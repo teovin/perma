@@ -11018,6 +11018,19 @@ p a.action-heading.perma [class*=" icon-"] {
   right: 0;
 }
 
+.single-member {
+  position: absolute;
+  top: 10px;
+  right: 250px;
+}
+
+.multiple-members {
+  position: absolute;
+  top: 11px;
+  right: 0;
+  font-size: 14px !important;
+}
+
 .org-settings {
   margin-top: 16px;
 }
@@ -11064,13 +11077,13 @@ p a.action-heading.perma [class*=" icon-"] {
 }
 
 .admin-data {
-  margin: 24px 0 0;
+  margin: 48px 0 0;
   border-top: 1px solid #2D76EE;
   padding-top: 1px;
 }
 @media only screen and (min-width: 768px) {
   .admin-data {
-    margin: 24px 0;
+    margin: 48px 0;
   }
 }
 

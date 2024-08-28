@@ -6,7 +6,8 @@
 {% block dashboardContent %}
   <h2 class="body-ah">{{ pretty_group_name_plural|title }}</h2>
 
-  <a class="action-heading" data-toggle="collapse" href="#add-member" aria-expanded="false" aria-controls="#add-member"><i class="icon-plus-sign" aria-hidden="true"></i> add<span class="_verbose"> {{ pretty_group_name|lower }}</span></a>
+  <a class="action-heading single-member" data-toggle="collapse" href="#add-member" aria-expanded="false" aria-controls="#add-member"><i class="icon-plus-sign" aria-hidden="true"></i> add<span class="_verbose"> {{ pretty_group_name|lower }}</span></a>
+  <a class="action-heading multiple-members" data-toggle="collapse" href="#bulk-add-members" aria-expanded="false" aria-controls="#bulk-add-members"><i class="icon-plus-sign" aria-hidden="true"></i> add multiple<span class="_verbose"> {{ pretty_group_name|lower }}s</span></a>
 
   {% if messages %}
     {% for message in messages %}
@@ -25,6 +26,18 @@
       </fieldset>
     </form>
   </div><!-- add member -->
+
+  <div id="bulk-add-members" class="collapse {% if form.errors %}in{% endif %}">
+    <form method="get" action="{% url add_user_url %}" class="form-inline" role="form">
+      <fieldset>
+        <div class="form-group fg-100">
+          <label for="add">Comma seperated emails</label>
+          <input id="add" type="text" name="email" value="{{ search_query|default:"" }}" placeholder="{{ search_placeholder|default:"Emails" }}"/>
+        </div>
+        <button type="submit" class="btn btn-default btn-inline">Add {{ pretty_group_name|lower }}s</button>
+      </fieldset>
+    </form>
+  </div><!-- bulk add members -->
 
   <div class="row row-no-bleed admin-data">
     <h3 class="sr-only">Stats</h3>
@@ -364,5 +377,28 @@
   {% endif %}
 
   {% include "user_management/includes/paginator.html" with page=users title='User List'%}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log("in here")
+        const toggleAll = document.querySelectorAll('.action-heading');
+
+        toggleAll.forEach(toggle => {
+            toggle.addEventListener('click', event => {
+                const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+
+                document.querySelectorAll('.multi-collapse').forEach(collapse => {
+                    if (isExpanded) {
+                        collapse.classList.remove('show');
+                    } else {
+                        collapse.classList.add('show');
+                    }
+                });
+
+                toggleAll.forEach(t => t.setAttribute('aria-expanded', !isExpanded));
+            });
+        });
+    });
+  </script>
 
 {% endblock %}
