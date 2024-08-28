@@ -11018,17 +11018,22 @@ p a.action-heading.perma [class*=" icon-"] {
   right: 0;
 }
 
-.single-member {
+.bulk-users {
   position: absolute;
-  top: 10px;
-  right: 250px;
+  top: 50px;
+  right: 22px;
+  font-size: 16px;
+  font-weight: 200;
 }
 
 .multiple-members {
-  position: absolute;
-  top: 11px;
-  right: 0;
-  font-size: 14px !important;
+  color: #2D76EE !important;
+  text-decoration: underline;
+  font-weight: normal;
+}
+
+#bulk-user-modal textarea {
+  height: 20em;
 }
 
 .org-settings {
@@ -11074,6 +11079,7 @@ p a.action-heading.perma [class*=" icon-"] {
 
 #add-member {
   padding-bottom: 0;
+  margin-top: 50px;
 }
 
 .admin-data {

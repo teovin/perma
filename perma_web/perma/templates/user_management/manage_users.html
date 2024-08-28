@@ -1,4 +1,5 @@
 {% extends "manage-layout.html" %}
+{% load render_bundle from webpack_loader %}
 {% load current_query_string visible_organizations visible_sponsorships %}
 {% load intcomma from humanize %}
 {% block title %} | {{ pretty_group_name_plural }}{% endblock %}
@@ -7,8 +8,78 @@
   <h2 class="body-ah">{{ pretty_group_name_plural|title }}</h2>
 
   <a class="action-heading single-member" data-toggle="collapse" href="#add-member" aria-expanded="false" aria-controls="#add-member"><i class="icon-plus-sign" aria-hidden="true"></i> add<span class="_verbose"> {{ pretty_group_name|lower }}</span></a>
-  <a class="action-heading multiple-members" data-toggle="collapse" href="#bulk-add-members" aria-expanded="false" aria-controls="#bulk-add-members"><i class="icon-plus-sign" aria-hidden="true"></i> add multiple<span class="_verbose"> {{ pretty_group_name|lower }}s</span></a>
+  <p class="bulk-users">or <a class="multiple-members" data-toggle="modal" href="#bulk-user-modal">add multiple users</a></p>
+  <!-- <a class="action-heading multiple-members" data-toggle="collapse" href="#bulk-add-members" aria-expanded="false" aria-controls="#bulk-add-members"><i class="icon-plus-sign" aria-hidden="true"></i> add multiple<span class="_verbose"> {{ pretty_group_name|lower }}s</span></a> -->
 
+  <!-- <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+    Launch demo modal
+  </button> -->
+
+  <!-- Modal
+  <div class="modal fade" id="bulk-user-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Add Multiple Organization Users </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          Testing the modal
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- Display Batch modal -->
+  <div class="modal" id="bulk-user-modal" tabindex="-1" role="dialog" aria-labelled-by="batch-modal-title">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h3 id="batch-modal-title" class="modal-title">Add Multiple Users to Organization</h3>
+        </div>
+        <div class="spinner _hide">
+        <span class="sr-only" id="loading" tabindex="-1">Loading</span></div>
+        <div class="modal-body">
+
+          <div id="batch-create-input">
+            <div class="form-group">
+              <label id="batch-target" for="batch-target-path" class="label-affil">These users will be affiliated with</label>
+              <select id="batch-target-path" class="form-control">
+                <option>{{user}}</option>
+                <option>2</option>
+                <option>3</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <textarea aria-label="Paste user emails here (one email address per line)" placeholder="Paste user emails here (one email address per line)"></textarea>
+            </div>
+            <div class="form-buttons">
+              <button id="start-batch" class="btn" disabled="disabled">Add Users</button>
+              <button class="btn cancel" data-dismiss="modal">Cancel</button>
+            </div>
+          </div>
+
+          <div id="batch-details-wrapper" tabindex="-1" class="_hide">
+            <p id="batch-progress-report" role="log" aria-atomic="false"></p>
+            <div id="batch-details" aria-describedby="batch-progress-report"></div>
+            <div class="form-buttons">
+              <button class="btn cancel" data-dismiss="modal">Exit</button>
+              <a href="#" id="export-csv" class="btn _hide">Export list as CSV</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   {% if messages %}
     {% for message in messages %}
       <div class="alert-{{ message.level_tag }} alert-block" >{% if 'safe' in message.tags %}{{ message|safe }}{% else %}{{ message }}{% endif %}</div>
@@ -378,27 +449,8 @@
 
   {% include "user_management/includes/paginator.html" with page=users title='User List'%}
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log("in here")
-        const toggleAll = document.querySelectorAll('.action-heading');
-
-        toggleAll.forEach(toggle => {
-            toggle.addEventListener('click', event => {
-                const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-
-                document.querySelectorAll('.multi-collapse').forEach(collapse => {
-                    if (isExpanded) {
-                        collapse.classList.remove('show');
-                    } else {
-                        collapse.classList.add('show');
-                    }
-                });
-
-                toggleAll.forEach(t => t.setAttribute('aria-expanded', !isExpanded));
-            });
-        });
-    });
-  </script>
+  {% block scripts %}
+   {% render_bundle 'global' 'js' %}
+  {% endblock %}
 
 {% endblock %}
