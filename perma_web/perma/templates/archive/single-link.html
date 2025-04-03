@@ -224,7 +224,7 @@
         {% if request.user.is_staff %}
           <a href="?embed=False" class="btn btn-ui-small btn-dashboard">Show playback controls</a>
         {% endif %}
-        {% if link.can_play_back %}
+        {% if link.can_play_back and request.user.is_authenticated %}
           <a href="{% url 'single_permalink' guid=link.guid %}?type=warc_download" role="button" class="btn btn-ui-small btn-dashboard" title="download">Download WARC</a>
             {% if link.wacz_size %}
               <a href="{% url 'single_permalink' guid=link.guid %}?type=wacz_download" role="button" class="btn btn-ui-small btn-dashboard" title="download">Download WACZ</a>

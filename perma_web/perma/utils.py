@@ -841,6 +841,9 @@ def stream_archive(link, stream=True, file_format='warc'):
 
 
 def stream_archive_if_permissible(link, user, stream=True, file_format='warc'):
+    if not user.is_authenticated:
+        return HttpResponse('Unauthenticated.', status=401)
+
     if user.can_view(link):
         return stream_archive(link, stream, file_format)
     return HttpResponseForbidden('Private archive.')
