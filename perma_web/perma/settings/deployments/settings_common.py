@@ -481,7 +481,8 @@ CELERY_TASK_ROUTES = {
     'perma.celery_tasks.deactivate_expired_sponsored_users': {'queue': 'background'},
     'perma.celery_tasks.warn_expiring_sponsored_users': {'queue': 'background'},
     'perma.celery_tasks.remove_expired_organization_user_affiliations': {'queue': 'background'},
-    'perma.celery_tasks.warn_expiring_organization_users': {'queue': 'background'}
+    'perma.celery_tasks.warn_expiring_organization_users': {'queue': 'background'},
+    'perma.celery_tasks.send_bulk_user_creation_emails': {'queue': 'background'}
 }
 
 # Schedule celerybeat jobs.

@@ -28,6 +28,10 @@ from django.db.models import F
 from django.db.models.functions import Greatest, Now
 from django.conf import settings
 from django.utils import timezone
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.contrib.auth.tokens import default_token_generator
 from django.template.defaultfilters import pluralize, filesizeformat
 
 from perma.models import LinkUser, Link, Capture, \
@@ -1603,3 +1607,22 @@ def warn_expiring_organization_users(warning_days=None):
                 except Exception:
                     logger.exception(f"Error emailing user {affiliation.user_id}")
                 break
+
+
+@shared_task
+def send_user_email_from_bulk_addition(user_email, context, template, host=None, is_new_user=False):
+    """
+    Handles sending emails to users created/updated via the bulk org user addition form
+    """
+    if is_new_user:
+        user = LinkUser.objects.get(raw_email=user_email)
+        activation_route = f'''{host}{reverse('password_reset_confirm', 
+                                              args=[
+                                                urlsafe_base64_encode(force_bytes(user.pk)),
+                                                default_token_generator.make_token(user),
+                                              ])}'''
+        context['activation_expires'] = settings.PASSWORD_RESET_TIMEOUT
+        context['activation_route'] = activation_route
+
+    send_user_email(user_email, template, context)
+
