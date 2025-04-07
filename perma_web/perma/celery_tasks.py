@@ -1616,11 +1616,12 @@ def send_user_email_from_bulk_addition(user_email, context, template, host=None,
     """
     if is_new_user:
         user = LinkUser.objects.get(raw_email=user_email)
-        activation_route = f'''{host}{reverse('password_reset_confirm', 
-                                              args=[
-                                                urlsafe_base64_encode(force_bytes(user.pk)),
-                                                default_token_generator.make_token(user),
-                                              ])}'''
+        path = reverse('password_reset_confirm',
+                       args=[
+                           urlsafe_base64_encode(force_bytes(user.pk)),
+                           default_token_generator.make_token(user)
+                       ])
+        activation_route = f'{host}{path}'
         context['activation_expires'] = settings.PASSWORD_RESET_TIMEOUT
         context['activation_route'] = activation_route
 
