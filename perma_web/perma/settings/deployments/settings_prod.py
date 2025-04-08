@@ -19,7 +19,8 @@ CELERY_BEAT_JOB_NAMES = [
     'deactivate_expired_sponsored_users',
     'warn_expiring_sponsored_users',
     'remove_expired_organization_user_affiliations',
-    'warn_expiring_organization_users'
+    'warn_expiring_organization_users',
+    'send_user_email_from_bulk_addition'
 ]
 
 # logging
