@@ -164,6 +164,7 @@ urlpatterns = [
     re_path(r'^manage/sponsored-users/(?P<user_id>\d+)/remove/(?P<registrar_id>\d+)/?$', user_management.manage_single_sponsored_user_remove, name='user_management_manage_single_sponsored_user_remove'),
     re_path(r'^manage/sponsored-users/(?P<user_id>\d+)/readd/(?P<registrar_id>\d+)/?$', user_management.manage_single_sponsored_user_readd, name='user_management_manage_single_sponsored_user_readd'),
     re_path(r'^manage/sponsored-users/(?P<user_id>\d+)/links/(?P<registrar_id>\d+)/?$', user_management.manage_single_sponsored_user_links, name='user_management_manage_single_sponsored_user_links'),
+    re_path(r'^manage/sponsored-users/(?P<user_id>\d+)/modify/(?P<registrar_id>\d+)/?$', user_management.manage_single_sponsored_user_expiration_date, name='user_management_manage_single_sponsored_user_expiration_date'),
 
     re_path(r'^manage/account/leave-organization/(?P<org_id>\d+)/?$', user_management.organization_user_leave_organization, name='user_management_organization_user_leave_organization'),
 

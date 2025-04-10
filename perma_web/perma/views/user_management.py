@@ -1133,6 +1133,33 @@ def manage_single_sponsored_user_links(request, user_id, registrar_id):
     })
 
 
+@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+def manage_single_sponsored_user_expiration_date(request, user_id, registrar_id):
+    """
+        Modify the sponsorship expiration date of a user
+    """
+    target_user = get_object_or_404(LinkUser, id=user_id)
+    registrar = get_object_or_404(Registrar, id=registrar_id)
+    sponsorship = get_object_or_404(Sponsorship, user=target_user, registrar=registrar)
+
+    # Registrar users can only edit their own sponsored users
+    if request.user.is_registrar_user() and \
+        (request.user.registrar not in target_user.sponsoring_registrars.all() or
+         str(request.user.registrar_id) != registrar_id):
+        return HttpResponseForbidden()
+    
+    if request.method == 'POST':
+        expires_at = request.POST.get("expires_at") or None
+        sponsorship.expires_at = expires_at
+        sponsorship.save()
+        return HttpResponseRedirect(reverse('user_management_manage_single_sponsored_user', args=[user_id]))
+
+    return render(request, 'user_management/manage_sponsorship_affiliation_expiration.html', {
+        'user': target_user,
+        'registrar_id': registrar_id
+    })
+
+
 @user_passes_test_or_403(lambda user: user.is_staff)
 def manage_single_admin_user_remove(request, user_id):
     """

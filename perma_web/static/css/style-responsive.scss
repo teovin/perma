@@ -1242,7 +1242,7 @@ div.col-right {
       background-color: $color-active !important;
     }
   }
-  &.cancel {
+  &.cancel, &.update-affiliation-btn {
     border-color: $color-orange;
     color: $color-orange;
     background-color: white;
@@ -1256,6 +1256,12 @@ div.col-right {
       background-color: white !important;
       border-color: $color-black;
       color: $color-black !important;
+    }
+  }
+  &.update-affiliation-btn {
+    &:hover, &:focus {
+      color: $color-green !important;
+      border-color: $color-green;
     }
   }
   &.btn-bookmarklet {
@@ -2977,7 +2983,7 @@ div.checkbox {
   padding-left: 36px;
 }
 
-div.checkbox:has(#id_a-indefinite_sponsorship),  div.checkbox:has(#id_a-indefinite_affiliation) {
+div.checkbox:has(#id_a-indefinite_sponsorship), div.checkbox:has(#indefinite_sponsorship), div.checkbox:has(#id_a-indefinite_affiliation) {
   background-color: inherit;
   padding-left: 0;
   margin-right: 0;

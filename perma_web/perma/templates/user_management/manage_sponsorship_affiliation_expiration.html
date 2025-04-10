@@ -1,0 +1,47 @@
+{% extends "admin-layout.html" %}
+
+{% block title %} | Modify affiliation expiration of user {% endblock %}
+
+{% block adminContent %}
+
+    <h3 class="body-bh">Modify affiliation expiration of {{  user }}</h3>
+
+    <form method="POST" action="{% url 'user_management_manage_single_sponsored_user_expiration_date' user_id=user.id registrar_id=registrar_id %}">
+        {% csrf_token %}
+        <fieldset>
+            <div class="checkbox">
+            <label for="indefinite_sponsorship">
+                <input type="checkbox" name="indefinite_sponsorship" id="indefinite_sponsorship">
+                    Sponsor permanently
+                </input>
+            </label>
+            </div>
+            <div class="form-group">
+                <label for="expires_at">Or set a new expiration date
+                    <input type="date" name="expires_at" id="expires_at"/>
+                </label>
+            </div>
+        </fieldset>
+        <button type="submit" class="btn">Update</button>
+        <a href="../" class="btn cancel">Cancel</a>
+    </form>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const checkbox = document.getElementById("indefinite_sponsorship");
+            const datetimeField = document.getElementById("expires_at");
+
+            const toggleExpirationDateField = () => {
+                if (checkbox.checked) {
+                    datetimeField.value = '';
+                    datetimeField.disabled = true;
+                } else {
+                    datetimeField.disabled = false;
+                }
+            };
+
+            checkbox.addEventListener("change", toggleExpirationDateField);
+            toggleExpirationDateField();
+        });
+    </script>
+
+{% endblock %}
