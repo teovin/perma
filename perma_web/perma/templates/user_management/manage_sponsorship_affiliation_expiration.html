@@ -1,10 +1,10 @@
 {% extends "admin-layout.html" %}
 
-{% block title %} | Modify affiliation expiration of user {% endblock %}
+{% block title %} | Modify sponsorship expiration of user {% endblock %}
 
 {% block adminContent %}
 
-    <h3 class="body-bh">Modify affiliation expiration of {{  user }}</h3>
+    <h3 class="body-bh">Modify sponsorship expiration of {{ user }}</h3>
 
     <form method="POST" action="{% url 'user_management_manage_single_sponsored_user_expiration_date' user_id=user.id registrar_id=registrar_id %}">
         {% csrf_token %}
@@ -17,7 +17,7 @@
             </label>
             </div>
             <div class="form-group">
-                <label for="expires_at">Or set a new expiration date
+                <label for="expires_at">Or set a new expiration date:
                     <input type="date" name="expires_at" id="expires_at"/>
                 </label>
             </div>

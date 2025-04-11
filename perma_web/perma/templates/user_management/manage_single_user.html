@@ -11,9 +11,7 @@
         {% for sponsorship in status.list %}
           <div class="settings-block">
             <p>{{ sponsorship.registrar.name }}</p>
-            {% if sponsorship.status == 'active' %}
-              <!-- <br><p><strong>Expiration date:</strong> {{ sponsorship.expires_at }}</p> -->
-              <br>
+            {% if sponsorship.status == 'active' %}<br>
               <p>
                 <strong>Expiration:</strong>
                 {% if sponsorship.expires_at %}
