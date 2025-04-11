@@ -23,7 +23,7 @@
             </div>
         </fieldset>
         <button type="submit" class="btn">Update</button>
-        <a href="../" class="btn cancel">Cancel</a>
+        <a href="{% url 'user_management_manage_single_sponsored_user' user_id=user.id %}" class="btn cancel">Cancel</a>
     </form>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
