@@ -22,7 +22,7 @@
               </p>
               <a href="{% url 'user_management_manage_single_sponsored_user_remove' user_id=target_user.id registrar_id=sponsorship.registrar.id %}" class="btn cancel btn-xs leave-org-btn">Deactivate sponsorship</a>
               <a href="{% url 'user_management_manage_single_sponsored_user_expiration_date' user_id=target_user.id registrar_id=sponsorship.registrar.id %}" class="btn btn-xs update-affiliation-btn">Update sponsorship</a>
-              {% else %}
+            {% else %}
               <a href="{% url 'user_management_manage_single_sponsored_user_readd' user_id=target_user.id registrar_id=sponsorship.registrar.id %}" name="registrar" class="btn btn-default btn-xs leave-org-btn">Reactivate</a>
             {% endif %}
           </div>
