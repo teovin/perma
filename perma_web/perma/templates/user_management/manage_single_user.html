@@ -13,7 +13,7 @@
             <p>{{ sponsorship.registrar.name }}</p>
             {% if sponsorship.status == 'active' %}<br>
               <p>
-                <strong>Expiration:</strong>
+                Expiration: 
                 {% if sponsorship.expires_at %}
                   {{ sponsorship.expires_at }}
                 {% else %}
