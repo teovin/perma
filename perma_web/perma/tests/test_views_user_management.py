@@ -1081,6 +1081,42 @@ class UserManagementViewsTestCase(PermaTestCase):
                          error_keys=['sponsoring_registrars'])
         self.assertFalse(LinkUser.objects.filter(pk=self.regular_user.pk, sponsoring_registrars=self.unrelated_registrar).exists())
 
+    ### MODIFYING SPONSORSHIPS ###
+
+    def test_admin_user_can_modify_sponsorship_of_existing_user(self):
+        self.log_in_user(self.admin_user)
+        sponsorship = Sponsorship.objects.get(user=self.sponsored_user, registrar=self.registrar, status='active')
+        sponsorship.expires_at = '2025-12-29'
+        sponsorship.save()
+        self.submit_form('user_management_manage_single_sponsored_user_expiration_date',
+                         reverse_kwargs={'args': [self.sponsored_user.id, self.registrar.id]},
+                         data={'expires_at': ''},
+                         success_url=reverse('user_management_manage_single_sponsored_user', args=[self.sponsored_user.id]),
+                         success_query=LinkUser.objects.filter(pk=self.regular_user.pk, sponsoring_registrars=self.registrar))
+        sponsorship.refresh_from_db()
+        self.assertEqual(sponsorship.expires_at, None)
+
+        
+    def test_registrar_user_can_modify_sponsorship_of_existing_user(self):
+        # can only modify users affiliated with itself
+        self.log_in_user(self.registrar_user)
+        sponsorship = Sponsorship.objects.get(user=self.sponsored_user, registrar=self.registrar, status='active')
+        sponsorship.expires_at = '2025-12-29'
+        sponsorship.save()
+        self.submit_form('user_management_manage_single_sponsored_user_expiration_date',
+                         reverse_kwargs={'args': [self.sponsored_user.id, self.registrar.id]},
+                         data={'expires_at': ''},
+                         success_url=reverse('user_management_manage_single_sponsored_user', args=[self.sponsored_user.id]),
+                         success_query=LinkUser.objects.filter(pk=self.regular_user.pk, sponsoring_registrars=self.registrar))
+        sponsorship.refresh_from_db()
+        self.assertEqual(sponsorship.expires_at, None)
+
+        # cannot modify users affiliated with another registrar
+        self.log_in_user(self.registrar_user)
+        self.submit_form('user_management_manage_single_sponsored_user_expiration_date',
+                         reverse_kwargs={'args': [self.sponsored_user.id, self.unrelated_registrar.pk]},
+                         require_status_code=403)
+
     ### TOGGLING THE STATUS OF SPONSORSHIPS ###
 
     def test_admin_user_can_deactivate_active_sponsorship(self):
@@ -1144,7 +1180,8 @@ class UserManagementViewsTestCase(PermaTestCase):
         sponsorship.refresh_from_db()
         self.assertEqual(sponsorship.status, 'inactive')
 
-    ### ADDING NEW USERS TO REGISTRARS AS REGISTRAR USERS) ###
+
+    ### ADDING NEW USERS TO REGISTRARS AS REGISTRAR USERS ###
 
     def test_admin_user_can_add_new_user_to_registrar(self):
         address = self.randomize_capitalization('doesnotexist@example.com')
