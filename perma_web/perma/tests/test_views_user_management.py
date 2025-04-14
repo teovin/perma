@@ -7,6 +7,7 @@ from random import random, getrandbits
 import re
 
 from bs4 import BeautifulSoup
+from datetime import datetime
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.core import mail
@@ -1097,21 +1098,20 @@ class UserManagementViewsTestCase(PermaTestCase):
         self.assertEqual(sponsorship.expires_at, None)
 
         
-    def test_registrar_user_can_modify_sponsorship_of_existing_user(self):
-        # can only modify users affiliated with itself
+    def test_registrar_user_can_modify_sponsorship_of_existing_affiliated_user(self):
+        # can only modify sponsorships affiliated withitself
         self.log_in_user(self.registrar_user)
         sponsorship = Sponsorship.objects.get(user=self.sponsored_user, registrar=self.registrar, status='active')
-        sponsorship.expires_at = '2025-12-29'
-        sponsorship.save()
+        expires_at = '2025-04-30T00:00:00+00:00'
         self.submit_form('user_management_manage_single_sponsored_user_expiration_date',
                          reverse_kwargs={'args': [self.sponsored_user.id, self.registrar.id]},
-                         data={'expires_at': ''},
+                         data={'expires_at': expires_at},
                          success_url=reverse('user_management_manage_single_sponsored_user', args=[self.sponsored_user.id]),
                          success_query=LinkUser.objects.filter(pk=self.regular_user.pk, sponsoring_registrars=self.registrar))
         sponsorship.refresh_from_db()
-        self.assertEqual(sponsorship.expires_at, None)
+        self.assertEqual(sponsorship.expires_at, datetime.strptime(expires_at, "%Y-%m-%dT%H:%M:%S%z"))
 
-        # cannot modify users affiliated with another registrar
+        # cannot modify sponsorships affiliated with another registrar
         self.log_in_user(self.registrar_user)
         self.submit_form('user_management_manage_single_sponsored_user_expiration_date',
                          reverse_kwargs={'args': [self.sponsored_user.id, self.unrelated_registrar.pk]},
