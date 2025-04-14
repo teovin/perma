@@ -1099,7 +1099,7 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         
     def test_registrar_user_can_modify_sponsorship_of_existing_affiliated_user(self):
-        # can only modify sponsorships affiliated withitself
+        # can only modify sponsorships affiliated with itself
         self.log_in_user(self.registrar_user)
         sponsorship = Sponsorship.objects.get(user=self.sponsored_user, registrar=self.registrar, status='active')
         expires_at = '2025-04-30T00:00:00+00:00'
