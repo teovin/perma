@@ -7433,21 +7433,25 @@ a.cc:active, p a.cc.perma:active {
 .btn._nav:active {
   background-color: #222 !important;
 }
-.btn.cancel {
+.btn.cancel, .btn.update-affiliation-btn {
   border-color: #DD671A;
   color: #DD671A;
   background-color: white;
 }
-.btn.cancel:hover, .btn.cancel:focus {
+.btn.cancel:hover, .btn.cancel:focus, .btn.update-affiliation-btn:hover, .btn.update-affiliation-btn:focus {
   background-color: white !important;
   color: red !important;
   border-color: red;
   text-decoration: none !important;
 }
-.btn.cancel:active {
+.btn.cancel:active, .btn.update-affiliation-btn:active {
   background-color: white !important;
   border-color: #222;
   color: #222 !important;
+}
+.btn.update-affiliation-btn:hover, .btn.update-affiliation-btn:focus {
+  color: #77AE3A !important;
+  border-color: #77AE3A;
 }
 .btn.btn-bookmarklet {
   padding: 8px;
@@ -9324,7 +9328,7 @@ div.checkbox {
   padding-left: 36px;
 }
 
-div.checkbox:has(#id_a-indefinite_sponsorship), div.checkbox:has(#id_a-indefinite_affiliation) {
+div.checkbox:has(#id_a-indefinite_sponsorship), div.checkbox:has(#indefinite_sponsorship), div.checkbox:has(#id_a-indefinite_affiliation) {
   background-color: inherit;
   padding-left: 0;
   margin-right: 0;
