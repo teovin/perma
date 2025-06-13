@@ -63,14 +63,16 @@ function initCopyLink() {
 }
 
 function showCopiedFeedback() {
-  if (copyText && copiedText) {
-    copyText.style.display = 'none';
-    copiedText.style.display = 'inline';
+  if (copyBtn) {
+    copyBtn.classList.add('copied');
+    
+    const originalTitle = copyBtn.title;
+    copyBtn.title = 'Copied!';
     
     // Reset after 2 seconds
     setTimeout(function() {
-      copyText.style.display = 'inline';
-      copiedText.style.display = 'none';
+      copyBtn.classList.remove('copied');
+      copyBtn.title = originalTitle;
     }, 2000);
   }
 }
@@ -86,9 +88,8 @@ function fallbackCopyTextToClipboard(text) {
   textArea.select();
   
   try {
-    // This is deprecated, but it's a fallback for older browsers 
-    // that don't support the clipboard API. It creates a temporary 
-    // textarea element, copies the text to it, and then removes it.
+    // I know this is deprecated, using it purely as a fallback 
+    // mechanism for browsers that do not support the clipboard api
     const successful = document.execCommand('copy');
     if (successful) {
       showCopiedFeedback();
