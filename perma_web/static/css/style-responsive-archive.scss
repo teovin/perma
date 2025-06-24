@@ -12,27 +12,44 @@
 
 
 $height-record-hed: 113px;
-$color-trans-white: rgba(254,254,254,.65);
+$color-trans-white: rgba(254, 254, 254, .65);
 $color-yellow: #d0a60f;
 
-html,body {
+html,
+body {
   overflow: visible;
   height: 100%;
 }
 
 a {
   text-decoration: none;
-  &:link { color: inherit; }
-  &:visited { color: inherit; }
-  &:hover { color: inherit; }
-  &:focus { color: inherit; }
-  &:active { color: inherit; }
+
+  &:link {
+    color: inherit;
+  }
+
+  &:visited {
+    color: inherit;
+  }
+
+  &:hover {
+    color: inherit;
+  }
+
+  &:focus {
+    color: inherit;
+  }
+
+  &:active {
+    color: inherit;
+  }
 }
 
 // iframe start
 
 .verbose {
   display: none;
+
   @include respond-tablet {
     display: inline;
   }
@@ -41,7 +58,7 @@ a {
 .capture-wrapper {
   position: relative;
   height: 100%;
-  width : 100%;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -49,8 +66,12 @@ a {
   padding: 0;
 }
 
-#main-archive, #main-content, #main-content > .row, .capture-wrapper, .h_iframe {
-  height : 100%;
+#main-archive,
+#main-content,
+#main-content>.row,
+.capture-wrapper,
+.h_iframe {
+  height: 100%;
 }
 
 .h_iframe {
@@ -58,9 +79,9 @@ a {
 }
 
 .h_iframe .ratio {
-  display:block;
-  width:100%;
-  height:auto;
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 iframe.archive-iframe {
@@ -72,14 +93,14 @@ iframe.archive-iframe {
   border-width: 0px 0px;
   border-style: solid;
   border-color: #999;
-  text-align:auto;
-  background:#ffffff;
-  margin:0px auto;
+  text-align: auto;
+  background: #ffffff;
+  margin: 0px auto;
 }
 
 iframe.interstitial {
   border: 0;
-  display:block;
+  display: block;
   margin: 16px auto;
 }
 
@@ -93,19 +114,24 @@ header {
   font-family: $font-hed-alt;
   border-bottom: $grid solid #e5e5e5;
   box-sizing: content-box;
-  @include respond-desktop {
-  }
+
+  @include respond-desktop {}
+
   &._isPrivate {
     background-color: $color-black;
+
     .title {
       margin-left: 0;
+
       @include respond-tablet {
         font-size: 22px;
       }
+
       @include respond-wide {
         font-size: 24px;
       }
     }
+
     ._isDarchive {
       color: $color-orange-a;
       border-bottom: 1px solid $color-black;
@@ -114,10 +140,12 @@ header {
         text-decoration: underline;
       }
 
-      &:hover, &:focus {
-          color: $color-blue;
+      &:hover,
+      &:focus {
+        color: $color-blue;
       }
     }
+
     .title:before {
       content: '';
       display: inline-block;
@@ -129,17 +157,21 @@ header {
       margin-right: 4px;
       bottom: -2px;
     }
+
     .navbar-toggle .icon-bar {
       background-color: $color-black;
     }
+
     .ui-tray {
       border-color: $color-black;
     }
+
     @media (min-width: 400px) {
       .title:before {
-          bottom: -1px;
+        bottom: -1px;
       }
     }
+
     @include respond-tablet {
       .title:before {
         bottom: 0;
@@ -157,9 +189,11 @@ header {
   margin: 64px 0 24px;
   font-family: $font-hed-alt;
   padding: 0 $double;
+
   @include respond-mobile {
     margin: 200px 0 48px;
   }
+
   @include respond-tablet {
     margin: 155px 0 48px;
   }
@@ -169,6 +203,7 @@ header {
   @include respond-mobile {
     margin-top: 230px;
   }
+
   @include respond-tablet {
     margin-top: 195px;
   }
@@ -180,6 +215,7 @@ header {
   font-size: 24px;
   font-weight: 300;
   line-height: 1.2;
+
   @include respond-tablet {
     font-size: 36px;
   }
@@ -191,15 +227,19 @@ header {
   font-size: 14px;
   line-height: 1.5;
   color: $color-trans-gray;
+
   @include respond-tablet {
     font-size: 16px;
   }
 
   a {
     text-decoration: underline;
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       color: $color-hover;
     }
+
     &:active {
       color: $color-active;
     }
@@ -239,11 +279,13 @@ header {
         width: 20px;
         top: 3px;
         left: -1px;
+
         @include respond-tablet {
           top: -6px;
           height: 27px;
           width: 27px;
         }
+
         @include respond-desktop {
           height: 32px;
           width: 32px;
@@ -253,12 +295,13 @@ header {
       }
 
       @include respond-tablet {
-      padding-left: $grid * 4;
-      padding-top: 0;
-      float: none;
+        padding-left: $grid * 4;
+        padding-top: 0;
+        float: none;
       }
+
       @include respond-desktop {
-      padding-left: $grid * 5;
+        padding-left: $grid * 5;
       }
     }
 
@@ -266,12 +309,16 @@ header {
       font-size: 13px;
       color: $color-trans-gray;
       padding-left: $half;
+
       a {
         color: $color-orange;
         text-decoration: underline;
-        &:hover, &:focus {
+
+        &:hover,
+        &:focus {
           color: $color-black;
         }
+
         &:active {
           color: $color-blue;
         }
@@ -282,6 +329,7 @@ header {
   strong {
     display: block;
     position: relative;
+
     @include respond-tablet {
       display: inline;
     }
@@ -299,15 +347,18 @@ header {
     margin-top: 1px;
     margin-right: -11px;
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: $color-hover;
     }
+
     &:active {
       background-color: $color-active;
     }
+
     @include respond-tablet {
-        margin-top: 3px;
-        margin-right: 0;
+      margin-top: 3px;
+      margin-right: 0;
     }
   }
 
@@ -319,14 +370,15 @@ header {
       overflow: hidden;
       text-indent: -1000px;
     }
+
     .success {
       line-height: 29px;
     }
   }
 
   @include respond-desktop {
-      padding: 12px $grid * 6;
-      font-weight: 200;
+    padding: 12px $grid * 6;
+    font-weight: 200;
   }
 
   @include respond-wide {
@@ -342,15 +394,19 @@ header {
 .btn {
   background-color: transparent;
   border-radius: 0;
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     background-color: transparent;
     border-color: $color-white;
   }
+
   &:active {
     background-color: transparent;
     border-color: inherit;
     box-shadow: none;
   }
+
   &:focus {
     background-color: transparent;
     border-color: inherit;
@@ -390,12 +446,14 @@ header {
     display: inline-block;
     font-weight: 700;
     font-size: 16px;
-    & + .btn {
+
+    &+.btn {
       margin-left: $double;
     }
   }
 
-  &:hover, &:focus {
+  &:hover,
+  &:focus {
     background-color: $color-hover !important;
     text-decoration: none !important;
     border-color: transparent;
@@ -412,28 +470,35 @@ header {
   font-size: 12px;
   font-weight: 400;
   padding: 5px 9px;
-  border: 2px solid ;
+  border: 2px solid;
   border-radius: 4px;
   color: $color-blue;
   border-color: $color-blue;
   background-color: transparent;
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     border-width: 3px;
     padding: 4px 8px;
   }
+
   &:active {
     border-width: 3px;
     padding: 4px 8px;
     color: white;
     background-color: $color-blue;
   }
+
   @include respond-tablet {
     padding: 7px 11px;
     border-radius: 10em;
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       border-width: 3px;
       padding: 6px 10px;
     }
+
     &:active {
       border-width: 3px;
       padding: 6px 10px;
@@ -454,39 +519,48 @@ header {
   text-align: left;
   padding-left: $double;
   border-radius: 0;
+
   span {
     vertical-align: middle;
   }
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     border: none;
     padding: 0;
     padding-left: $double;
     color: $color-blue;
     background-color: $color-white;
   }
+
   &:active {
     border: none;
     padding: 0;
     padding-left: $double;
   }
+
   @include respond-desktop {
     text-align: center;
     font-size: 12px;
     font-weight: 400;
     padding: 7px 11px;
-    border: 2px solid  $color-white;
+    border: 2px solid $color-white;
     border-radius: 10em;
     background-color: transparent;
     width: 11em;
     display: inline-block;
     height: auto;
+
     span {
       display: inline;
     }
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       border: 3px solid $color-white;
       padding: 6px 10px;
     }
+
     &:active {
       border: 3px solid $color-white;
       padding: 6px 10px;
@@ -500,6 +574,7 @@ header .primary-segment {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+
   @include respond-desktop {
     display: block;
   }
@@ -507,10 +582,12 @@ header .primary-segment {
 
 .primary-segment .col {
   display: table;
+
   .content {
     display: table-cell;
     vertical-align: middle;
   }
+
   @include respond-desktop {
     float: left;
   }
@@ -521,12 +598,14 @@ header .primary-segment {
   text-align: center;
   order: 3;
   width: 50%;
+
   @include respond-desktop {
     text-align: center;
     padding: $grid * 3;
     height: $height-record-hed;
     width: 180px;
   }
+
   @include respond-wide {
     width: 18%;
   }
@@ -536,30 +615,37 @@ header .primary-segment {
   padding-left: $grid * 2;
   order: 1;
   width: 100%;
+
   &._unauthenticated {
     padding-right: $double;
   }
+
   padding-right: $grid * 8;
   height: auto;
+
   @include respond-tablet {
     height: $height-record-hed;
     // 70% should work, but oddly sometimes forces undesired wrapping
     width: 69%;
     padding-right: $double;
     border-bottom: 1px solid $color-trans-white;
+
     .content {
       padding: 0;
     }
   }
+
   @include respond-desktop {
     border-left: 1px solid $color-trans-white;
     border-bottom: none;
     width: 40%;
   }
+
   @include respond-wide {
     width: 46%;
     padding-left: $grid * 3;
   }
+
   .content {
     padding: 12px 0 0 6px;
   }
@@ -569,10 +655,12 @@ header .primary-segment {
   padding: 0;
   order: 4;
   width: 50%;
+
   @include respond-desktop {
     height: $height-record-hed;
     width: 18%;
   }
+
   @include respond-wide {
     width: 18%;
   }
@@ -582,13 +670,17 @@ a.about {
   padding-bottom: 3px;
   border-bottom: 1px solid;
   font-weight: 200;
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     border-color: $color-hover;
   }
+
   &:active {
     border-color: $color-active;
     color: $color-active;
   }
+
   font-size: 14px;
 }
 
@@ -598,27 +690,36 @@ a.about {
   width: 100%;
   border-bottom: 1px solid $color-trans-white;
   text-align: center;
+
   @include respond-tablet {
     height: $height-record-hed;
     width: 30%;
     display: table;
   }
+
   @include respond-desktop {
     border-bottom: none;
     width: 22%;
   }
+
   @include respond-wide {
     width: 18%;
     float: left;
   }
+
   &._unauthenticated {
     a.about {
       display: none;
     }
+
     @include respond-tablet {
       text-align: right;
-      a.about { display: inline; }
+
+      a.about {
+        display: inline;
+      }
     }
+
     @include respond-desktop {
       text-align: center;
     }
@@ -632,6 +733,7 @@ a.about {
   line-height: 1.1;
   margin-bottom: 0;
   margin-left: -.075em;
+
   // .logo:after {
   //   content: '';
   //   background-image: url('../img/perma-logo-white.svg');
@@ -645,6 +747,7 @@ a.about {
   @media (min-width: 400px) {
     font-size: 18px;
   }
+
   @include respond-tablet {
     font-size: 24px;
   }
@@ -657,17 +760,21 @@ a.about {
   padding-top: $half;
   margin-bottom: 0;
   letter-spacing: .01em;
+
   @include respond-wide {
     font-size: 16px;
   }
+
   .action {
     display: inline;
     margin-left: 0;
     margin-right: .7em;
     padding-bottom: 2px;
     vertical-align: baseline;
+
     ._verbose {
       width: .7em;
+
       @include respond-tablet {
         display: inline;
         width: auto;
@@ -675,31 +782,40 @@ a.about {
         text-indent: 0;
       }
     }
+
     a {
       padding-bottom: 3px;
       border-bottom: 1px solid;
       display: inline-block;
-      &:hover, &:focus {
+
+      &:hover,
+      &:focus {
         border-color: $color-hover;
         text-decoration: none;
       }
+
       &:active {
         border-color: $color-active;
         color: $color-active;
       }
     }
   }
+
   @include respond-wide {
     .action {
       margin-left: $double;
     }
   }
+
   a.about {
     vertical-align: baseline;
     display: inline-block;
   }
+
   @include respond-tablet {
-    a.about { display: none; }
+    a.about {
+      display: none;
+    }
   }
 }
 
@@ -721,6 +837,7 @@ a.about {
   padding: 0;
   text-align: right;
   padding-right: $double;
+
   @include respond-desktop {
     height: $height-record-hed;
     padding: $grid * 2;
@@ -730,12 +847,15 @@ a.about {
     padding: $grid * 2;
     text-align: center;
   }
+
   @include respond-wide {
     padding: $grid * 3;
   }
+
   span {
     display: table-cell;
     vertical-align: middle;
+
     &:after {
       content: '';
       width: 9px;
@@ -750,17 +870,22 @@ a.about {
       background-position: -9px * 5;
     }
   }
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     background-color: white;
     color: $color-blue;
+
     span:after {
       background-position: -9px * 2;
     }
   }
+
   &:active {
     background-color: $color-black;
     border-color: $color-black;
     color: $color-white;
+
     span:after {
       background-position: -9px * 5;
     }
@@ -770,7 +895,7 @@ a.about {
 
 // dropdown and nav
 
-.nav > li > a.dropdown-toggle {
+.nav>li>a.dropdown-toggle {
   display: none !important; // review
   font-family: $font-hed-alt;
   font-size: 17px;
@@ -779,6 +904,7 @@ a.about {
   @include respond-tablet {
     display: block !important; // review
   }
+
   &.navbar-link {
     padding-top: 16px;
     padding-bottom: 16px;
@@ -787,6 +913,7 @@ a.about {
     border-radius: 2px;
     border: 1px solid $color-trans-lightgray;
   }
+
   &:after {
     content: '';
     height: 9px;
@@ -799,27 +926,35 @@ a.about {
     top: -1px;
     margin-left: $grid;
   }
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     background-color: $color-trans-lightgray;
   }
+
   &:active {
     border-color: $color-trans-gray;
   }
-  &:hover::after, &:focus::after {
-  }
+
+  &:hover::after,
+  &:focus::after {}
 }
 
-.nav > li.open > a.dropdown-toggle {
+.nav>li.open>a.dropdown-toggle {
   border-color: $color-background;
   background-color: $color-background;
   color: $color-blue;
+
   &:after {
     transform: rotate(180deg);
     background-position: -17px * 0;
   }
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     color: $color-orange;
   }
+
   &:active {
     border-color: $color-black;
   }
@@ -833,7 +968,8 @@ li.dropdown {
   @include style-dropdown-items;
   padding-left: 0;
 
-  & a, & button {
+  & a,
+  & button {
     display: block;
     padding: 3px 20px;
     clear: both;
@@ -851,14 +987,19 @@ li.dropdown {
   border: 2px solid rgba(255, 255, 255, 0);
   padding: 1px 6px 2px 6px;
   margin-right: -1px;
+
   &.active {
     background-color: $color-white;
     color: $color-blue;
   }
-  &:hover, &:focus {
+
+  &:hover,
+  &:focus {
     text-decoration: underline;
   }
-  &:hover:not(.active), &:focus:not(.active) {
+
+  &:hover:not(.active),
+  &:focus:not(.active) {
     text-decoration: none;
     border-color: $color-white;
     color: $color-white;
@@ -933,7 +1074,8 @@ li.dropdown {
 }
 */
 
-.dropdown-menu   { // review
+.dropdown-menu {
+  // review
   @include style-dropdown-items;
   position: relative;
   float: none;
@@ -951,6 +1093,7 @@ li.dropdown {
   border-color: black;
   padding-top: $double;
   min-width: $grid * 27;
+
   @include respond-tablet {
     position: absolute; // DEL WHEN FINAL
     top: 77px;
@@ -958,10 +1101,13 @@ li.dropdown {
     margin-right: -7px;
     margin-top: 2px;
   }
+
   @include respond-desktop {
     top: 64px;
   }
-  & > li > a, & > li button {
+
+  &>li>a,
+  &>li button {
     @include respond-tablet {
       padding-right: 20px;
     }
@@ -985,12 +1131,14 @@ li.dropdown {
   padding-top: 7px;
   color: $color-blue;
   text-transform: uppercase;
+
   @include respond-tablet {
     padding-right: 20px;
   }
 }
 
-._expanded .navbar-create { // review
+._expanded .navbar-create {
+  // review
   margin: 0;
   background-color: $color-blue;
   color: white;
@@ -1001,6 +1149,7 @@ li.dropdown {
   margin-right: $half;
   margin-left: $half;
   padding-right: 12px;
+
   &:after {
     content: '';
     width: 9px;
@@ -1028,6 +1177,7 @@ li.dropdown {
   overflow: visible;
   border: none;
   box-shadow: none;
+
   &.in {
     overflow: visible;
   }
@@ -1046,10 +1196,13 @@ li.dropdown {
 }
 
 .navbar-nav {
-  margin: 0 (-$grid) $double (-$grid);
-  @include respond-tablet {
-    margin: 0;
-  }
+  margin: 0 (-$grid) $double (
+    -$grid
+  );
+
+@include respond-tablet {
+  margin: 0;
+}
 }
 
 // ui-tray
@@ -1070,6 +1223,7 @@ li.dropdown {
   height: auto !important;
   max-height: 75vh;
   display: none;
+
   @include respond-wide {
     left: 18%;
     width: 64%;
@@ -1083,9 +1237,11 @@ li.dropdown {
 .tray-detail-group {
   padding: $double;
   margin: 0;
-  & + .tray-detail-group {
+
+  &+.tray-detail-group {
     border-top: 1px solid $color-trans-lightgray;
   }
+
   @include respond-desktop {
     padding: $double $grid * 3;
   }
@@ -1100,6 +1256,7 @@ li.dropdown {
   font-size: 15px;
   font-weight: 400;
   margin-top: 2px;
+
   @include respond-tablet {
     font-size: 17px;
   }
@@ -1118,9 +1275,12 @@ p.fp {
   font-family: $font-hed-alt;
   line-height: 1.4;
   padding-top: $grid * 3;
+
   a {
     text-decoration: underline;
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       color: $color-blue;
     }
   }
@@ -1135,6 +1295,7 @@ p.fp {
   padding-right: $grid;
   margin-top: -1px;
   overflow: auto;
+
   @include respond-desktop {
     padding-left: $grid * 3;
     padding-right: $double;
@@ -1148,16 +1309,19 @@ p.fp {
   height: 1em;
   overflow: hidden;
   text-indent: -1000px;
+
   @include respond-tablet {
     display: inline;
     width: auto;
     height: auto;
     text-indent: 0;
   }
+
   &._toDesktop {
     @include respond-tablet {
       display: none;
     }
+
     @include respond-wide {
       display: inline;
       width: auto;
@@ -1172,21 +1336,26 @@ p.fp {
   color: $color-blue;
   margin-left: -2px;
   margin-right: $grid;
+
   &:active {
     color: white;
   }
-  &.darchive {
-  }
+
+  &.darchive {}
+
   &.user-delete {
     border-color: $color-error;
     color: $color-error;
+
     &:active {
       background-color: $color-error;
       color: white;
     }
   }
+
   &.flag {
     float: right;
+
     &:before {
       content: '';
       width: 15px;
@@ -1203,6 +1372,7 @@ p.fp {
       margin-top: -$half;
       margin-bottom: -$half;
     }
+
     &:active:before {
       background-position: -14px * 5;
     }
@@ -1224,10 +1394,12 @@ p.fp {
   margin: 0;
   border-radius: 2px;
   z-index: 100;
-  @include respond-xmobile{
+
+  @include respond-xmobile {
     width: 51px !important;
     height: 48px !important;
-   }
+  }
+
   .icon-bar {
     background-color: $color-blue;
     display: block;
@@ -1236,35 +1408,45 @@ p.fp {
     border-radius: 1px;
     margin-right: auto;
     margin-left: auto;
-    & + .icon-bar {
-        margin-top: $half;
-      }
-    }
-    &:hover, &:focus {
-      background-color: $color-hover;
-      border-radius: 2px;
-      .icon-bar {
-        background-color: $color-white;
+
+    &+.icon-bar {
+      margin-top: $half;
     }
   }
-  &:active {
-    background-color: $color-black;
+
+  &:hover,
+  &:focus {
+    background-color: $color-hover;
     border-radius: 2px;
+
     .icon-bar {
       background-color: $color-white;
     }
   }
+
+  &:active {
+    background-color: $color-black;
+    border-radius: 2px;
+
+    .icon-bar {
+      background-color: $color-white;
+    }
+  }
+
   &:focus {
     outline: none;
     border-radius: 2px;
     background-color: $color-white;
+
     .icon-bar {
       background-color: $color-blue;
     }
   }
+
   @include respond-tablet {
     display: none;
   }
+
   @include respond-xmobile {
     width: $grid * 8;
   }
@@ -1316,6 +1498,7 @@ body.modal-open {
     padding: 0;
     @include fill-screen;
   }
+
   @include respond-tablet {
     position: relative;
     left: 50%;
@@ -1335,19 +1518,23 @@ body.modal-open {
   box-shadow: none;
   height: 100%;
   overflow-y: scroll;
+
   @include respond-tablet {
     @include style-card(black);
     width: $modalWidth;
     padding: $grid * 4 $grid * 4 $double;
     height: auto;
   }
+
   form {
     margin-top: $double;
     overflow: visible;
+
     @include respond-tablet {
       margin-top: $grid * 3;
     }
   }
+
   .form-group {
     float: none;
     width: auto;
@@ -1360,12 +1547,15 @@ body.modal-open {
     padding-right: $double;
     margin-top: 0;
     background-color: $color-background;
+
     &:first-child {
       border-top: 1px solid $color-trans-lightgray;
     }
-    & + .form-group {
+
+    &+.form-group {
       margin-top: 0;
     }
+
     @include respond-tablet {
       margin-left: -$grid * 4;
       padding-left: $grid * 4;
@@ -1373,15 +1563,19 @@ body.modal-open {
       padding-right: $grid * 4;
     }
   }
+
   label {
     font-weight: 700;
   }
+
   .modal-actions {
     margin-top: $double;
+
     @include respond-tablet {
       margin-top: $grid * 4;
     }
   }
+
   input {
     font-size: 16px;
     font-weight: 400;
@@ -1389,13 +1583,16 @@ body.modal-open {
     padding: $grid;
     margin-bottom: $half;
   }
+
   input#file {
     padding-left: $grid;
     border: 1px solid $color-trans-lightgray;
+
     &:focus {
       border-color: $color-blue;
     }
   }
+
   .field-error {
     padding-top: 0;
   }
@@ -1403,6 +1600,7 @@ body.modal-open {
 
 .modal-header {
   overflow: visible;
+
   .close {
     @include hide-text;
     position: absolute;
@@ -1412,24 +1610,30 @@ body.modal-open {
     height: $grid * 5;
     background-color: gray;
   }
-  .modal-title, .modal-description {
+
+  .modal-title,
+  .modal-description {
     font-family: $font-hed-alt;
   }
+
   .modal-title {
     color: $color-black;
     font-weight: 700;
     font-size: 18px;
     line-height: 1.3;
+
     @include respond-tablet {
       font-size: 24px;
     }
   }
+
   .modal-description {
     font-weight: 300;
     color: $color-blue;
     margin-bottom: 0;
     font-size: 18px;
     line-height: 1.3;
+
     @include respond-tablet {
       font-size: 24px;
     }
@@ -1441,6 +1645,7 @@ body.modal-open {
   font-family: $font-hed-alt;
   font-weight: 400;
   color: $color-trans-gray;
+
   @include respond-mobile {
     float: right;
     display: inline-block;
@@ -1457,11 +1662,15 @@ body.modal-open {
   .tray-detail-title {
     margin-bottom: 5px;
   }
-  .temporary-options, .admin-only {
+
+  .temporary-options,
+  .admin-only {
     background-color: $color-trans-whispergray;
   }
+
   input {
     padding-left: 6px;
+
     &.file {
       cursor: pointer;
     }
@@ -1487,6 +1696,7 @@ body.modal-open {
     display: block;
     margin-left: 5px;
   }
+
   .btn-sm {
     border: 0px;
     padding: 7px;
@@ -1494,81 +1704,107 @@ body.modal-open {
     font-size: 12px;
     letter-spacing: .2px;
   }
+
   .btn-file-upload {
     background-color: $color-trans-lightgray;
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       background-color: $color-trans-darkgray;
     }
-    &:hover:disabled, &:focus:disabled {
+
+    &:hover:disabled,
+    &:focus:disabled {
       background-color: $color-trans-lightgray;
     }
   }
+
   .blue-button {
     background: $color-blue;
     color: white;
     border: 0px;
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       background-color: $color-hover;
     }
-    &:hover:disabled, &:focus:disabled {
+
+    &:hover:disabled,
+    &:focus:disabled {
       background-color: $color-blue;
     }
   }
+
   .temporary-instructions {
     position: relative;
     top: -6px;
   }
+
   .btn-delete {
     background-color: $color-error;
     color: white;
-    &:hover, &:focus {
+
+    &:hover,
+    &:focus {
       background-color: black;
     }
   }
 }
 
 .client-side-compare {
-    display: grid;
-    grid-template-columns: auto auto;
-    grid-column-gap: 4px;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-column-gap: 4px;
+  width: 100%;
+  height: 100%;
+
+  div {
     width: 100%;
     height: 100%;
+    outline: 3px solid black;
 
-    div {
-        width:100%;
-        height:100%;
-        outline: 3px solid black;
-
-        iframe.archive-iframe {
-            position: unset;
-            top: unset;
-            left: unset;
-            width: 100%;
-            height: 100%;
-            border-width: 0px 0px;
-            border-style: solid;
-            border-color: #999;
-            text-align:auto;
-            background:#ffffff;
-            margin:0px auto;
-        }
+    iframe.archive-iframe {
+      position: unset;
+      top: unset;
+      left: unset;
+      width: 100%;
+      height: 100%;
+      border-width: 0px 0px;
+      border-style: solid;
+      border-color: #999;
+      text-align: auto;
+      background: #ffffff;
+      margin: 0px auto;
     }
+  }
 }
 
 /* Fallback screen for old browsers */
 #no-playback,
-#playback-interstitial .hidden{
+#playback-interstitial .hidden {
   /* Prevent flashing: */
   opacity: 0;
   animation: no-playback-fade-in 0.5s ease-in-out;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
 }
+
 @keyframes no-playback-fade-in {
-  0%    { opacity: 0; }
-  20%   { opacity: 0; }
-  80%   { opacity: 0.5; }
-  100%  { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0;
+  }
+
+  80% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 iframe.background {
@@ -1576,4 +1812,78 @@ iframe.background {
   height: 10px;
   min-width: 10px;
   width: 10px;
+}
+
+/* copy link button */
+
+.copy-icon-btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  margin-left: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  color: #666;
+  vertical-align: middle;
+}
+
+.copy-icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.copy-icon-btn:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 1px;
+}
+
+.copy-icon-btn:active {
+  background-color: rgba(0, 0, 0, 0.15);
+  transform: scale(0.95);
+}
+
+.copy-icon-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.5;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Success feedback animation */
+.copy-icon-btn.copied {
+  color: #28a745;
+}
+
+.copy-icon-btn.copied svg {
+  animation: copySuccess 0.3s ease;
+}
+
+@keyframes copySuccess {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
