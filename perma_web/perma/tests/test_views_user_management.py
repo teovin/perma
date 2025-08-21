@@ -694,7 +694,7 @@ class UserManagementViewsTestCase(PermaTestCase):
                          ).exists())
 
     def test_add_multiple_org_users_via_csv(self):
-        def create_csv_file(filename, content, encoding):
+        def create_csv_file(filename, content, encoding='utf-8'):
             return SimpleUploadedFile(filename, content.encode(encoding), content_type='text/csv')
 
         def initialize_form(csv_file, data=None):
@@ -707,11 +707,11 @@ class UserManagementViewsTestCase(PermaTestCase):
         invalid_csv_data = 'name\nJohn Doe'
         another_invalid_csv_data = 'first_name,last_name,email\nJohn,Doe,\nJane,Smith,janesmith@example.com'
 
-        valid_csv_file = create_csv_file('users.csv', csv_data, 'utf-8')
-        another_valid_csv_file = create_csv_file('another_valid_users.csv', another_csv_data, 'utf-8')
-        one_more_valid_csv_file = create_csv_file('one_more_valid_users.csv', csv_data, 'utf-8')
-        invalid_csv_file = create_csv_file('invalid_users.csv', invalid_csv_data, 'utf-8')
-        another_invalid_csv_file = create_csv_file('another_invalid_users.csv', another_invalid_csv_data, 'utf-8')
+        valid_csv_file = create_csv_file('users.csv', csv_data)
+        another_valid_csv_file = create_csv_file('another_valid_users.csv', another_csv_data)
+        one_more_valid_csv_file = create_csv_file('one_more_valid_users.csv', csv_data)
+        invalid_csv_file = create_csv_file('invalid_users.csv', invalid_csv_data)
+        another_invalid_csv_file = create_csv_file('another_invalid_users.csv', another_invalid_csv_data)
         one_more_invalid_csv_file = create_csv_file('users.csv', csv_data, 'utf-16')
 
         request = RequestFactory().get('/')
