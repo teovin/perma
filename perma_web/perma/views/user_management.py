@@ -782,7 +782,7 @@ class BaseAddUserToGroup(UpdateView):
                 'requester': self.request.user.get_full_name(),
                 'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
             }
-            host = self.request.build_absolute_uri()
+            host = f"{self.request.scheme}://{self.request.get_host()}"
 
             for obj in users.values():
                 try:
