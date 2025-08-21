@@ -712,7 +712,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         one_more_valid_csv_file = create_csv_file('one_more_valid_users.csv', csv_data)
         invalid_csv_file = create_csv_file('invalid_users.csv', invalid_csv_data)
         another_invalid_csv_file = create_csv_file('another_invalid_users.csv', another_invalid_csv_data)
-        one_more_invalid_csv_file = create_csv_file('users.csv', csv_data, 'utf-16')
+        csv_file_with_invalid_encoding = create_csv_file('users.csv', csv_data, 'utf-16')
 
         request = RequestFactory().get('/')
         request.user = self.registrar_user
@@ -744,7 +744,7 @@ class UserManagementViewsTestCase(PermaTestCase):
                         in form3.errors['csv_file'])
 
         # invalid csv - non utf-8 encoding
-        form4 = initialize_form(one_more_invalid_csv_file)
+        form4 = initialize_form(csv_file_with_invalid_encoding)
         self.assertFalse(form4.is_valid())
         self.assertTrue("CSV file must be encoded with UTF-8."
                         in form4.errors['csv_file'])
