@@ -1,7 +1,7 @@
 import logging
 import secrets
 import csv
-from io import TextIOWrapper
+from io import StringIO
 import string
 from typing import Any, Mapping
 
@@ -502,8 +502,14 @@ class MultipleUsersFormWithOrganization(ModelForm):
         if not file.name.endswith('.csv'):
             raise forms.ValidationError("The file must be a CSV.")
 
-        file = TextIOWrapper(file, encoding='utf-8')
-        reader = csv.DictReader(file)
+        # validate for encoding errors
+        try:
+            raw_contents = file.read().decode('utf-8')
+        except UnicodeDecodeError:
+            raise forms.ValidationError("CSV file must be encoded with UTF-8.")
+        
+        csv_file = StringIO(raw_contents)
+        reader = csv.DictReader(csv_file)
 
         # validate the headers
         headers = reader.fieldnames

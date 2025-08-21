@@ -694,8 +694,8 @@ class UserManagementViewsTestCase(PermaTestCase):
                          ).exists())
 
     def test_add_multiple_org_users_via_csv(self):
-        def create_csv_file(filename, content):
-            return SimpleUploadedFile(filename, content.encode('utf-8'), content_type='text/csv')
+        def create_csv_file(filename, content, encoding='utf-8'):
+            return SimpleUploadedFile(filename, content.encode(encoding), content_type='text/csv')
 
         def initialize_form(csv_file, data=None):
             data = {'organizations': selected_organization.pk, 'indefinite_affiliation': True}
@@ -712,6 +712,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         one_more_valid_csv_file = create_csv_file('one_more_valid_users.csv', csv_data)
         invalid_csv_file = create_csv_file('invalid_users.csv', invalid_csv_data)
         another_invalid_csv_file = create_csv_file('another_invalid_users.csv', another_invalid_csv_data)
+        csv_file_with_invalid_encoding = create_csv_file('users.csv', csv_data, 'utf-16')
 
         request = RequestFactory().get('/')
         request.user = self.registrar_user
@@ -741,6 +742,12 @@ class UserManagementViewsTestCase(PermaTestCase):
         self.assertFalse(form3.is_valid())
         self.assertTrue("Each row in the CSV file must contain email."
                         in form3.errors['csv_file'])
+
+        # invalid csv - non utf-8 encoding
+        form4 = initialize_form(csv_file_with_invalid_encoding)
+        self.assertFalse(form4.is_valid())
+        self.assertTrue("CSV file must be encoded with UTF-8."
+                        in form4.errors['csv_file'])
 
         # --- test user creation ---
         self.assertTrue(form1.is_valid())
