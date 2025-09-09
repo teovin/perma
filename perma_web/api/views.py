@@ -535,7 +535,9 @@ class AuthenticatedLinkListView(BaseView):
                 # kick off capture tasks -- no need for guid since it'll work through the queue
                 capture_job.status = 'pending'
                 capture_job.link = link
-                capture_job.save(update_fields=['status', 'link'])
+                if validation_status_code := serializer.context['request'].data.get("validation_status_code"):
+                    capture_job.validation_status_code = validation_status_code
+                capture_job.save(update_fields=['status', 'link', 'validation_status_code'])
                 if not os.path.exists(settings.DEPLOYMENT_SENTINEL):
                     run_next_capture.delay()
                 else:

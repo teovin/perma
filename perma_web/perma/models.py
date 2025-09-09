@@ -2188,6 +2188,7 @@ class CaptureJob(models.Model):
     submitted_url = models.CharField(max_length=2100, blank=True, null=False)
     created_by = models.ForeignKey(LinkUser, blank=False, null=False, related_name='capture_jobs', on_delete=models.CASCADE)
     link_batch = models.ForeignKey('LinkBatch', blank=True, null=True, related_name='capture_jobs', on_delete=models.CASCADE)
+    validation_status_code = models.IntegerField(blank=True, null=True)
     engine = models.CharField(max_length=255,
                               choices=(('perma', 'perma'), ('scoop-api', 'scoop-api')),
                               default='scoop-api',
