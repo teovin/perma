@@ -1043,7 +1043,7 @@ def manage_single_organization_user_remove(request, user_id):
         if request.user == target_user and not target_user.organizations.exists():
             return HttpResponseRedirect(reverse('create_link'))
 
-    return HttpResponseRedirect(reverse('user_management_manage_single_organization_user', args=[user_id]))
+    return HttpResponseRedirect(reverse('user_management_manage_organization_user'))
 
 
 @user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
