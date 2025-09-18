@@ -961,7 +961,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         self.submit_form('user_management_manage_single_organization_user_remove',
                          data={'affiliation': self.user_organization_affiliation.pk},
                          reverse_kwargs={'args': [self.organization_user.pk]},
-                         success_url=reverse('user_management_manage_single_organization_user', args=[self.organization_user.pk]))
+                         success_url=reverse('user_management_manage_organization_user'))
         self.assertFalse(self.organization_user.organizations.filter(pk=self.user_organization_affiliation.pk).exists())
 
     def test_registrar_cannot_remove_unrelated_user_from_organization(self):
