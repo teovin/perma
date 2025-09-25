@@ -298,7 +298,7 @@ class AuthenticatedLinkSerializer(LinkSerializer):
                             if content_length > settings.MAX_ARCHIVE_FILE_SIZE:
                                 errors['url'] = f"Target page is too large (max size {settings.MAX_ARCHIVE_FILE_SIZE / 1024 / 1024}MB)."
                         if validation_status_code := response_data.get("status_code"):
-                            self.context['request'].data["validation_status_code"] = validation_status_code
+                            self.validation_status_code = validation_status_code
                     except ScoopAPIException:
                         logger.exception("Scoop validation attempt failed.")
                         errors['url'] = "We encountered a network error: please try again."
