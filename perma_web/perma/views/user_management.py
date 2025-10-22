@@ -1046,7 +1046,7 @@ def manage_single_organization_user_remove(request, user_id):
     return HttpResponseRedirect(reverse('user_management_manage_organization_user'))
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(lambda user: user.is_registrar_user() or user.is_organization_user or user.is_staff)
 def manage_single_organization_user_expiration_date(request, user_id, organization_id):
     """
         Modify the affiliation expiration date of an org user
