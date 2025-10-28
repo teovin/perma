@@ -17,11 +17,12 @@
       {% else %}
         <h1 class="page-title">Contact</h1>
         {% if request.user.is_supported_by_registrar %}
-          <p class="page-dek">This form is the easiest way to start a dialog with Perma.cc support at your library.</p>
+          <p class="page-dek">This form is the easiest way to reach out for Perma.cc support from your organization and our team at the Harvard Law Library.</p>
         {% else %}
           <p class="page-dek">This form is the easiest way to start a dialog with Perma.cc.</p>
         {% endif %}
         <p class="page-dek">Save yourself some time. Is your question one of our <a href="{% url 'docs_faq' %}">Frequently Asked Questions?</a> Do you have questions about <a href="{% url 'sign_up' %}">setting up a Perma.cc account?</a> Have you looked at our <a href="{% url 'docs' %}">Perma.cc Guide</a>? The answer may be right at your fingertips!</p>
+        <p class="page-dek">If you are reporting an issue with capture or playback, please include the following information: the URLs you are attempting to capture, the browser you are using, and the error message you are receiving.</p>
       {% endif %}
     </div>
   </div> <!-- row -->
