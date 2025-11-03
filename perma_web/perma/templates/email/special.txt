@@ -1,25 +1,25 @@
-TITLE: Perma.cc: notes for law school registrars
+TITLE: Perma.cc Institutional Partner Survey
 
-Hi Perma Colleagues!
+Below is a message from the Perma.cc team at HLSL. If your library is currently a Registrar for Perma, we ask that you participate in this brief, 10-minute survey to inform Perma’s future participation models and potential platform improvements.
 
-I'm Brett Johnson from the Perma.cc team at Harvard Law Library.
+—
 
-I hope you've had a wonderful start to your September. I know this is a very busy time for you all as you introduce students to the services your library offers. To that end I wanted to reach out with some resources that may help you assist journal members and others at your school using Perma.cc.
+Dear Perma.cc Institutional Partners,
 
-* Creating Perma.cc orgs and adding org users:
-  https://docs.google.com/document/d/1ZNheAxvY24HBvRbxsDBJAgK7Q_syHYOplTNKQ47PQZA/edit
+Thank you for the part you’ve played in the Perma.cc network, connecting your patrons with Perma.cc’s services. In addition to being built and maintained by a unit of the Harvard Law School Library, Perma’s connection with the academic library system has been a core part of its structure since the beginning. We are writing today to ask you to participate in this brief, 10-minute survey to inform Perma’s future participation and sustainability models as well as potential platform improvements.
 
-* Handling graduating and departing users:
-  https://blogs.harvard.edu/perma/2019/03/07/academic-libraries-on-perma-how-to-handle-departing-or-graduating-users/
+Perma.cc Institutional Partner Survey
+https://harvard.az1.qualtrics.com/jfe/form/SV_doL6I7r9OFx7bDM
 
-* How to use a Perma.cc link in a citation:
-  https://guides.library.harvard.edu/c.php?g=537635&p=3756915
+Due to the ongoing needs of a project like Perma.cc (see below) we are considering new approaches to funding. You are being asked to participate in the survey because as director of a Perma Registrar or the local Perma admin for a library your insights will greatly inform our conversations about Perma’s ongoing sustainability and governance.
 
-* How bad is link rot? A collection of studies:
-  https://blogs.harvard.edu/perma/2019/02/14/so-how-bad-a-problem-is-link-rot/
+The stability of libraries and archives is front of mind for all of us, including from a financial point of view. We acknowledge up front that any adjustments made to our funding structure need to prioritize accessibility of Perma to the academic community – including by having provisions for institutions where funding is particularly scarce.
 
-As you communicate with your journals about using Perma, please feel free to reach out to us at info@perma.cc with any questions that come up - and follow us on Twitter @permacc !
+Since our launch in 2013, the Perma Team has been striving to keep pace with changes in web technologies, such as changing browser protocols, increasingly sophisticated and disruptive advertising tactics, and locked-down social media platforms. There will surely be future innovations in the digital and web space that will need to be incorporated into Perma.cc, and keeping pace with these changes requires us to fund the staffing for these necessary and other user-identified improvements. We would love your input in determining the best way forward for ensuring Perma’s ongoing success.
 
-Thanks for reading - and happy Fall semester from me and the rest of the Perma.cc Team!
+We are committed to Perma.cc being accessible, especially in the academic context. In a moment where there is a great deal of uncertainty in academia, ensuring our collective ability to preserve the web is vital. In the survey, please share any thoughts you have about how we may best approach the sustainability of this tool as a community.
 
-P.S. - Interested in some swag (stickers, bookmarks, etc.) to help promote Perma.cc at your school? Reply to this email with your name and shipping address and we'll get a pack out to you!
+Take the survey via Qualtrics: https://harvard.az1.qualtrics.com/jfe/form/SV_doL6I7r9OFx7bDM
+
+All the best,
+The Perma.cc Team at Harvard Law School Library
