@@ -209,7 +209,7 @@ def ping_registrar_users(ctx, limit_to="", limit_by_tag="", exclude="", exclude_
     logger.info("Begin emailing registrar users.")
     send_count = 0
     failed_list = []
-    for user in users:
+    for user in tqdm(users):
         context = {}
         context.update(user)
         context["year"] = year
