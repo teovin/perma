@@ -177,7 +177,7 @@ def ping_registrar_users(ctx, limit_to="", limit_by_tag="", exclude="", exclude_
        Sends an email to our current registrar users. See templates/email/registrar_user_ping.txt
 
        Arguments should be strings, with multiple values separated by semi-colons
-       e.g. invoke ping-registrar-users --limit-to "14;27;30" --exclude-by-tag "opted_out" --email "special"
+       e.g. invoke dev.ping-registrar-users --limit-to "14;27;30" --exclude-by-tag "opted_out" --email "special"
 
        Limit filters are applied before exclude filters.
     '''
