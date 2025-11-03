@@ -156,6 +156,7 @@ def registrar_users(registrars=None):
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "email": user.email,
+                "raw_email": user.raw_email,
             })
     return users
 

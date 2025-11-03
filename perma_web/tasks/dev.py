@@ -213,7 +213,7 @@ def ping_registrar_users(ctx, limit_to="", limit_by_tag="", exclude="", exclude_
         context = {}
         context.update(user)
         context["year"] = year
-        succeeded = send_user_email(user['email'],
+        succeeded = send_user_email(user['raw_email'],
                                     template,
                                      context)
         if succeeded:
