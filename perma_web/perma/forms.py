@@ -103,13 +103,15 @@ class LibraryRegistrarForm(ModelForm):
 
 class FirmRegistrarForm(ModelForm):
     # Ensure firm name doesn't throw a DataError when we write it to LinkUser.requested_account_note
-    name = forms.CharField(max_length=LinkUser.requested_account_note.field.max_length)
+    name = forms.CharField(
+        max_length=LinkUser.requested_account_note.field.max_length,
+        label='Organization name'
+    )
 
     class Meta:
         model = Registrar
         fields = ['name', 'email', 'website']
         labels = {
-            'name': 'Organization name',
             'email': 'Organization email',
             'website': 'Organization website',
         }
