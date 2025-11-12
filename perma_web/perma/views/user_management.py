@@ -322,11 +322,13 @@ def manage_sponsored_user_export_user_list(request: HttpRequest) -> HttpResponse
         'last_login',
         'sponsorship_status',
         'sponsorship_created_at',
+        'sponsorship_expires_at'
     ]
     records = list_sponsored_users(request, export=True)
     users = records.annotate(
         sponsorship_status=F('sponsorships__status'),
         sponsorship_created_at=F('sponsorships__created_at'),
+        sponsorship_expires_at=F('sponsorships__expires_at'),
     ).values(*field_names)
     filename = 'perma-sponsored-users'
 
@@ -384,9 +386,13 @@ def manage_organization_user_export_user_list(request: HttpRequest):
         'date_joined',
         'last_login',
         'organization_name',
+        'affiliation_expires_at',
     ]
     records = list_users_in_group(request, 'organization_user', export=True)
-    org_users = records.annotate(organization_name=F('organizations__name')).values(*field_names)
+    org_users = records.annotate(
+        organization_name=F('organizations__name'),
+        affiliation_expires_at=F('userorganizationaffiliation__expires_at'),
+    ).values(*field_names)
     filename = 'perma-organization-users'
 
     # Export records in appropriate format based on `format` URL parameter
