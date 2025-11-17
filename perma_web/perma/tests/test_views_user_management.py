@@ -1692,15 +1692,6 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         # NOT LOGGED IN
 
-        # Existing user's email address, no court info
-        # (currently succeeds, should probably fail; see issue 1746)
-        self.submit_form('sign_up_courts',
-                          data = { 'address': self.randomize_capitalization(existing_user['email'])},
-                          success_url = reverse('court_request_response'))
-        expected_emails_sent += 1
-        self.assertEqual(len(mail.outbox), expected_emails_sent)
-        self.check_court_email(mail.outbox[expected_emails_sent - 1], existing_user['email'])
-
         # Existing user's email address + court info
         self.submit_form('sign_up_courts',
                           data = { 'address': self.randomize_capitalization(existing_user['email']),
@@ -1789,6 +1780,13 @@ class UserManagementViewsTestCase(PermaTestCase):
                           user = 'test_user@example.com',
                           error_keys = ['email', 'requested_account_note'])
         self.assertEqual(len(mail.outbox), 0)
+
+        # Existing user's email address, no court info
+        self.submit_form('sign_up_courts',
+                          data = { 'address': self.randomize_capitalization('test_user@example.com')},
+                          error_keys = ['requested_account_note'])
+        self.assertEqual(len(mail.outbox), 0)
+
 
 
     ### Firms ###
