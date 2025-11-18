@@ -346,7 +346,11 @@ class CreateUserFormWithCourt(UserForm):
     add court to the create user form
     """
 
-    requested_account_note = forms.CharField(required=True)
+    requested_account_note = forms.CharField(
+        required=True,
+        # Explicitly add this max length to the form, so that it is enforced by the HTML
+        max_length=LinkUser.requested_account_note.field.max_length
+    )
 
     class Meta:
         model = LinkUser

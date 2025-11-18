@@ -138,14 +138,21 @@ def sign_up_courts(request):
             target_user = None
 
         if target_user:
-            requested_account_note = request.POST.get('requested_account_note', None)
-            target_user.requested_account_type = 'court'
-            target_user.requested_account_note = requested_account_note
-            target_user.save()
-            email_court_request(request, target_user)
-            return HttpResponseRedirect(reverse('court_request_response'))
+            # Validate the entire form
+            form.is_valid()
+            # Remove the email validation error (since we know the user exists)
+            form.errors.pop('email', None)
+            # Check if there are any remaining errors (like requested_account_note being too long)
+            if not form.errors:
+                # No errors - proceed
+                requested_account_note = request.POST.get('requested_account_note', None)
+                target_user.requested_account_type = 'court'
+                target_user.requested_account_note = requested_account_note
+                target_user.save()
+                email_court_request(request, target_user)
+                return HttpResponseRedirect(reverse('court_request_response'))
 
-        if form.is_valid():
+        elif form.is_valid():
             new_user = form.save(commit=False)
             new_user.requested_account_type = 'court'
             create_account = request.POST.get('create_account', None)
