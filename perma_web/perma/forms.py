@@ -346,7 +346,7 @@ class CreateUserFormWithCourt(UserForm):
 
     requested_account_note = forms.CharField(
         required=True,
-        # Explicitly add this max length to the form, so that it enforced by the HTML
+        # Explicitly add this max length to the form, so that it is enforced by the HTML
         max_length=LinkUser.requested_account_note.field.max_length
     )
 
