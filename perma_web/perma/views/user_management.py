@@ -565,7 +565,6 @@ def list_users_in_group(request: HttpRequest, group_name: str, export: bool = Fa
         'delete_user_url': f'user_management_manage_single_{group_name}_delete',
         'add_user_url': f'user_management_{group_name}_add_user',
         'add_multiple_users_url': f'user_management_{group_name}_add_multiple_users',
-
         'sort': sort,
         'search_query': search_query,
         'registrar_filter': registrar_filter,
