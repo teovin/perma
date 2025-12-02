@@ -310,6 +310,8 @@
                 {% if request.user.is_staff %}
                   {% if group_name == 'sponsored_user' %}
                     {% include "user_management/includes/edit_sponsorship.html" %}
+                  {% elif group_name == 'organization_user' %}
+                    <a class="action action-delete" href="{% url single_user_url listed_user.id %}">edit/remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                   {% elif group_name != 'admin_user' %}
                     <a class="action action-delete" href="{% url single_user_url listed_user.id %}">remove/delete <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                   {% else %}
@@ -317,14 +319,14 @@
                   {% endif %}
                 {% elif request.user.is_registrar_user %}
                   {% if group_name == 'organization_user' %}
-                    <a class="action action-delete" href="{% url single_user_url listed_user.id %}">remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
+                    <a class="action action-delete" href="{% url single_user_url listed_user.id %}">edit/remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                   {% elif group_name == 'registrar_user' %}
                     <a class="action action-delete" href="{% url 'user_management_manage_single_registrar_user_remove' listed_user.id %}">remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                   {% elif group_name == 'sponsored_user' %}
                     {% include "user_management/includes/edit_sponsorship.html" %}
                   {% endif %}
                 {% else %}
-                  <a class="action action-delete" href="{% url single_user_url listed_user.id %}">remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
+                  <a class="action action-delete" href="{% url single_user_url listed_user.id %}">edit/remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                 {% endif %}
               {% elif listed_user.is_confirmed %}
                 <span class="text-warning">deactivated account</span>
