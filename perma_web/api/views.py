@@ -323,7 +323,7 @@ class PublicLinkListView(BaseView):
     def get(self, request, format=None):
         """ List public links. """
 
-        return HttpResponse('This route is temporarily unavilable', status=503)
+        return HttpResponse('This route is temporarily unavailable.', status=503)
 
         # queryset = Link.objects\
         #     .order_by('-creation_timestamp')\
@@ -339,7 +339,7 @@ class PublicLinkDetailView(BaseView):
     def get(self, request, guid, format=None):
         """ Get public link details. """
 
-        return HttpResponse('This route is temporarily unavilable', status=503)
+        return HttpResponse('This route is temporarily unavailable.', status=503)
 
         # try:
         #     obj = Link.objects.discoverable().get(pk=guid)
@@ -356,7 +356,7 @@ class PublicLinkDownloadView(BaseView):
     def get(self, request, guid, format=None):
         """ Download public link  """
 
-        return HttpResponse('This route is temporarily unavilable', status=503)
+        return HttpResponse('This route is temporarily unavailable.', status=503)
 
         # try:
         #     link = Link.objects.discoverable().get(pk=guid)
