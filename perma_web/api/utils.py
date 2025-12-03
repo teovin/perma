@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from functools import wraps
 import json
 
+from django.conf import settings
 from django.http import Http404
 from django.urls import resolve, reverse
 from django.urls.exceptions import NoReverseMatch
@@ -26,7 +27,34 @@ logger = logging.getLogger(__name__)
 class TastypiePagination(LimitOffsetPagination):
     """
         Modify DRF's LimitOffsetPagination to return results in the same format as paginated results returned by Tastypie. Omit count from output and use a false, large count internally to allow `next` links to work. This breaks the convention that the last page has a null `next` link -- instead, a consumer of the paginated API should follow next links until `objects` is an empty list.
+
+        Limits users to the first API_MAX_PAGES pages to prevent expensive database queries.
     """
+    max_pages = settings.API_MAX_PAGES
+
+    def paginate_queryset(self, queryset, request, view=None):
+        self.limit = self.get_limit(request)
+
+        # Defensive coding:
+        # disabling pagination isn't currently possible, because we have
+        # PAGE_SIZE: 300 in our REST_FRAMEWORK configuration, but, double check
+        # here so this code doesn't error out if that ever changes.
+        if self.limit is None:
+            return None
+
+        self.offset = self.get_offset(request)
+
+        # Calculate max offset based on limit and max_pages
+        max_offset = self.limit * (self.max_pages - 1)
+
+        if self.offset > max_offset:
+            raise ValidationError({
+                'offset': f'Maximum offset is {max_offset}. Results are limited to {self.max_pages} pages to prevent expensive queries.'
+            })
+
+        # Continue with normal pagination
+        return super().paginate_queryset(queryset, request, view)
+
     def get_paginated_response(self, data):
         return Response(OrderedDict([
             ('meta', OrderedDict([

@@ -556,6 +556,7 @@ REST_FRAMEWORK = {
     'SEARCH_PARAM': 'q',  # query string key for plain text searches
     'ORDERING_PARAM': 'order_by',  # query string key to specify ordering of results
 }
+API_MAX_PAGES = 10
 
 #
 # Playback
