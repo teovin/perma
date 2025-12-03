@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 import surt
 
-from perma.utils import stream_archive, stream_archive_if_permissible
+from perma.utils import stream_archive_if_permissible
 from perma.celery_tasks import run_next_capture
 from perma.models import Folder, CaptureJob, Link, Capture, Organization, LinkBatch
 
@@ -322,11 +322,14 @@ class PublicLinkListView(BaseView):
 
     def get(self, request, format=None):
         """ List public links. """
-        queryset = Link.objects\
-            .order_by('-creation_timestamp')\
-            .select_related('capture_job')\
-            .prefetch_related('captures').discoverable()
-        return self.simple_list(request, queryset)
+
+        return HttpResponse('This route is temporarily unavilable', status=503)
+
+        # queryset = Link.objects\
+        #     .order_by('-creation_timestamp')\
+        #     .select_related('capture_job')\
+        #     .prefetch_related('captures').discoverable()
+        # return self.simple_list(request, queryset)
 
 # /public/archives/:guid
 class PublicLinkDetailView(BaseView):
@@ -335,11 +338,14 @@ class PublicLinkDetailView(BaseView):
 
     def get(self, request, guid, format=None):
         """ Get public link details. """
-        try:
-            obj = Link.objects.discoverable().get(pk=guid)
-        except Link.DoesNotExist:
-            raise Http404
-        return self.simple_get(request, obj=obj)
+
+        return HttpResponse('This route is temporarily unavilable', status=503)
+
+        # try:
+        #     obj = Link.objects.discoverable().get(pk=guid)
+        # except Link.DoesNotExist:
+        #     raise Http404
+        # return self.simple_get(request, obj=obj)
 
 
 #/public/archives/:guid/download
@@ -349,18 +355,21 @@ class PublicLinkDownloadView(BaseView):
 
     def get(self, request, guid, format=None):
         """ Download public link  """
-        try:
-            link = Link.objects.discoverable().get(pk=guid)
-        except Link.DoesNotExist:
-            raise Http404
 
-        file_format = get_download_file_format(request)
+        return HttpResponse('This route is temporarily unavilable', status=503)
 
-        if link.replacement_link_id:
-            base_url = reverse_api_view_relative('public_archives_download', kwargs={'guid': link.replacement_link_id})
-            return HttpResponseRedirect(f"{base_url}?file_format={file_format}")
+        # try:
+        #     link = Link.objects.discoverable().get(pk=guid)
+        # except Link.DoesNotExist:
+        #     raise Http404
 
-        return stream_archive(link, file_format=file_format)
+        # file_format = get_download_file_format(request)
+
+        # if link.replacement_link_id:
+        #     base_url = reverse_api_view_relative('public_archives_download', kwargs={'guid': link.replacement_link_id})
+        #     return HttpResponseRedirect(f"{base_url}?file_format={file_format}")
+
+        # return stream_archive(link, file_format=file_format)
 
 
 # /archives

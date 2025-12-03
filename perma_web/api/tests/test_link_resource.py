@@ -157,47 +157,47 @@ class LinkResourceTestCase(LinkResourceTestMixin, ApiResourceTestCase):
     # GET #
     #######
 
-    def test_get_list_json(self):
-        self.successful_get(self.public_list_url, count=13)
+    # def test_get_list_json(self):
+    #     self.successful_get(self.public_list_url, count=13)
 
-    def test_get_detail_json(self):
-        self.successful_get(self.public_link_detail_url, fields=self.logged_out_fields)
+    # def test_get_detail_json(self):
+    #     self.successful_get(self.public_link_detail_url, fields=self.logged_out_fields)
 
-    @patch('perma.models.Link.get_warc', autospec=True)
-    def test_public_download_warc(self, get_warc):
-        get_warc.return_value = StringIO("archive placeholder")
-        resp = self.api_client.get(self.public_link_download_url)
-        self.assertHttpOK(resp)
-        self.assertEqual(resp.get('Content-Disposition', ''), f'attachment; filename="{self.link.pk}.warc.gz"')
-        self.assertEqual(resp.get('Content-Type', ''), 'application/gzip')
-        self.assertEqual(get_warc.call_count, 1)
+    # @patch('perma.models.Link.get_warc', autospec=True)
+    # def test_public_download_warc(self, get_warc):
+    #     get_warc.return_value = StringIO("archive placeholder")
+    #     resp = self.api_client.get(self.public_link_download_url)
+    #     self.assertHttpOK(resp)
+    #     self.assertEqual(resp.get('Content-Disposition', ''), f'attachment; filename="{self.link.pk}.warc.gz"')
+    #     self.assertEqual(resp.get('Content-Type', ''), 'application/gzip')
+    #     self.assertEqual(get_warc.call_count, 1)
 
-    @patch('perma.models.Link.get_wacz', autospec=True)
-    def test_public_download_wacz(self, get_wacz):
-        get_wacz.return_value = StringIO("archive placeholder")
-        resp = self.api_client.get(f"{self.public_link_download_url}?file_format=wacz")
-        self.assertHttpOK(resp)
-        self.assertEqual(resp.get('Content-Disposition', ''), f'attachment; filename="{self.link.pk}.wacz"')
-        self.assertEqual(resp.get('Content-Type', ''), 'application/wacz')
-        self.assertEqual(get_wacz.call_count, 1)
+    # @patch('perma.models.Link.get_wacz', autospec=True)
+    # def test_public_download_wacz(self, get_wacz):
+    #     get_wacz.return_value = StringIO("archive placeholder")
+    #     resp = self.api_client.get(f"{self.public_link_download_url}?file_format=wacz")
+    #     self.assertHttpOK(resp)
+    #     self.assertEqual(resp.get('Content-Disposition', ''), f'attachment; filename="{self.link.pk}.wacz"')
+    #     self.assertEqual(resp.get('Content-Type', ''), 'application/wacz')
+    #     self.assertEqual(get_wacz.call_count, 1)
 
-    def test_public_download_unsupported_format(self):
-        self.rejected_get(f"{self.public_link_download_url}?file_format=asdf", expected_status_code=400)
+    # def test_public_download_unsupported_format(self):
+    #     self.rejected_get(f"{self.public_link_download_url}?file_format=asdf", expected_status_code=400)
 
-    @patch('perma.models.Link.get_warc', autospec=True)
-    def test_download_nonexistent_warc(self, get_warc):
-        get_warc.side_effect = RuntimeError
-        self.rejected_get(self.public_link_download_url, expected_status_code=404)
-        self.assertEqual(get_warc.call_count, 1)
+    # @patch('perma.models.Link.get_warc', autospec=True)
+    # def test_download_nonexistent_warc(self, get_warc):
+    #     get_warc.side_effect = RuntimeError
+    #     self.rejected_get(self.public_link_download_url, expected_status_code=404)
+    #     self.assertEqual(get_warc.call_count, 1)
 
-    @patch('perma.models.Link.get_wacz', autospec=True)
-    def test_download_nonexistent_wacz(self, get_wacz):
-        get_wacz.side_effect = RuntimeError
-        self.rejected_get(f"{self.public_link_download_url}?file_format=wacz", expected_status_code=404)
-        self.assertEqual(get_wacz.call_count, 1)
+    # @patch('perma.models.Link.get_wacz', autospec=True)
+    # def test_download_nonexistent_wacz(self, get_wacz):
+    #     get_wacz.side_effect = RuntimeError
+    #     self.rejected_get(f"{self.public_link_download_url}?file_format=wacz", expected_status_code=404)
+    #     self.assertEqual(get_wacz.call_count, 1)
 
-    def test_private_download_at_public_url(self):
-        self.rejected_get(self.public_link_download_url_for_private_link, expected_status_code=404)
+    # def test_private_download_at_public_url(self):
+    #     self.rejected_get(self.public_link_download_url_for_private_link, expected_status_code=404)
 
     def test_private_download_unauthenticated(self):
         self.rejected_get(self.logged_in_private_link_download_url, expected_status_code=401)
@@ -209,10 +209,10 @@ class LinkResourceTestCase(LinkResourceTestMixin, ApiResourceTestCase):
             user=self.firm_user
         )
 
-    def test_replaced_link_public_download(self):
-        resp = self.api_client.get(self.replaced_link_public_download_url)
-        self.assertEqual(resp.status_code, 302)
-        self.assertEqual(resp.url, self.replaced_link_public_download_redirect_target)
+    # def test_replaced_link_public_download(self):
+    #     resp = self.api_client.get(self.replaced_link_public_download_url)
+    #     self.assertEqual(resp.status_code, 302)
+    #     self.assertEqual(resp.url, self.replaced_link_public_download_redirect_target)
 
     def test_replaced_link_authed_download(self):
         self.api_client.force_authenticate(user=self.replaced_link_owner)
