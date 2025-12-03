@@ -329,46 +329,6 @@ class PublicLinkListView(BaseView):
             .prefetch_related('captures').discoverable()
         return self.simple_list(request, queryset, paginator_class=LimitedTastypiePagination)
 
-# /public/archives/:guid
-class PublicLinkDetailView(BaseView):
-    permission_classes = ()  # no login required
-    serializer_class = LinkSerializer
-
-    def get(self, request, guid, format=None):
-        """ Get public link details. """
-
-        return HttpResponse('This route is temporarily unavailable.', status=503)
-
-        # try:
-        #     obj = Link.objects.discoverable().get(pk=guid)
-        # except Link.DoesNotExist:
-        #     raise Http404
-        # return self.simple_get(request, obj=obj)
-
-
-#/public/archives/:guid/download
-class PublicLinkDownloadView(BaseView):
-    permission_classes = ()  # no login required
-    serializer_class = LinkSerializer
-
-    def get(self, request, guid, format=None):
-        """ Download public link  """
-
-        return HttpResponse('This route is temporarily unavailable.', status=503)
-
-        # try:
-        #     link = Link.objects.discoverable().get(pk=guid)
-        # except Link.DoesNotExist:
-        #     raise Http404
-
-        # file_format = get_download_file_format(request)
-
-        # if link.replacement_link_id:
-        #     base_url = reverse_api_view_relative('public_archives_download', kwargs={'guid': link.replacement_link_id})
-        #     return HttpResponseRedirect(f"{base_url}?file_format={file_format}")
-
-        # return stream_archive(link, file_format=file_format)
-
 
 # /archives
 # /folders/:parent_id/archives
