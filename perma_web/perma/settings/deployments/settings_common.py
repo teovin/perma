@@ -356,8 +356,28 @@ CACHE_MAX_AGES = {
 MAX_USER_LIST_SIZE = 50
 
 # Logging
+import logging
+class IgnoreHTTP503Filter(logging.Filter):
+    def filter(self, record):
+        # If record has status_code attribute (from Django request logger), ignore 503
+        status = getattr(record, "status_code", None)
+        if status == 503:
+            return False
+        # If status is embedded in message, attempt to detect "503"
+        msg = getattr(record, "getMessage", None)
+        try:
+            text = record.getMessage() if callable(msg) else str(record.msg)
+        except Exception:
+            text = ""
+        if "503" in text and "HTTP" in text:
+            return False
+        return True
+
 from django.utils.log import DEFAULT_LOGGING
 LOGGING = deepcopy(DEFAULT_LOGGING)
+LOGGING['filters']['ignore_503'] = {
+    '()': IgnoreHTTP503Filter,
+}
 LOGGING['handlers'] = {
     **LOGGING['handlers'],
     # log everything to console on both dev and prod
@@ -369,7 +389,7 @@ LOGGING['handlers'] = {
     # custom error email template
     'mail_admins': {
         'level': 'ERROR',
-        'filters': ['require_debug_false'],
+        'filters': ['ignore_503', 'require_debug_false'],
         'class': 'perma.reporter.CustomAdminEmailHandler'
     },
     # log to file
