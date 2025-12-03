@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 import surt
 
-from perma.utils import stream_archive, stream_archive_if_permissible
+from perma.utils import stream_archive_if_permissible
 from perma.celery_tasks import run_next_capture
 from perma.models import Folder, CaptureJob, Link, Capture, Organization, LinkBatch
 
