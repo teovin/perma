@@ -45,10 +45,6 @@ urlpatterns = [
 
         # /public/archives
         re_path(r'^public/archives/?$', views.PublicLinkListView.as_view(), name='public_archives'),
-        # /public/archives/:guid
-        re_path(fr'^public/archives/{guid_pattern}/?$', views.PublicLinkDetailView.as_view(), name='public_archives'),
-        # /public/archives/:guid/download
-        re_path(fr'^public/archives/{guid_pattern}/download/?$', views.PublicLinkDownloadView.as_view(), name='public_archives_download'),
         # /archives
         re_path(legacy_user_prefix + r'archives/?$', views.AuthenticatedLinkListView.as_view(), name='archives'),
         # /archives/export

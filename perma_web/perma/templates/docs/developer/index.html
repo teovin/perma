@@ -71,37 +71,16 @@ Welcome to the Perma.cc developer guide.
     <div class="col-sm-8 docs reading-body">
     <h2 class="body-ah">Public Archives</h2>
 
-    <p class="body-text">(Note: these API routes are temporarily unavailable.)</p>
-
-    <p class="body-text">The Public Archives API endpoint helps you find all publicly available Perma.cc archives. You do not need an API Key to use this portion of the API.</p>
+    <p class="body-text">The Public Archives API endpoint helps you find publicly available Perma.cc archives. You do not need an API Key to use this portion of the API.</p>
     <p class="body-text">The base endpoint for this API is <code>{{base_url}}/public/archives/</code></p>
+
+    <p class="body-text">This API provides access to the most recently created Perma Links. To inquire about access to data beyond this limit, <a href="{% url 'contact' %}?subject=Public%20Perma%20Link%20Dataset%20Inquiry">please drop us a note</a>.</p>
 
     <h3 id="get-all-public-archives" class="body-bh">Get all public archives</h3>
     <p class="body-text">Use HTTP GET to retrieve every public archive in Perma.cc. (In order to keep this example short, we limit the number of returned items to one.)</p>
     <pre>curl {{base_url}}/public/archives/?limit=1</pre>
     <p class="body-text">Response:</p>
-    <pre class="prettyprint">{"meta":{"limit":1,"next":"{{ base_url }}/public/archives/?limit=1&offset=1","offset":0,"previous":null},"objects":[{"guid":"W6PY-UZ99","creation_timestamp":"2018-05-15T18:13:52Z","url":"http://example.com","title":"Example Domain","description":null,"warc_size":20932,"warc_download_url":"{{ base_url }}/public/archives/W6PY-UZ99/download","wacz_size":21844,"wacz_download_url":"{{ base_url }}/public/archives/W6PY-UZ99/download?file_format=wacz","captures":[{"role":"primary","status":"success","url":"http://example.com","record_type":"response","content_type":"text/html","user_upload":false},{"role":"screenshot","status":"success","url":"file:///W6PY-UZ99/cap.png","record_type":"resource","content_type":"image/png","user_upload":false}],"queue_time":0,"capture_time":4}]}</pre>
-
-    <h3 id="get-one-archive" class="body-bh">Get a single public archive's details</h3>
-    <p class="body-text">If we have the globally unique ID (GUID) of one public archive, we can GET details about it.</p>
-    <pre>curl {{ base_url }}/public/archives/W5MF-N9EV/</pre>
-    <p class="body-text">Response:</p>
-    <pre class="prettyprint">{"guid":"W5MF-N9EV","creation_timestamp":"2018-05-14T15:12:33Z","url":"http://example.com","title":"Example Domain","description":null,"warc_size":19156,"warc_download_url":"{{ base_url }}/public/archives/W5MF-N9EV/download","wacz_size":19962,"wacz_download_url":"{{ base_url }}/public/archives/W5MF-N9EV/download?file_format=wacz","captures":[{"role":"primary","status":"success","url":"http://example.com","record_type":"response","content_type":"text/html","user_upload":false},{"role":"screenshot","status":"success","url":"file:///W5MF-N9EV/cap.png","record_type":"resource","content_type":"image/png","user_upload":false}],"queue_time":3,"capture_time":4}</pre>
-
-    <h3 id="download-one-archive" class="body-bh">Download a single public archive</h3>
-    <p class="body-text">Perma archives are downloadable and can be viewed using tools that can replay WARC or WACZ files, like <a href="https://replayweb.page/">ReplayWeb.page</a>.</p>
-
-    <h4 class="body-ch">WARC</h4>
-
-    <pre>wget {{ base_url }}/public/archives/Y6JJ-TDUJ/download</pre>
-    <p>or</p>
-    <pre>curl -o your_favorite_filename.warc.gz {{ base_url }}/public/archives/Y6JJ-TDUJ/download</pre>
-
-    <h4 class="body-ch">WACZ</h4>
-
-    <pre>wget {{ base_url }}/public/archives/Y6JJ-TDUJ/download?file_format=wacz</pre>
-    <p>or</p>
-    <pre>curl -o your_favorite_filename.wacz {{ base_url }}/public/archives/Y6JJ-TDUJ/download?file_format=wacz</pre>
+    <pre class="prettyprint">{"meta":{"limit":1,"next":"{{ base_url }}/public/archives/?limit=1&offset=1","offset":0,"previous":null},"objects":[{"guid":"W6PY-UZ99","creation_timestamp":"2018-05-15T18:13:52Z","url":"http://example.com","title":"Example Domain","description":null,"warc_size":20932,"wacz_size":21844,"captures":[{"role":"primary","status":"success","url":"http://example.com","record_type":"response","content_type":"text/html","user_upload":false},{"role":"screenshot","status":"success","url":"file:///W6PY-UZ99/cap.png","record_type":"resource","content_type":"image/png","user_upload":false}],"queue_time":0,"capture_time":4}]}</pre>
 
     </div>
   </div>

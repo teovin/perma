@@ -18,7 +18,7 @@ from perma.utils import stream_archive_if_permissible
 from perma.celery_tasks import run_next_capture
 from perma.models import Folder, CaptureJob, Link, Capture, Organization, LinkBatch
 
-from .utils import TastypiePagination, load_parent, raise_general_validation_error, \
+from .utils import TastypiePagination, LimitedTastypiePagination, load_parent, raise_general_validation_error, \
     raise_invalid_capture_job, dispatch_multiple_requests, reverse_api_view_relative, \
     url_is_invalid_unicode, get_download_file_format
 from .serializers import FolderSerializer, CaptureJobSerializer, LinkSerializer, AuthenticatedLinkSerializer, \
@@ -91,13 +91,13 @@ class BaseView(APIView):
 
     ### basic views ###
 
-    def simple_list(self, request, queryset=None, serializer_class=None):
+    def simple_list(self, request, queryset=None, serializer_class=None, paginator_class=None):
         """
             Paginate and return a list of objects from given queryset.
         """
         queryset = self.get_queryset(queryset)
         queryset = self.filter_queryset(queryset)
-        paginator = TastypiePagination()
+        paginator = paginator_class() if paginator_class else TastypiePagination()
         items = paginator.paginate_queryset(queryset, request)
         serializer_class = serializer_class if serializer_class else self.serializer_class
         serializer = serializer_class(items, many=True, context={"request": request})
@@ -323,53 +323,11 @@ class PublicLinkListView(BaseView):
     def get(self, request, format=None):
         """ List public links. """
 
-        return HttpResponse('This route is temporarily unavilable', status=503)
-
-        # queryset = Link.objects\
-        #     .order_by('-creation_timestamp')\
-        #     .select_related('capture_job')\
-        #     .prefetch_related('captures').discoverable()
-        # return self.simple_list(request, queryset)
-
-# /public/archives/:guid
-class PublicLinkDetailView(BaseView):
-    permission_classes = ()  # no login required
-    serializer_class = LinkSerializer
-
-    def get(self, request, guid, format=None):
-        """ Get public link details. """
-
-        return HttpResponse('This route is temporarily unavilable', status=503)
-
-        # try:
-        #     obj = Link.objects.discoverable().get(pk=guid)
-        # except Link.DoesNotExist:
-        #     raise Http404
-        # return self.simple_get(request, obj=obj)
-
-
-#/public/archives/:guid/download
-class PublicLinkDownloadView(BaseView):
-    permission_classes = ()  # no login required
-    serializer_class = LinkSerializer
-
-    def get(self, request, guid, format=None):
-        """ Download public link  """
-
-        return HttpResponse('This route is temporarily unavilable', status=503)
-
-        # try:
-        #     link = Link.objects.discoverable().get(pk=guid)
-        # except Link.DoesNotExist:
-        #     raise Http404
-
-        # file_format = get_download_file_format(request)
-
-        # if link.replacement_link_id:
-        #     base_url = reverse_api_view_relative('public_archives_download', kwargs={'guid': link.replacement_link_id})
-        #     return HttpResponseRedirect(f"{base_url}?file_format={file_format}")
-
-        # return stream_archive(link, file_format=file_format)
+        queryset = Link.objects\
+            .order_by('-creation_timestamp')\
+            .select_related('capture_job')\
+            .prefetch_related('captures').discoverable()
+        return self.simple_list(request, queryset, paginator_class=LimitedTastypiePagination)
 
 
 # /archives
