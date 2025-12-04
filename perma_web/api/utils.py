@@ -283,8 +283,8 @@ def get_download_file_format(request):
     return file_format
 
 
-def get_download_url(request, link, file_format='warc', public=True):
-    view_name = f"{'public_' if public else ''}archives_download"
+def get_download_url(request, link, file_format='warc'):
+    view_name = "archives_download"
     match file_format:
         case 'warc':
             if link.warc_size or link.wacz_size:

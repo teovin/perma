@@ -227,10 +227,10 @@ class AuthenticatedLinkSerializer(LinkSerializer):
         allowed_update_fields = ['submitted_title', 'submitted_description', 'notes', 'is_private', 'private_reason', 'default_to_screenshot_view']
 
     def get_warc_download_url(self, link):
-        return get_download_url(self.context['request'], link, file_format='warc', public=False)
+        return get_download_url(self.context['request'], link, file_format='warc')
 
     def get_wacz_download_url(self, link):
-        return get_download_url(self.context['request'], link, file_format='wacz', public=False)
+        return get_download_url(self.context['request'], link, file_format='wacz')
 
     def validate_url(self, url):
         # Clean up the user submitted url
