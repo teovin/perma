@@ -182,8 +182,6 @@ class LinkSerializer(BaseSerializer):
     captures = CaptureSerializer(many=True, read_only=True)
     queue_time = serializers.SerializerMethodField()
     capture_time = serializers.SerializerMethodField()
-    warc_download_url = serializers.SerializerMethodField()
-    wacz_download_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Link
@@ -194,9 +192,7 @@ class LinkSerializer(BaseSerializer):
             'title',
             'description',
             'warc_size',
-            'warc_download_url',
             'wacz_size',
-            'wacz_download_url',
             'captures',
             'queue_time',
             'capture_time'
@@ -216,12 +212,6 @@ class LinkSerializer(BaseSerializer):
         except (ObjectDoesNotExist, TypeError):
             return None
 
-    def get_warc_download_url(self, link):
-        return get_download_url(self.context['request'], link, file_format='warc', public=True)
-
-    def get_wacz_download_url(self, link):
-        return get_download_url(self.context['request'], link, file_format='wacz', public=True)
-
 
 class AuthenticatedLinkSerializer(LinkSerializer):
     """
@@ -229,9 +219,11 @@ class AuthenticatedLinkSerializer(LinkSerializer):
     """
     created_by = LinkUserSerializer(read_only=True)
     organization = OrganizationSerializer(read_only=True)
+    warc_download_url = serializers.SerializerMethodField()
+    wacz_download_url = serializers.SerializerMethodField()
 
     class Meta(LinkSerializer.Meta):
-        fields = LinkSerializer.Meta.fields + ('notes', 'created_by', 'is_private', 'private_reason', 'user_deleted', 'archive_timestamp', 'organization', 'default_to_screenshot_view')
+        fields = LinkSerializer.Meta.fields + ('warc_download_url', 'wacz_download_url', 'notes', 'created_by', 'is_private', 'private_reason', 'user_deleted', 'archive_timestamp', 'organization', 'default_to_screenshot_view')
         allowed_update_fields = ['submitted_title', 'submitted_description', 'notes', 'is_private', 'private_reason', 'default_to_screenshot_view']
 
     def get_warc_download_url(self, link):
