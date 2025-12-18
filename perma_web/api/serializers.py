@@ -4,6 +4,7 @@ from django.core.validators import URLValidator
 from django.db.models import F, Case, When, Value, BooleanField
 import requests
 from rest_framework import serializers
+import waffle
 
 from perma.exceptions import ScoopAPIException
 from perma.models import LinkUser, Folder, CaptureJob, Capture, Link, Organization, LinkBatch
@@ -274,6 +275,10 @@ class AuthenticatedLinkSerializer(LinkSerializer):
                         URLValidator()(temp_link.ascii_safe_url)
                     except ValidationError as e:
                         errors['url'] = e.message
+
+                elif waffle.switch_is_active('disable_live_capture'):
+                    errors['url'] = "We are currently experiencing difficulty capturing the live web. Thanks for your patience as our team investigates."
+
                 else:
                     # Ask the Scoop API to validate and resolve the URL
                     try:

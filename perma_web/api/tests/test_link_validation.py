@@ -4,6 +4,7 @@ from .utils import TEST_ASSETS_DIR, ApiResourceTestCase, ApiResourceTransactionT
 from requests.exceptions import RequestException
 from requests import request as orig_request
 from mock import patch
+from waffle.testutils import override_switch
 
 from django.test.utils import override_settings
 
@@ -34,6 +35,18 @@ class LinkValidationMixin():
 
 
 class LinkValidationTestCase(LinkValidationMixin, ApiResourceTestCase):
+
+    #########################
+    # Live Capture Disabled #
+    #########################
+
+    @override_switch("disable_live_capture", active=True)
+    def test_capture_disabled_if_flag_active(self):
+        resp = self.rejected_post(self.list_url,
+                          user=self.org_user,
+                          data={'url': "http://example.com"})
+        self.assertIn(b"currently experiencing difficulty capturing the live web", resp.content)
+
 
     ########
     # URLs #
