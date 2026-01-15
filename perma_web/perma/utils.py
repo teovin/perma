@@ -17,6 +17,7 @@ import tempfile
 from typing import Literal, TypeVar
 import uuid
 import unicodedata
+import waffle
 from wsgiref.util import FileWrapper
 import zipfile
 
@@ -1054,14 +1055,24 @@ def safe_get_response_json(response):
     return data
 
 def send_to_scoop(method, path, valid_if, json=None, stream=False, timeout=10):
+    api_root = settings.SCOOP_API_URL
+    api_key = settings.SCOOP_API_KEY
+
+    if waffle.switch_is_active('use_beta_capture_api'):
+        if settings.BETA_SCOOP_API_URL and settings.BETA_SCOOP_API_KEY:
+            api_root = settings.BETA_SCOOP_API_URL
+            api_key = settings.BETA_SCOOP_API_KEY
+        else:
+            logger.warning("The 'use_beta_capture_api' is on, but configuration is absent. Using standard API.")
+
     # Make the request
     try:
         response = requests.request(
             method,
-            settings.SCOOP_API_URL + path,
+            api_root + path,
             json=json,
             headers={
-                "Access-Key": settings.SCOOP_API_KEY,
+                "Access-Key": api_key,
                 "User-Agent": settings.SCOOP_API_USERAGENT
             },
             timeout=timeout,
