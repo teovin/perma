@@ -56542,24 +56542,47 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* WEBPACK VAR INJECTION */(function($) {/* harmony import */ var _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(272);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(561);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(609);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(65);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(708);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(2);
-/* harmony import */ var _babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(402);
-/* harmony import */ var _stores_globalStore__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(572);
-/* harmony import */ var jstree__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(751);
-/* harmony import */ var jstree__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(jstree__WEBPACK_IMPORTED_MODULE_8__);
-/* harmony import */ var jstree_css_default_style_min_css__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(752);
-/* harmony import */ var jstree_css_default_style_min_css__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(jstree_css_default_style_min_css__WEBPACK_IMPORTED_MODULE_9__);
+/* WEBPACK VAR INJECTION */(function($) {/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_keys__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(262);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_keys__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_object_keys__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_get_own_property_symbols__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(574);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_get_own_property_symbols__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_object_get_own_property_symbols__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_filter__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(380);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_filter__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_filter__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(577);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptors__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(581);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptors__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptors__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _babel_runtime_corejs3_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(585);
+/* harmony import */ var _babel_runtime_corejs3_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(272);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_6__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(561);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(609);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_concat__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(439);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_concat__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_concat__WEBPACK_IMPORTED_MODULE_9__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(65);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_10__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(708);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_11__);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(2);
+/* harmony import */ var _babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_12__);
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(402);
+/* harmony import */ var _stores_globalStore__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(572);
+/* harmony import */ var jstree__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(751);
+/* harmony import */ var jstree__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(jstree__WEBPACK_IMPORTED_MODULE_15__);
+/* harmony import */ var jstree_css_default_style_min_css__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(752);
+/* harmony import */ var jstree_css_default_style_min_css__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(jstree_css_default_style_min_css__WEBPACK_IMPORTED_MODULE_16__);
+
+
+
+
+
+
+function ownKeys(e, r) { var t = _babel_runtime_corejs3_core_js_stable_object_keys__WEBPACK_IMPORTED_MODULE_0___default()(e); if (_babel_runtime_corejs3_core_js_stable_object_get_own_property_symbols__WEBPACK_IMPORTED_MODULE_1___default.a) { var o = _babel_runtime_corejs3_core_js_stable_object_get_own_property_symbols__WEBPACK_IMPORTED_MODULE_1___default()(e); r && (o = _babel_runtime_corejs3_core_js_stable_instance_filter__WEBPACK_IMPORTED_MODULE_2___default()(o).call(o, function (r) { return _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_3___default()(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _babel_runtime_corejs3_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_5___default()(e, r, t[r]); }) : _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptors__WEBPACK_IMPORTED_MODULE_4___default.a ? Object.defineProperties(e, _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptors__WEBPACK_IMPORTED_MODULE_4___default()(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, _babel_runtime_corejs3_core_js_stable_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_3___default()(t, r)); }); } return e; }
+
 
 
 
@@ -56577,7 +56600,7 @@ __webpack_require__.r(__webpack_exports__);
     var __expose = _ref.expose,
       __emit = _ref.emit;
     var emit = __emit;
-    var folderTreeRef = Object(vue__WEBPACK_IMPORTED_MODULE_6__["ref"])(null);
+    var folderTreeRef = Object(vue__WEBPACK_IMPORTED_MODULE_13__["ref"])(null);
     var APIModule = __webpack_require__(291);
     var Helpers = __webpack_require__(261);
     var localStorageKey = Helpers.variables.localStorageKey;
@@ -56590,7 +56613,7 @@ __webpack_require__.r(__webpack_exports__);
       setupEventHandlers();
       folderTree.deselect_all();
     }
-    Object(vue__WEBPACK_IMPORTED_MODULE_6__["onMounted"])(function () {
+    Object(vue__WEBPACK_IMPORTED_MODULE_13__["onMounted"])(function () {
       init();
     });
 
@@ -56610,7 +56633,7 @@ __webpack_require__.r(__webpack_exports__);
       },
       setItem: function setItem(key, value) {
         if (typeof value !== "string") {
-          value = _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_0___default()(value);
+          value = _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_6___default()(value);
         }
         localStorage.setItem(key, value);
       }
@@ -56647,11 +56670,11 @@ __webpack_require__.r(__webpack_exports__);
     };
     function folderListFromUrl() {
       // get queryDict from URL
-      var queryDict = new _babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_1___default.a(window.location.search);
+      var queryDict = new _babel_runtime_corejs3_core_js_stable_url_search_params__WEBPACK_IMPORTED_MODULE_7___default.a(window.location.search);
       if (queryDict.get('folder')) {
         try {
           var folder_list = queryDict.get('folder').split('-');
-          folder_list = _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2___default()(folder_list).call(folder_list, function (s) {
+          folder_list = _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8___default()(folder_list).call(folder_list, function (s) {
             return parseInt(s);
           });
           folder_list.forEach(function (i) {
@@ -56705,7 +56728,7 @@ __webpack_require__.r(__webpack_exports__);
       var folderList;
       if (Array.isArray(data.folderId)) {
         var _context;
-        folderList = _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2___default()(_context = data.folderId).call(_context, function (x) {
+        folderList = _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8___default()(_context = data.folderId).call(_context, function (x) {
           return parseInt(x);
         });
       } else {
@@ -56745,7 +56768,7 @@ __webpack_require__.r(__webpack_exports__);
       var data = node.data;
       if (data) {
         var _context2;
-        var folderIds = _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2___default()(_context2 = folderTree.get_path(node, false, true)).call(_context2, function (id) {
+        var folderIds = _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8___default()(_context2 = folderTree.get_path(node, false, true)).call(_context2, function (id) {
           return folderTree.get_node(id).data.folder_id;
         });
         ls.setCurrent(data.organization_id, folderIds);
@@ -56761,7 +56784,7 @@ __webpack_require__.r(__webpack_exports__);
         data.readOnly = node.data.read_only;
         data.path = folderTree.get_path(node);
       }
-      Helpers.triggerOnWindow("FolderTreeModule.selectionChange", _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_0___default()(data));
+      Helpers.triggerOnWindow("FolderTreeModule.selectionChange", _babel_runtime_corejs3_core_js_stable_json_stringify__WEBPACK_IMPORTED_MODULE_6___default()(data));
     }
     function handleShowFoldersEvent(currentFolder, callback) {
       // This function gets called by jsTree with the current folder, and a callback to return subfolders.
@@ -56777,7 +56800,7 @@ __webpack_require__.r(__webpack_exports__);
     }
     function apiFoldersToJsTreeFolders(apiFolders) {
       // Helper to process a list of folders from our API into the form expected by jsTree.
-      return _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2___default()(apiFolders).call(apiFolders, function (folder) {
+      return _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8___default()(apiFolders).call(apiFolders, function (folder) {
         var jsTreeFolder = {
           text: folder.name,
           data: {
@@ -56805,10 +56828,42 @@ __webpack_require__.r(__webpack_exports__);
         return jsTreeFolder;
       });
     }
+    function loadSubfoldersUpToTwoPages(folderId, requestArgs) {
+      // QUICK FIX: our API responses are capped server-side (see `TastypiePagination`), and this code
+      // historically requested `limit=500` with a TODO to handle pagination.
+      //
+      // For now, fetch up to two pages and concatenate results if the first page is "full".
+      // TODO: implement proper pagination (follow `meta.next` until `objects` is empty, with safety limits).
+      var deferred = $.Deferred();
+      var baseUrl = "/folders/".concat(folderId, "/folders/");
+      APIModule.request("GET", baseUrl, null, requestArgs).done(function (data) {
+        var _context3, _context4;
+        var objects = data && data.objects ? data.objects : [];
+        var limit = data && data.meta && data.meta.limit ? data.meta.limit : null;
+
+        // If we can't determine page size, or the first page isn't full, don't issue a follow-up request.
+        if (!limit || objects.length < limit) {
+          deferred.resolve(data);
+          return;
+        }
+        APIModule.request("GET", _babel_runtime_corejs3_core_js_stable_instance_concat__WEBPACK_IMPORTED_MODULE_9___default()(_context3 = _babel_runtime_corejs3_core_js_stable_instance_concat__WEBPACK_IMPORTED_MODULE_9___default()(_context4 = "".concat(baseUrl, "?limit=")).call(_context4, limit, "&offset=")).call(_context3, limit), null, requestArgs).done(function (data2) {
+          var objects2 = data2 && data2.objects ? data2.objects : [];
+          if (objects2.length === limit) {
+            console.error("FolderTree pagination quick-fix hit two full pages; results may be incomplete.", {
+              folderId: folderId,
+              limit: limit
+            });
+          }
+          deferred.resolve(_objectSpread(_objectSpread({}, data), {}, {
+            objects: _babel_runtime_corejs3_core_js_stable_instance_concat__WEBPACK_IMPORTED_MODULE_9___default()(objects).call(objects, objects2)
+          }));
+        }).fail(deferred.reject);
+      }).fail(deferred.reject);
+      return deferred.promise();
+    }
     function loadSingleFolder(folderId, callback) {
       // Grab a single folder ID from the server and pass back to jsTree.
-      // Temporarily limit response to 500; TODO: handle pagination
-      APIModule.request("GET", "/folders/".concat(folderId, "/folders/?limit=500")).done(function (data) {
+      loadSubfoldersUpToTwoPages(folderId).done(function (data) {
         callback(apiFoldersToJsTreeFolders(data.objects));
       });
     }
@@ -56823,9 +56878,8 @@ __webpack_require__.r(__webpack_exports__);
       }
       // User does have folders selected. First, have jquery fetch contents of all folders in the selected path.
       // Set requestArgs["error"] to null to prevent a 404 from propagating up to the user.)
-      // Temporarily limit response to 500; TODO: handle pagination
-      $.when.apply($, _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_2___default()(subfoldersToPreload).call(subfoldersToPreload, function (folderId) {
-        return APIModule.request("GET", "/folders/".concat(folderId, "/folders/?limit=500"), null, {
+      $.when.apply($, _babel_runtime_corejs3_core_js_stable_instance_map__WEBPACK_IMPORTED_MODULE_8___default()(subfoldersToPreload).call(subfoldersToPreload, function (folderId) {
+        return loadSubfoldersUpToTwoPages(folderId, {
           "error": null
         });
       }))
@@ -56839,7 +56893,7 @@ __webpack_require__.r(__webpack_exports__);
         var _loop = function _loop() {
             // find the parent folder to load subfolders into, and mark it opened:
             var folderId = subfoldersToPreload[i];
-            var parentFolder = _babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_3___default()(parentFolders).call(parentFolders, function (folder) {
+            var parentFolder = _babel_runtime_corejs3_core_js_stable_instance_find__WEBPACK_IMPORTED_MODULE_10___default()(parentFolders).call(parentFolders, function (folder) {
               return folderId == folder.data.folder_id;
             });
             if (!parentFolder) // tree must have changed since last time user visited
@@ -57063,9 +57117,9 @@ __webpack_require__.r(__webpack_exports__);
         return false;
       });
       $('a.delete-folder').on('click', function () {
-        var _context3;
+        var _context5;
         var node = getSelectedNode();
-        if (!confirm("Really delete folder '" + _babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_4___default()(_context3 = node.text).call(_context3) + "'?")) return false;
+        if (!confirm("Really delete folder '" + _babel_runtime_corejs3_core_js_stable_instance_trim__WEBPACK_IMPORTED_MODULE_11___default()(_context5 = node.text).call(_context5) + "'?")) return false;
         folderTree.delete_node(node);
         return false;
       });
@@ -57077,7 +57131,7 @@ __webpack_require__.r(__webpack_exports__);
       });
     }
     function editNodeName(node) {
-      _babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_5___default()(function () {
+      _babel_runtime_corejs3_core_js_stable_set_timeout__WEBPACK_IMPORTED_MODULE_12___default()(function () {
         folderTree.edit(node);
       }, 0);
     }
@@ -57154,6 +57208,7 @@ __webpack_require__.r(__webpack_exports__);
       sendSelectionChangeEvent: sendSelectionChangeEvent,
       handleShowFoldersEvent: handleShowFoldersEvent,
       apiFoldersToJsTreeFolders: apiFoldersToJsTreeFolders,
+      loadSubfoldersUpToTwoPages: loadSubfoldersUpToTwoPages,
       loadSingleFolder: loadSingleFolder,
       loadInitialFolders: loadInitialFolders,
       domTreeInit: domTreeInit,
@@ -57164,11 +57219,11 @@ __webpack_require__.r(__webpack_exports__);
       moveLink: moveLink,
       setupEventHandlers: setupEventHandlers,
       editNodeName: editNodeName,
-      ref: vue__WEBPACK_IMPORTED_MODULE_6__["ref"],
-      onMounted: vue__WEBPACK_IMPORTED_MODULE_6__["onMounted"],
-      watch: vue__WEBPACK_IMPORTED_MODULE_6__["watch"],
+      ref: vue__WEBPACK_IMPORTED_MODULE_13__["ref"],
+      onMounted: vue__WEBPACK_IMPORTED_MODULE_13__["onMounted"],
+      watch: vue__WEBPACK_IMPORTED_MODULE_13__["watch"],
       get useGlobalStore() {
-        return _stores_globalStore__WEBPACK_IMPORTED_MODULE_7__["useGlobalStore"];
+        return _stores_globalStore__WEBPACK_IMPORTED_MODULE_14__["useGlobalStore"];
       }
     };
     Object.defineProperty(__returned__, '__isScriptSetup', {
