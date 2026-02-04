@@ -1,5 +1,6 @@
 from .utils import ApiResourceTestCase
 from perma.models import LinkUser, Folder
+from rest_framework.settings import api_settings
 
 
 class FolderResourceTestCase(ApiResourceTestCase):
@@ -22,6 +23,20 @@ class FolderResourceTestCase(ApiResourceTestCase):
                                    user=self.org_user)
 
         self.assertEqual(obj['name'], name)
+
+    def test_limit_is_capped_to_page_size(self):
+        data = self.successful_get(
+            self.list_url,
+            user=self.org_user,
+            data={'limit': 9999},
+        )
+        self.assertKeys(data, ['meta', 'objects'])
+        self.assertEqual(data['meta']['limit'], api_settings.PAGE_SIZE)
+
+    def test_default_limit_matches_page_size(self):
+        data = self.successful_get(self.list_url, user=self.org_user)
+        self.assertKeys(data, ['meta', 'objects'])
+        self.assertEqual(data['meta']['limit'], api_settings.PAGE_SIZE)
 
     def test_moving(self):
         user = self.empty_child_folder.created_by

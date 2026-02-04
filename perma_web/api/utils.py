@@ -29,6 +29,19 @@ class TastypiePagination(LimitOffsetPagination):
         Modify DRF's LimitOffsetPagination to return results in the same format as paginated results returned by Tastypie. Omit count from output and use a false, large count internally to allow `next` links to work. This breaks the convention that the last page has a null `next` link -- instead, a consumer of the paginated API should follow next links until `objects` is an empty list.
     """
 
+    # Enforce a hard cap on the page size. DRF's `max_limit` is only applied
+    # when a `limit` query param is provided, so we also cap the resolved limit
+    # in `get_limit()` to ensure the cap is always respected.
+    max_limit = api_settings.PAGE_SIZE
+
+    def get_limit(self, request):
+        limit = super().get_limit(request)
+        if limit is None:
+            return None
+        if self.max_limit is None:
+            return limit
+        return min(limit, self.max_limit)
+
     def get_paginated_response(self, data):
         return Response(OrderedDict([
             ('meta', OrderedDict([
@@ -42,6 +55,7 @@ class TastypiePagination(LimitOffsetPagination):
 
     def get_count(self, queryset):
         return 2**31
+
 
 class LimitedTastypiePagination(TastypiePagination):
     """

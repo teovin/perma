@@ -247,12 +247,52 @@ function apiFoldersToJsTreeFolders(apiFolders) {
   });
 }
 
+function loadSubfoldersUpToTwoPages(folderId, requestArgs) {
+  // QUICK FIX: our API responses are capped server-side (see `TastypiePagination`), and this code
+  // historically requested `limit=500` with a TODO to handle pagination.
+  //
+  // For now, fetch up to two pages and concatenate results if the first page is "full".
+  // TODO: implement proper pagination (follow `meta.next` until `objects` is empty, with safety limits).
+  let deferred = $.Deferred();
+  let baseUrl = `/folders/${folderId}/folders/`;
+
+  APIModule.request("GET", baseUrl, null, requestArgs)
+    .done(function (data) {
+      let objects = (data && data.objects) ? data.objects : [];
+      let limit = (data && data.meta && data.meta.limit) ? data.meta.limit : null;
+
+      // If we can't determine page size, or the first page isn't full, don't issue a follow-up request.
+      if (!limit || objects.length < limit) {
+        deferred.resolve(data);
+        return;
+      }
+
+      APIModule.request("GET", `${baseUrl}?limit=${limit}&offset=${limit}`, null, requestArgs)
+        .done(function (data2) {
+          let objects2 = (data2 && data2.objects) ? data2.objects : [];
+          if (objects2.length === limit) {
+            console.error(
+              "FolderTree pagination quick-fix hit two full pages; results may be incomplete.",
+              { folderId, limit }
+            );
+          }
+          deferred.resolve({
+            ...data,
+            objects: objects.concat(objects2),
+          });
+        })
+        .fail(deferred.reject);
+    })
+    .fail(deferred.reject);
+
+  return deferred.promise();
+}
+
 function loadSingleFolder(folderId, callback) {
   // Grab a single folder ID from the server and pass back to jsTree.
-  // Temporarily limit response to 500; TODO: handle pagination
-  APIModule.request("GET", `/folders/${folderId}/folders/?limit=500`).done(function (data) {
-    callback(apiFoldersToJsTreeFolders(data.objects));
-  });
+  loadSubfoldersUpToTwoPages(folderId).done(function (data) {
+      callback(apiFoldersToJsTreeFolders(data.objects));
+    });
 }
 
 function loadInitialFolders(preloadedData, subfoldersToPreload, callback) {
@@ -266,8 +306,7 @@ function loadInitialFolders(preloadedData, subfoldersToPreload, callback) {
   }
   // User does have folders selected. First, have jquery fetch contents of all folders in the selected path.
   // Set requestArgs["error"] to null to prevent a 404 from propagating up to the user.)
-  // Temporarily limit response to 500; TODO: handle pagination
-  $.when.apply($, subfoldersToPreload.map(folderId => APIModule.request("GET", `/folders/${folderId}/folders/?limit=500`, null, {"error": null})))
+  $.when.apply($, subfoldersToPreload.map(folderId => loadSubfoldersUpToTwoPages(folderId, {"error": null})))
 
       // When all API requests have returned, loop through the responses and build the folder tree:
       .done(function () {
