@@ -1,4 +1,5 @@
 from .utils import ApiResourceTestCase
+from django.conf import settings
 from perma.models import LinkUser, Folder
 from rest_framework.settings import api_settings
 
@@ -31,7 +32,7 @@ class FolderResourceTestCase(ApiResourceTestCase):
             data={'limit': 9999},
         )
         self.assertKeys(data, ['meta', 'objects'])
-        self.assertEqual(data['meta']['limit'], api_settings.PAGE_SIZE)
+        self.assertEqual(data['meta']['limit'], settings.API_LONG_PAGE_SIZE)
 
     def test_default_limit_matches_page_size(self):
         data = self.successful_get(self.list_url, user=self.org_user)
