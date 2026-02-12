@@ -56,6 +56,8 @@ class TastypiePagination(LimitOffsetPagination):
     def get_count(self, queryset):
         return 2**31
 
+class LongTastypiePagination(TastypiePagination):
+    max_limit = settings.API_LONG_PAGE_SIZE
 
 class LimitedTastypiePagination(TastypiePagination):
     """
