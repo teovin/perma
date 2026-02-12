@@ -557,6 +557,7 @@ REST_FRAMEWORK = {
     'ORDERING_PARAM': 'order_by',  # query string key to specify ordering of results
 }
 API_MAX_PAGES = 10
+API_LONG_PAGE_SIZE = 500
 
 #
 # Playback
