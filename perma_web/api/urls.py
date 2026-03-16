@@ -75,6 +75,9 @@ urlpatterns = [
         # /user
         re_path(r'^user/?$', views.LinkUserView.as_view(), name='user'),
 
+        # /internal/daily_link_counts
+        re_path(r'^internal/daily_link_counts/?$', views.InternalDailyLinkCountsView.as_view(), name='internal_daily_link_counts'),
+
         # / ('/v1/' only, not '/v1')
         re_path(r'^$', root_view)
     ])),
