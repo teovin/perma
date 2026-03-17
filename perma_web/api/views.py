@@ -361,7 +361,10 @@ class InternalDailyLinkCountsView(APIView):
             .annotate(count=Count('guid'))
             .order_by('day')
         )
-        data = [{row['day'].isoformat(): row['count']} for row in rows]
+        data = {
+            "lookback_period": lookback_period, 
+            "counts": [{row['day'].isoformat(): row['count']} for row in rows]
+        }
         return Response(data)
 
 
