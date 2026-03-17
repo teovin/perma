@@ -13,7 +13,6 @@ root_view = APIRootView.as_view(api_root_dict={
     'folders': 'folders',
     'capture_jobs': 'capture_jobs',
     'archives': 'archives',
-    'public_archives': 'public_archives',
     'organizations': 'organizations',
     'user': 'user',
 })
