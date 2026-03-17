@@ -317,8 +317,6 @@ class LinkFilter(django_filters.rest_framework.FilterSet):
 class PublicLinkListView(BaseView):
     permission_classes = ()  # no login required
     serializer_class = LinkSerializer
-    filterset_class = LinkFilter
-    search_fields = ('guid', 'submitted_url', 'submitted_title')  # fields that can be searched with q= query string
 
     def get(self, request, format=None):
         """ List public links. """
@@ -335,7 +333,7 @@ class PublicLinkListView(BaseView):
 class AuthenticatedLinkListView(BaseView):
     serializer_class = AuthenticatedLinkSerializer
     filterset_class = LinkFilter
-    search_fields = PublicLinkListView.search_fields + ('notes',)  # private links can also be searched by notes field
+    search_fields = ('guid', 'submitted_url', 'submitted_title', 'notes',)  # fields that can be searched with q= query string
 
     @staticmethod
     def get_folder_from_request(request):
