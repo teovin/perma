@@ -1,10 +1,13 @@
 from collections import OrderedDict
 import csv
+from datetime import timedelta
 import django_filters
 import os.path
 from django.core.exceptions import ObjectDoesNotExist, ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Prefetch, F
+from django.db.models import Count, Prefetch, F
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -22,7 +25,8 @@ from .utils import TastypiePagination, LongTastypiePagination, LimitedTastypiePa
     raise_invalid_capture_job, dispatch_multiple_requests, reverse_api_view_relative, \
     url_is_invalid_unicode, get_download_file_format
 from .serializers import FolderSerializer, CaptureJobSerializer, LinkSerializer, AuthenticatedLinkSerializer, \
-    LinkUserSerializer, OrganizationSerializer, LinkBatchSerializer, DetailedLinkBatchSerializer
+    LinkUserSerializer, OrganizationSerializer, LinkBatchSerializer, DetailedLinkBatchSerializer, \
+    InternalDailyLinkCountsQuerySerializer
 from django.conf import settings
 from django.urls import reverse
 
@@ -328,6 +332,40 @@ class PublicLinkListView(BaseView):
             .select_related('capture_job')\
             .prefetch_related('captures').discoverable()
         return self.simple_list(request, queryset, paginator_class=LimitedTastypiePagination)
+
+
+# /internal/daily_link_counts
+class InternalDailyLinkCountsView(APIView):
+    """
+    Returns the number of public archives created per day over a lookback window.
+    Accepts query param lookback_period - number of days to look back (default 30, max 365).
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        serializer = InternalDailyLinkCountsQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        lookback_period = serializer.validated_data['lookback_period']
+        today = timezone.now().date()
+        start_date = today - timedelta(days=lookback_period)
+        end_date = today - timedelta(days=1)
+
+        rows = (
+            Link.objects.discoverable()
+            .filter(
+                creation_timestamp__date__gte=start_date,
+                creation_timestamp__date__lte=end_date,
+            )
+            .annotate(day=TruncDate('creation_timestamp'))
+            .values('day')
+            .annotate(count=Count('guid'))
+            .order_by('day')
+        )
+        data = {
+            "lookback_period": lookback_period, 
+            "counts": [{row['day'].isoformat(): row['count']} for row in rows]
+        }
+        return Response(data)
 
 
 # /archives

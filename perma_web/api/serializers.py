@@ -361,3 +361,10 @@ class LinkBatchSerializer(BaseSerializer):
 
 class DetailedLinkBatchSerializer(LinkBatchSerializer):
     target_folder = FolderSerializer(read_only=True)
+
+
+### DAILY LINK COUNTS ###
+
+class InternalDailyLinkCountsQuerySerializer(serializers.Serializer):
+    lookback_period = serializers.IntegerField(default=30, min_value=1, max_value=365, required=False)
+
