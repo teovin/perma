@@ -95,4 +95,5 @@ RUN  apt-get update && apt install -y --no-install-recommends libdbus-glib-1-2 \
 
 RUN mkdir -p $HOME/.pki/nssdb \
     && certutil -d $HOME/.pki/nssdb -N --empty-password \
-    && playwright install chromium firefox
+    && playwright install chromium firefox \
+    && ln -sf "$(find /root/.cache/ms-playwright -name 'chrome' -type f -executable | head -1)" /usr/local/bin/playwright-chromium

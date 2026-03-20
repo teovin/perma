@@ -1,19 +1,8 @@
 var webpackConfig = require('./webpack.config.js');
 var path = require("path");
-var fs = require("fs");
 
-var playwrightCache = '/root/.cache/ms-playwright';
-try {
-  var chromiumDir = fs.readdirSync(playwrightCache).find(function(d) { return d.startsWith('chromium-'); });
-  if (chromiumDir) {
-    process.env.CHROMIUM_BIN = path.join(playwrightCache, chromiumDir, 'chrome-linux/chrome');
-  } else {
-    console.error('Failed to find chromium in playwright cache');
-    process.exit(1);
-  }
-} catch(e) {
-  console.error('Error reading playwright cache:', e);
-  process.exit(1);
+if (!process.env.CHROMIUM_BIN) {
+  process.env.CHROMIUM_BIN = '/usr/local/bin/playwright-chromium';
 }
 
 module.exports = function(config) {
