@@ -64,8 +64,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # python requirements
 COPY perma_web/pyproject.toml perma_web/uv.lock /perma/perma_web/
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 RUN uv sync --frozen
-ENV PATH="/perma/perma_web/.venv/bin:$PATH"
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Playwright browsers for integration tests
 RUN  apt-get update && apt install -y --no-install-recommends libdbus-glib-1-2 \
