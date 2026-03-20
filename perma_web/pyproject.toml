@@ -1,0 +1,96 @@
+[project]
+name = "perma"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    # general
+    "celery",
+    "Django~=4.2.0",
+    "django-ratelimit",
+    "django-axes==5.27.0",
+    "django-waffle",
+    "invoke",
+    "netaddr",
+    "requests",
+    "tqdm",
+    "Werkzeug",
+    "uwsgitop",
+
+    # databases
+    "psycopg2",
+    "django-redis",
+    "redis",
+
+    # models
+    "django-model-utils",
+    "django-tree-queries",
+    "django-simple-history",
+    "django-taggit",
+    "django-json-widget",
+
+    # templates
+    "django-settings-context-processor",
+
+    # assets
+    "django-webpack-loader~=1.0",
+    "whitenoise",
+
+    # capture related
+    "tempdir",
+    "ua-parser",
+    "warcio",
+    "warctools",
+
+    # alternate storages
+    "django-storages",
+    "boto3",
+
+    # api
+    "djangorestframework",
+    "django-filter",
+
+    # link preservation
+    "internetarchive",
+
+    # memento support
+    "surt",
+    "timegate",
+
+    # perma payments
+    "PyNaCl",
+
+    # instrumentation
+    "sentry-sdk",
+]
+
+[dependency-groups]
+dev = [
+    "beautifulsoup4",
+    "coverage",
+    "django-admin-smoke-tests",
+    "factory-boy",
+    "fakeredis[lua]",
+    "flake8",
+    "hypothesis",
+    "mock",
+    "pytest-cov",
+    "pytest-django",
+    "pytest-django-ordering",
+    "pytest-mock",
+    "pytest-xdist",
+    "pytest",
+    "pyhumps",
+    "pytest-playwright",
+    "playwright>=1.42.0",
+    "pytest-django-liveserver-ssl",
+    "django-extensions",
+    "django-debug-toolbar",
+    "ipdb",
+    "watchdog",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+timegate = { url = "https://github.com/mementoweb/timegate/archive/6810fbc873b84f6af8e78e89fc8515f21b695cae.zip" }

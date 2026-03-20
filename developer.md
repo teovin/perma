@@ -91,15 +91,15 @@ information about testing Perma.
 
 ### Update the python dependencies
 
-Top-level requirements are stored in `requirements.in`. After updating that file, you should run
+Top-level requirements are stored in `pyproject.toml`. After updating that file, you should run
 
-`d invoke pip-compile`
+`d invoke uv-lock`
 
-to freeze all subdependencies into `requirements.txt`.
+to freeze all subdependencies into `uv.lock`.
 
 To upgrade a single requirement to the latest version:
 
-`d invoke pip-compile --args "-P package_name"`
+`d invoke uv-lock --args "--upgrade-package package_name"`
 
 ### Update the node dependencies
 

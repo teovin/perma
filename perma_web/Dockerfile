@@ -5,7 +5,9 @@ ENV LANG=C.UTF-8 \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_SRC=/usr/local/src \
-    OPENSSL_CONF=/etc/ssl
+    OPENSSL_CONF=/etc/ssl \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 RUN mkdir -p /perma/perma_web
 WORKDIR /perma/perma_web
 
@@ -57,10 +59,13 @@ RUN npm install --prefix /perma/services/js-wacz/ \
     && rm /perma/services/js-wacz/package.json \
     && rm /perma/services/js-wacz/package-lock.json
 
+# uv package manager
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 # python requirements
-COPY perma_web/requirements.txt /perma/perma_web
-RUN python3 -m pip install -r /perma/perma_web/requirements.txt \
-    && rm /perma/perma_web/requirements.txt
+COPY perma_web/pyproject.toml perma_web/uv.lock /perma/perma_web/
+RUN uv sync --frozen
+ENV PATH="/perma/perma_web/.venv/bin:$PATH"
 
 # Install Playwright browsers for integration tests
 RUN  apt-get update && apt install -y --no-install-recommends libdbus-glib-1-2 \

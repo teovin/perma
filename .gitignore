@@ -19,6 +19,7 @@ perma_web/failed_test_files
 
 .idea
 venv
+.venv
 .vagrant
 .DS_Store
 
