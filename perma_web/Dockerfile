@@ -38,7 +38,7 @@ RUN apt-get update \
         libxml2-dev \
         libxslt-dev
 
-# node.js 
+# node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs=20.13.0-1nodesource1
 
 #
