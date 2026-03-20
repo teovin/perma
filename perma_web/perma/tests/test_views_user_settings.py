@@ -6,7 +6,7 @@ from django.conf import settings
 from perma.exceptions import PermaPaymentsCommunicationException
 
 from conftest import submit_form
-from mock import patch, sentinel
+from unittest.mock import patch, sentinel
 
 
 #

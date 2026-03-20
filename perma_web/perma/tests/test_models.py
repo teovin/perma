@@ -4,7 +4,7 @@ from django.conf import settings
 from django.test import override_settings
 from django.utils import timezone
 
-from mock import patch, sentinel
+from unittest.mock import patch, sentinel
 
 from perma.exceptions import PermaPaymentsCommunicationException, InvalidTransmissionException
 import perma.models

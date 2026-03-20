@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import decimal
-from mock import patch, sentinel
+from unittest.mock import patch, sentinel
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password

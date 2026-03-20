@@ -71,8 +71,6 @@ dev = [
     "factory-boy",
     "fakeredis[lua]",
     "flake8",
-    "hypothesis",
-    "mock",
     "pytest-cov",
     "pytest-django",
     "pytest-django-ordering",
@@ -85,7 +83,6 @@ dev = [
     "pytest-django-liveserver-ssl",
     "django-extensions",
     "django-debug-toolbar",
-    "ipdb",
     "watchdog",
 ]
 
