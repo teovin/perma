@@ -38,6 +38,7 @@ services:
       # isn't wiped out when mounting our code in ./perma_web code to
       # the container. We can consider restructuring the project instead.
       - node_modules:/perma/perma_web/node_modules
+      - python_venv:/perma/perma_web/.venv
       # BIND MOUNTS
       - ./perma_web:/perma/perma_web
       - ./services/celery:/perma/services/celery
@@ -140,6 +141,7 @@ services:
 
 volumes:
   node_modules:
+  python_venv:
   postgres_data_16:
   redis_data:
   pp_db_data_16:
