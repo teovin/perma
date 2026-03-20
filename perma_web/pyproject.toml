@@ -71,6 +71,7 @@ dev = [
     "factory-boy",
     "fakeredis[lua]",
     "flake8",
+    "Flake8-pyproject",
     "pytest-cov",
     "pytest-django",
     "pytest-django-ordering",
@@ -85,6 +86,28 @@ dev = [
     "django-debug-toolbar",
     "watchdog",
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "perma.settings.deployments.settings_testing"
+norecursedirs = ["node_modules"]
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "--browser chromium --screenshot only-on-failure --output failed_test_files"
+filterwarnings = ["ignore:Unverified HTTPS request"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/migrations/*",
+    "*/management/*",
+    "*/tests/*",
+    "fabfile/*",
+    "functional_tests/*",
+    "*/settings/*",
+]
+
+[tool.flake8]
+ignore = ["E126", "E127", "E128", "E2", "W2", "E3", "W3", "E4", "E501", "W504"]
+exclude = ["node_modules", "static", "settings"]
 
 [tool.uv]
 package = false

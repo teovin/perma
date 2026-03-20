@@ -296,7 +296,7 @@ common techniques for running the tests.
 
 All code must show zero warnings or errors when running `flake8 .` in `perma_web/`.
 
-Flake8 settings are configured in `perma_web/setup.cfg`
+Flake8 settings are configured in `perma_web/pyproject.toml`
 
 If you want to automatically run flake8 before pushing your code, you can add something like this to `.git/hooks/pre-commit` or `.git/hooks/pre-push`:
 

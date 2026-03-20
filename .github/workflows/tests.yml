@@ -63,7 +63,7 @@ jobs:
           set -x
           docker compose exec web invoke dev.init-db
           docker compose exec web pytest \
-            --cov --cov-config=setup.cfg --cov-report xml  `# write coverage data to .coverage for upload by codecov` \
+            --cov --cov-report xml  `# write coverage data to .coverage for upload by codecov` \
             -vv
 
       ### codecov ###
