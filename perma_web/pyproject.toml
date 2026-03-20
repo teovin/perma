@@ -4,87 +4,90 @@ version = "0.0.0"
 requires-python = ">=3.11"
 dependencies = [
     # general
-    "celery",
-    "Django~=4.2.0",
-    "django-ratelimit<4",
+    "celery==5.2.6",
+    "Django==4.2.23",
+    "django-ratelimit==3.0.1",
     "django-axes==5.27.0",
-    "django-waffle",
-    "invoke",
-    "netaddr",
-    "requests",
-    "tqdm",
-    "Werkzeug",
-    "uwsgitop",
+    "django-waffle==4.1.0",
+    "invoke==2.0.0",
+    "netaddr==0.8.0",
+    "requests==2.32.4",
+    "tqdm==4.66.4",
+    "Werkzeug==3.0.6",
+    "uwsgitop==0.11",
 
     # databases
-    "psycopg2",
-    "django-redis",
-    "redis",
+    "psycopg2==2.9.9",
+    "django-redis==5.2.0",
+    "redis==4.5.4",
 
     # models
-    "django-model-utils",
-    "django-tree-queries",
-    "django-simple-history",
-    "django-taggit",
-    "django-json-widget",
+    "django-model-utils==4.2.0",
+    "django-tree-queries==0.19.0",
+    "django-simple-history==3.0.0",
+    "django-taggit==5.0.1",
+    "django-json-widget==1.1.1",
 
     # templates
-    "django-settings-context-processor",
+    "django-settings-context-processor==0.2",
 
     # assets
-    "django-webpack-loader~=1.0",
-    "whitenoise",
+    "django-webpack-loader==1.8.1",
+    "whitenoise==6.0.0",
 
     # capture related
-    "tempdir",
-    "ua-parser",
-    "warcio",
-    "warctools",
+    "tempdir==0.7.1",
+    "ua-parser==0.10.0",
+    "warcio==1.7.4",
+    "warctools==4.10.0",
 
     # alternate storages
-    "django-storages",
-    "boto3",
+    "django-storages==1.14.2",
+    "boto3==1.35.12",
 
     # api
-    "djangorestframework",
-    "django-filter",
+    "djangorestframework==3.15.2",
+    "django-filter==21.1",
 
     # link preservation
-    "internetarchive",
+    "internetarchive==3.0.0",
 
     # memento support
-    "surt",
+    "surt==0.3.1",
     "timegate",
 
     # perma payments
-    "PyNaCl",
+    "PyNaCl==1.5.0",
 
     # instrumentation
-    "sentry-sdk",
+    "sentry-sdk==2.12.0",
+
+    # django-axes requires pkg_resources from setuptools
+    "setuptools==80.8.0",
 ]
 
 [dependency-groups]
 dev = [
-    "beautifulsoup4",
+    "beautifulsoup4==4.12.3",
     "coverage",
-    "django-admin-smoke-tests",
-    "factory-boy",
+    "django-admin-smoke-tests==0.3.0",
+    "factory-boy==3.3.0",
     "fakeredis[lua]",
-    "flake8",
+    "flake8==7.0.0",
     "Flake8-pyproject",
-    "pytest-cov",
-    "pytest-django",
-    "pytest-django-ordering",
-    "pytest-mock",
-    "pytest-xdist",
-    "pytest",
-    "pyhumps",
-    "pytest-playwright",
-    "playwright>=1.42.0",
-    "pytest-django-liveserver-ssl",
-    "django-extensions",
-    "django-debug-toolbar",
-    "watchdog",
+    "pytest-cov==4.1.0",
+    "pytest-django==4.8.0",
+    "pytest-django-ordering==1.2.0",
+    "pytest-mock==3.14.0",
+    "pytest-xdist==3.5.0",
+    "pytest==7.4.4",
+    "pyhumps==3.8.0",
+    "pytest-playwright==0.4.4",
+    "playwright==1.42.0",
+    "pytest-django-liveserver-ssl==0.0.2",
+    "django-extensions==3.2.3",
+    "django-debug-toolbar==4.3.0",
+    "watchdog==4.0.0",
 ]
 
 [tool.pytest.ini_options]
