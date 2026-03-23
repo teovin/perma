@@ -1,4 +1,7 @@
+import pytest
 
+
+@pytest.mark.uses_storage
 def test_log_out(page, user, log_in_user):
     log_in_user(page, user)
     page.locator(".dropdown-toggle").click()

@@ -1,21 +1,21 @@
-import pytest
-import boto3
-from dataclasses import dataclass
 import os
-from random import choice
 import subprocess
+from dataclasses import dataclass
+from random import choice
 
+import boto3
+import pytest
 from django.conf import settings
 from django.core.files.storage import storages
 from django.core.management import call_command
 from django.core.serializers.json import DjangoJSONEncoder
 from django.urls import reverse
 
-
 # patch Playwright's screenshot method so that we get full-page screenshots
 # when functional tests fail, which is not presently configurable in pytest-playwright
 # https://github.com/microsoft/playwright-pytest/blob/456f8286f09f132d2e21f6bf71f27465e71ba17a/pytest_playwright/pytest_playwright.py#L249
 from playwright.sync_api import Page
+
 _orig = Page.screenshot
 def full_page_screenshot(*args, **kwargs):
     kwargs['full_page'] = True
@@ -29,7 +29,13 @@ os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
 # patch django-liveserver-ssl to be compatible with changes made to the LiveTestServer in Django 4.2
 # https://github.com/django/django/commit/823a9e6bac38d38f7b0347497b833eec732bd384
-from pytest_django_liveserver_ssl.live_server_ssl_helper import HTTPSLiveServerThread, SecureHTTPServer, WSGIRequestHandler
+from pytest_django_liveserver_ssl.live_server_ssl_helper import (
+    HTTPSLiveServerThread,
+    SecureHTTPServer,
+    WSGIRequestHandler,
+)
+
+
 def _create_server(self, connections_override=None):
     return SecureHTTPServer(
         (self.host, self.port),
@@ -99,12 +105,13 @@ def _live_server_db_helper(request):
     _load_json_fixtures()
 
 
-@pytest.fixture(autouse=True, scope='function')
-def cleanup_storage():
+def pytest_runtest_teardown(item, nextitem):
     """
-    Empty the configured storage after each test, so that it's fresh each time.
+    Empty the configured storage after each test decorated with
+    @pytest.mark.uses_storage so it's fresh each time.
     """
-    yield
+    if not item.get_closest_marker('uses_storage'):
+        return
     for storage_option in ['default', 'secondary']:
         storage = boto3.resource(
             's3',
@@ -170,18 +177,26 @@ def log_in_user(urls):
 # As we modernize the test suite, we can start putting new fixtures here.
 # The separation should make it easier to work out, going forward, what can be deleted.
 
-import factory
-from factory.django import DjangoModelFactory, Password
-import humps
-
+from datetime import datetime
+from datetime import timezone as tz
 from decimal import Decimal
-from datetime import datetime, timezone as tz
+
+import factory
+import humps
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-
-from perma.models import Registrar, Organization, LinkUser, Link, CaptureJob, Capture, Sponsorship, Folder
+from factory.django import DjangoModelFactory, Password
+from perma.models import (
+    Capture,
+    CaptureJob,
+    Folder,
+    Link,
+    LinkUser,
+    Organization,
+    Registrar,
+    Sponsorship,
+)
 from perma.utils import pp_date_from_post
-
 
 GENESIS = datetime.fromtimestamp(0).replace(tzinfo=tz.utc)
 # this gives us a variable that we can use unhashed in tests
