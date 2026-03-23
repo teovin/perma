@@ -1,5 +1,3 @@
-import os
-
 from .settings_dev import *
 
 #########
@@ -37,6 +35,37 @@ STORAGES["secondary"]["OPTIONS"]["bucket_name"] += '-test'
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = 'memory://localhost/'
+
+# Use faster (but weaker) password hasher when testing
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.MD5PasswordHasher",  # Faster than PBKDF2 for setting passwords
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",  # Fallback for fixture verification
+]
+
+# Comment out middleware that isn't needed for testing
+MIDDLEWARE = (
+    'django.middleware.security.SecurityMiddleware',
+    # 'whitenoise.middleware.WhiteNoiseMiddleware',
+    'perma.middleware.APISubdomainMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'perma.middleware.AdminAuthMiddleware',
+    # 'ratelimit.middleware.RatelimitMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',  # record request.user for model history
+    'waffle.middleware.WaffleMiddleware',
+    # # Uncomment the next line for simple clickjacking protection:
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # # AxesMiddleware should be the last middleware in the MIDDLEWARE list.
+    # # It only formats user lockout messages and renders Axes lockout responses
+    # # on failed user authentication attempts from login views.
+    # # If you do not want Axes to override the authentication response
+    # # you can skip installing the middleware and use your own views.
+    'axes.middleware.AxesMiddleware',
+    # 'api.middleware.CORSMiddleware'
+)
 
 # faster collectstatic
 STORAGES["staticfiles"]["BACKEND"] = 'django.contrib.staticfiles.storage.StaticFilesStorage'
