@@ -109,3 +109,17 @@ if not SCOOP_API_KEY:
             SCOOP_API_KEY = match.groups()[0]
     except Exception:
         print("Did not locate Scoop API Key.")
+
+
+# schema viewer
+SCHEMA_VIEWER_ON = True
+
+if SCHEMA_VIEWER_ON:
+    try:
+        import schema_viewer
+        INSTALLED_APPS += (
+            'schema_viewer',
+        )
+    except ImportError:
+        SCHEMA_VIEWER_ON = False
+        print("django-schema-viewer is not installed")
