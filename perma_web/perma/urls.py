@@ -191,7 +191,7 @@ if settings.DEBUG:
             re_path(r'^__debug__/', include(debug_toolbar.urls)),
         ] + urlpatterns
 
-if settings.SCHEMA_VIEWER_ON:
+if settings.VIEW_SCHEMA:
     # APPEND_SLASH is False in the app, but django-schema-viewer expects urls to have trailing slashes.
     # The two redirects normalize slash-less URLs so the viewer works as expected.    
     urlpatterns = [

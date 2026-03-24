@@ -19,7 +19,7 @@ SUBDOMAIN_URLCONFS = {}
 
 DEBUG = False
 TESTING = True
-SCHEMA_VIEWER_ON = False
+VIEW_SCHEMA = False
 
 ADMINS = (
     ("Admin's Name", 'admin@example.com'),

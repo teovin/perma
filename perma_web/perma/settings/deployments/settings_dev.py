@@ -112,14 +112,14 @@ if not SCOOP_API_KEY:
 
 
 # schema viewer
-SCHEMA_VIEWER_ON = True
+VIEW_SCHEMA = True
 
-if SCHEMA_VIEWER_ON:
+if VIEW_SCHEMA:
     try:
         import schema_viewer
         INSTALLED_APPS += (
             'schema_viewer',
         )
     except ImportError:
-        SCHEMA_VIEWER_ON = False
+        VIEW_SCHEMA = False
         print("django-schema-viewer is not installed")
