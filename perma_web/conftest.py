@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from random import choice
 
 import boto3
-import pytest
 from django.conf import settings
 from django.core.files.storage import storages
 from django.core.management import call_command
@@ -12,6 +11,8 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.urls import reverse
 from filelock import FileLock
 from playwright.sync_api import Page, expect
+import pytest
+from pytest_django.plugin import blocking_manager_key
 
 # patch Playwright's screenshot method so that we get full-page screenshots
 # when functional tests fail, which is not presently configurable in pytest-playwright
@@ -100,10 +101,12 @@ _db_fixtures_flushed = False
 
 
 def _is_transactional_test(item: pytest.Item) -> bool:
-    from django.test import TransactionTestCase
+    from django.test import TestCase, TransactionTestCase
 
     marker = item.get_closest_marker("django_db")
-    item_has_cls = hasattr(item, "cls") and item.cls
+    item_is_transactional = (
+        hasattr(item, "cls") and item.cls and issubclass(item.cls, TransactionTestCase) and not issubclass(item.cls, TestCase)
+    )
 
     match marker:
         case marker if marker and marker.kwargs.get("transaction"):
@@ -112,33 +115,41 @@ def _is_transactional_test(item: pytest.Item) -> bool:
             return True
         case marker if "live_server_ssl" in getattr(item, "fixturenames", []):
             return True
-        case marker if item_has_cls and issubclass(item.cls, TransactionTestCase):
+        case marker if item_is_transactional:
             return True
         case _:
             return False
 
 
-@pytest.fixture(autouse=True, scope='function')
-def _live_server_db_helper(request, django_db_blocker):
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item):
     """
-    Automatically reload JSON fixtures when needed, namely:
-
-        - Before every `live_server_ssl` test (database is flushed
-          between them).
-
-        - Before non-transactional tests when a prior transactional test
-          on this worker has flushed the database (relevant for xdist).
+    Reload JSON fixtures before test setup when a prior transactional
+    test on this worker has flushed the database. This runs at hook
+    level, before fixtures are resolved, so that Django's
+    `TestCase.setUpTestData` can find the expected rows.
     """
     global _db_fixtures_flushed
 
-    if "live_server_ssl" in request.fixturenames:
-        _load_json_fixtures()
-        return
-
-    if _db_fixtures_flushed is True:
-        with django_db_blocker.unblock():
+    if _db_fixtures_flushed and not _is_transactional_test(item):
+        blocker = item.config.stash[blocking_manager_key]
+        with blocker.unblock():
             _load_json_fixtures()
         _db_fixtures_flushed = False
+
+
+@pytest.fixture(autouse=True, scope='function')
+def _live_server_db_helper(request, django_db_blocker):
+    """
+    Reload JSON fixtures before every live_server_ssl test, since each
+    transactional test starts with a fresh (empty) database.
+
+    django_db_blocker is accepted as a parameter to ensure this fixture
+    resolves after database setup fixtures, preventing `IntegrityError`s
+    caused by loading into a not-yet-cleaned database.
+    """
+    if "live_server_ssl" in request.fixturenames:
+        _load_json_fixtures()
 
 
 def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item):
