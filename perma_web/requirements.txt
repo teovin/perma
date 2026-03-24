@@ -250,6 +250,7 @@ django==4.2.23 \
     #   django-filter
     #   django-model-utils
     #   django-redis
+    #   django-schema-viewer
     #   django-storages
     #   django-taggit
     #   django-waffle
@@ -293,6 +294,10 @@ django-ratelimit==3.0.1 \
 django-redis==5.2.0 \
     --hash=sha256:1d037dc02b11ad7aa11f655d26dac3fb1af32630f61ef4428860a2e29ff92026 \
     --hash=sha256:8a99e5582c79f894168f5865c52bd921213253b7fd64d16733ae4591564465de
+    # via -r requirements.in
+django-schema-viewer==0.5.3 \
+    --hash=sha256:d5bdaa7cfec0827d1232f1d79f746ea5a7f42bf6abf2359615084acb230b2d1c \
+    --hash=sha256:f6385d74c6e2c5e204fc7b2b8d7d25affe63f9f6b96b03e79e5b094b5012588a
     # via -r requirements.in
 django-settings-context-processor==0.2 \
     --hash=sha256:d37c853d69a3069f5abbf94c7f4f6fc0fac38bbd0524190cd5a250ba800e496a

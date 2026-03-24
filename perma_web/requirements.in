@@ -91,6 +91,7 @@ ipdb                                    # improved debugger and interactive shel
 watchdog                                # watch for file changes
 pip-tools
 typing-extensions>=4.6                  # setuptools vendors typeguard which needs Buffer
+django-schema-viewer                    # db models visualization
 
 # instrumentation
 sentry-sdk
