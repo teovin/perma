@@ -1,3 +1,5 @@
+import os
+
 from .settings_dev import *
 
 #########
@@ -24,6 +26,13 @@ ADMINS = (
 
 STORAGES["default"]["OPTIONS"]["bucket_name"] += '-test'
 STORAGES["secondary"]["OPTIONS"]["bucket_name"] += '-test'
+
+# Ensure unique bucket names for xdist workers
+_xdist_worker = os.environ.get('PYTEST_XDIST_WORKER')
+if _xdist_worker:
+    STORAGES["default"]["OPTIONS"]["bucket_name"] += f'-{_xdist_worker}'
+    STORAGES["secondary"]["OPTIONS"]["bucket_name"] += f'-{_xdist_worker}'
+
 
 ###############
 # Speed Hacks #

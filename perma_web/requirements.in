@@ -71,6 +71,7 @@ coverage                                # record code coverage
 django-admin-smoke-tests                # basic tests for the Django admin
 factory-boy                             # create django model fixtures on demand
 fakeredis[lua]                          # simulate redis backend for tests
+filelock                                # cross-worker lock for xdist cert setup
 flake8                                  # code linting
 hypothesis                              # run tests with lots of generated input
 mock                                    # safe monkey patching
