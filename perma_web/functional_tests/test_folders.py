@@ -1,5 +1,7 @@
 import pytest
 
+
+@pytest.mark.uses_storage
 def test_create_folder(page, user, log_in_user, urls):
     """Clicking the add button should create a new folder"""
     log_in_user(page, user)
@@ -10,6 +12,7 @@ def test_create_folder(page, user, log_in_user, urls):
     page.locator(f":nth-match(.jstree-last, {folder_count + 1})").wait_for()
 
 
+@pytest.mark.uses_storage
 @pytest.mark.xfail(reason="Needs more work to be reliable")
 def test_delete_folder(page, user, log_in_user, urls):
     """Clicking the folder delete button should delete an existing empty folder"""

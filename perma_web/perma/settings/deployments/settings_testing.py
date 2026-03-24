@@ -28,6 +28,13 @@ ADMINS = (
 STORAGES["default"]["OPTIONS"]["bucket_name"] += '-test'
 STORAGES["secondary"]["OPTIONS"]["bucket_name"] += '-test'
 
+# Ensure unique bucket names for xdist workers
+_xdist_worker = os.environ.get('PYTEST_XDIST_WORKER')
+if _xdist_worker:
+    STORAGES["default"]["OPTIONS"]["bucket_name"] += f'-{_xdist_worker}'
+    STORAGES["secondary"]["OPTIONS"]["bucket_name"] += f'-{_xdist_worker}'
+
+
 ###############
 # Speed Hacks #
 ###############
@@ -38,6 +45,20 @@ STORAGES["secondary"]["OPTIONS"]["bucket_name"] += '-test'
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = 'memory://localhost/'
+
+# Use faster (but weaker) password hasher when testing
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.MD5PasswordHasher",  # Faster than PBKDF2 for setting passwords
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",  # Fallback for fixture verification
+]
+
+# Exclude middleware that isn't needed for testing
+MIDDLEWARE_EXCLUDED = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'ratelimit.middleware.RatelimitMiddleware',
+    'api.middleware.CORSMiddleware',
+]
+MIDDLEWARE = [key for key in MIDDLEWARE if key not in MIDDLEWARE_EXCLUDED]
 
 # faster collectstatic
 STORAGES["staticfiles"]["BACKEND"] = 'django.contrib.staticfiles.storage.StaticFilesStorage'
