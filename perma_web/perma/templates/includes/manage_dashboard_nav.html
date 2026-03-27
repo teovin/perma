@@ -1,0 +1,9 @@
+<nav aria-labelledby="page-title">
+  <ul class="nav nav-pills nav-stacked">
+    {% for item in manage_nav_items %}
+      <li {% if item.is_active %}class="active" aria-current="page"{% endif %}>
+        <a href="{% url item.url_name %}"><span>{{ item.label }}</span></a>
+      </li>
+    {% endfor %}
+  </ul>
+</nav>

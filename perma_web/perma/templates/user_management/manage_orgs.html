@@ -1,11 +1,12 @@
 {% extends "manage-layout.html" %}
 {% load current_query_string %}
 {% load intcomma from humanize %}
+{% load ui_logic %}
 {% block title %} | Organizations{% endblock %}
 
 {% block dashboardContent %}
   <h2 class="body-ah">Organizations</h2>
-  {% if request.user.is_staff or request.user.is_registrar_user %}
+  {% if request.user|is_staff_or_registrar %}
 
   <a class="action-heading" data-toggle="collapse" href="#add-member" aria-expanded="false" aria-controls="#add-member"><i class="icon-plus-sign" aria-hidden="true"></i> add<span class="_verbose"> organization</span></a>
 

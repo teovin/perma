@@ -1,3 +1,4 @@
+{% load ui_logic %}
 <div class="navbar-collapse collapse" id="upper_right_menu">
   <h2 class="sr-only" id="upper_right_menu_name">Main Menu</h2>
   <ul class="nav navbar-nav navbar-right">
@@ -17,7 +18,7 @@
             <li class="divider"></li>
           {% endif %}
 
-          {% if request.user.is_staff or request.user.is_registrar_user %}
+          {% if request.user|is_staff_or_registrar %}
             <li><h3 class="dropdown-header">Manage users</h3>
               <ul class="dropdown-inner-list">
                 {% if request.user.is_staff %}

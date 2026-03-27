@@ -1,4 +1,5 @@
 {% extends "base-responsive.html" %}
+{% load ui_logic %}
 
 {% block bodyFlags %}_admin{% endblock %}
 
@@ -8,7 +9,7 @@
   <div id="dashboard-container" class="container cont-fixed">
     <div class="row">
       <div class="col-sm-12">
-        {% if request.user.is_staff or request.user.is_registrar_user %}
+        {% if request.user|is_staff_or_registrar %}
           <h1 id="page-title" class="page-title">Manage users and organizations</h1>
         {% elif request.user.is_organization_user %}
           <h1 id="page-title" class="page-title">Manage users</h1>
@@ -16,38 +17,12 @@
       </div>
     </div> <!-- end row -->
     <div class="row admin-content">
-      {% if request.user.is_staff or request.user.is_registrar_user or request.user.is_organization_user %}
+      {% user_has_manage_sidebar request.user as show_manage_sidebar %}
+      {% if show_manage_sidebar %}
         <div class="col-sm-3">
 
           <!-- Dashboard tabs -->
-          <nav aria-labelledby="page-title">
-            <ul class="nav nav-pills nav-stacked">
-
-              <!-- Manage users -->
-              {% if request.user.is_staff %}
-                <li {% if this_page == "users_admin_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_admin_user' %}"><span>Admin users</span></a></li>
-                <li {% if this_page == "users_registrars" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_registrar' %}"><span>Registrars</span></a></li>
-              {% endif %}
-
-              {% if request.user.is_staff or request.user.is_registrar_user %}
-                <li {% if this_page == "users_registrar_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_registrar_user' %}"><span>Registrar users</span></a></li>
-              {% endif %}
-
-              {% if request.user.is_staff or request.user.is_registrar_user %}
-                <li {% if this_page == "users_sponsored_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_sponsored_user' %}"><span>Sponsored users</span></a></li>
-              {% endif %}
-
-              <li {% if this_page == "users_orgs" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_organization' %}"><span>Organizations</span></a></li>
-
-              <!-- Org users -->
-              <li {% if this_page == "users_organization_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_organization_user' %}"><span>Org users</span></a></li>
-
-              <!-- Regular users -->
-              {% if request.user.is_staff %}
-                <li {% if this_page == "users_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_user' %}"><span>Users</span></a></li>
-              {% endif %}
-            </ul><!--/#dashboard-tabs-->
-          </nav>
+          {% render_manage_dashboard_nav request.user this_page %}
         </div><!--/col-sm-3-->
       {% endif %}
 

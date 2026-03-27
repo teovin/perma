@@ -1,6 +1,7 @@
 {% extends "manage-layout.html" %}
 {% load current_query_string visible_organizations visible_sponsorships %}
 {% load intcomma from humanize %}
+{% load ui_logic %}
 {% block title %} | {{ pretty_group_name_plural }}{% endblock %}
 
 {% block dashboardContent %}
@@ -162,7 +163,7 @@
           </ul>
         </div>
 
-        {% if request.user.is_staff or request.user.is_registrar_user %}
+        {% if request.user|is_staff_or_registrar %}
           {% if group_name == 'organization_user' %}
             <div class="dropdown">
               <button class="btn-transparent" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">Organization <span class="caret"></span></button>
