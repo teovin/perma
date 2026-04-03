@@ -294,15 +294,17 @@ common techniques for running the tests.
 
 ### Linting with flake8
 
-All code must show zero warnings or errors when running `flake8 .` in `perma_web/`.
+All code must show zero warnings or errors when running `uv run flake8 .` in `perma_web/`.
 
-Flake8 settings are configured in `perma_web/pyproject.toml`
+flake8 settings are configured in `perma_web/pyproject.toml`.
 
 If you want to automatically run flake8 before pushing your code, you can add something like this to `.git/hooks/pre-commit` or `.git/hooks/pre-push`:
 
-    #!/usr/bin/env bash
-    docker compose exec -T web flake8 .
-    exit $?
+```sh
+#!/bin/bash
+docker compose exec -T web uv run flake8 .
+exit $?
+```
 
 Be sure to mark the hook as executable: `chmod u+x .git/hooks/pre-commit` or `chmod u+x .git/hooks/pre-push`.
 
