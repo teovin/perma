@@ -57,10 +57,11 @@ def run(ctx, port="0.0.0.0:8000", cert_file='perma-test.crt', key_file='perma-te
 
 
 @task
-def uv_lock(ctx, args=''):
-    command = ['uv', 'lock'] + args.split()
-    print("Calling %s" % " ".join(command))
-    subprocess.check_call(command)
+def lock_dependencies(ctx, args=''):
+    ctx.run(
+        f'uv lock {args} && uv export --format requirements.txt -o requirements.txt',
+        echo=True,
+    )
 
 
 @task

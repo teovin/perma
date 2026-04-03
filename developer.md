@@ -89,17 +89,19 @@ including a super-convenient keyword-matching option:
 See [Testing and Test Coverage](#testing-and-test-coverage) for more
 information about testing Perma.
 
-### Update the python dependencies
+### Update the Python dependencies
 
-Top-level requirements are stored in `pyproject.toml`. After updating that file, you should run
+We use [uv](https://docs.astral.sh/uv/) to manage Python dependencies. Requirements are stored in `pyproject.toml`. To add, remove, or modify a dependency, you can update that file. If you like, you may then run the following to generate lockfiles (`uv.lock` and `requirements.txt`):
 
-`d invoke uv-lock`
-
-to freeze all subdependencies into `uv.lock`.
+```sh
+d invoke lock-dependencies
+```
 
 To upgrade a single requirement to the latest version:
 
-`d invoke uv-lock --args "--upgrade-package package_name"`
+```sh
+d invoke lock-dependencies --args "--upgrade-package package_name"
+```
 
 ### Update the node dependencies
 
