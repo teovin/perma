@@ -25,9 +25,8 @@ def build_user_management_perms(
     request: HttpRequest,
     screen: str | None = None,
 ) -> dict[str, Any]:
-    
-    user = request.user
-    if not user.is_authenticated:
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
         return {}
 
     ui_flags = {
