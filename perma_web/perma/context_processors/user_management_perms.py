@@ -27,11 +27,13 @@ def build_user_management_perms(
 ) -> dict[str, Any]:
     
     user = request.user
+    if not user.is_authenticated:
+        return {}
 
     ui_flags = {
         "is_staff": allow_staff(user),
         "can_show_user_management_title": allow_staff_or_registrar(user),
-        "can_show_organization_only_management_title": allow_organization_user and not allow_staff_or_registrar(user),
+        "can_show_organization_only_management_title": allow_organization_user(user) and not allow_staff_or_registrar(user),
         "can_show_user_management_sidebar": allow_staff_registrar_or_org_user(user),
         "can_show_admin_users_and_registrars_nav": allow_staff(user),
         "can_show_registrar_users_and_sponsored_users_nav": allow_staff_or_registrar(user),
