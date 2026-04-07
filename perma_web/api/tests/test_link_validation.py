@@ -3,7 +3,7 @@ import requests
 from .utils import TEST_ASSETS_DIR, ApiResourceTestCase, ApiResourceTransactionTestCase, ApiResourceLiveServerTestCase
 from requests.exceptions import RequestException
 from requests import request as orig_request
-from mock import patch
+from unittest.mock import patch
 from waffle.testutils import override_switch
 
 from django.test.utils import override_settings

@@ -90,17 +90,19 @@ including a super-convenient keyword-matching option:
 See [Testing and Test Coverage](#testing-and-test-coverage) for more
 information about testing Perma.
 
-### Update the python dependencies
+### Update the Python dependencies
 
-Top-level requirements are stored in `requirements.in`. After updating that file, you should run
+We use [uv](https://docs.astral.sh/uv/) to manage Python dependencies. Requirements are stored in `pyproject.toml`. To add, remove, or modify a dependency, you can update that file. If you like, you may then run the following to generate lockfiles (`uv.lock` and `requirements.txt`):
 
-`d invoke pip-compile`
-
-to freeze all subdependencies into `requirements.txt`.
+```sh
+d invoke lock
+```
 
 To upgrade a single requirement to the latest version:
 
-`d invoke pip-compile --args "-P package_name"`
+```sh
+d invoke lock --args "--upgrade-package package_name"
+```
 
 ### Update the node dependencies
 
@@ -303,15 +305,17 @@ common techniques for running the tests.
 
 ### Linting with flake8
 
-All code must show zero warnings or errors when running `flake8 .` in `perma_web/`.
+All code must show zero warnings or errors when running `uv run flake8 .` in `perma_web/`.
 
-Flake8 settings are configured in `perma_web/setup.cfg`
+flake8 settings are configured in `perma_web/pyproject.toml`.
 
 If you want to automatically run flake8 before pushing your code, you can add something like this to `.git/hooks/pre-commit` or `.git/hooks/pre-push`:
 
-    #!/usr/bin/env bash
-    docker compose exec -T web flake8 .
-    exit $?
+```sh
+#!/bin/bash
+docker compose exec -T web uv run flake8 .
+exit $?
+```
 
 Be sure to mark the hook as executable: `chmod u+x .git/hooks/pre-commit` or `chmod u+x .git/hooks/pre-push`.
 

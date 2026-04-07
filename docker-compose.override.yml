@@ -11,7 +11,8 @@ services:
           - linux/amd64
           - linux/arm64
       x-hash-paths:
-        - perma_web/requirements.txt
+        - perma_web/pyproject.toml
+        - perma_web/uv.lock
         - perma_web/npm-shrinkwrap.json
         - perma_web/package.json
         - perma_web/lil-archive-keyring.gpg

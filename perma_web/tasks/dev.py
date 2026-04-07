@@ -57,13 +57,11 @@ def run(ctx, port="0.0.0.0:8000", cert_file='perma-test.crt', key_file='perma-te
 
 
 @task
-def pip_compile(ctx, args=''):
-    # run pip-compile
-    # Use --allow-unsafe because pip --require-hashes needs all requirements to be pinned, including those like
-    # setuptools that pip-compile leaves out by default.
-    command = ['pip-compile', '--generate-hashes', '--allow-unsafe']+args.split()
-    print("Calling %s" % " ".join(command))
-    subprocess.check_call(command, env=dict(os.environ, CUSTOM_COMPILE_COMMAND='invoke pip-compile'))
+def lock(ctx, args=''):
+    ctx.run(
+        f'uv lock {args} && uv export --format requirements.txt -o requirements.txt',
+        echo=True,
+    )
 
 
 @task

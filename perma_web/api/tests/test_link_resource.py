@@ -10,7 +10,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.test.utils import override_settings
 
-from mock import patch
+from unittest.mock import patch
 import pytest
 
 from .utils import ApiResourceTestCase, ApiResourceTransactionTestCase, TEST_ASSETS_DIR, index_warc_file, raise_on_call, raise_after_call, return_on_call, MockResponse

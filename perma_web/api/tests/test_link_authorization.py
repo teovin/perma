@@ -8,7 +8,7 @@ from perma.models import Link, LinkUser, Folder, Capture
 from django.utils import timezone
 from datetime import timedelta
 from django.core.files.uploadedfile import SimpleUploadedFile
-from mock import patch
+from unittest.mock import patch
 
 
 class LinkAuthorizationMixin():
