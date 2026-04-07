@@ -1,7 +1,7 @@
 {% extends "manage-layout.html" %}
 
 {% block dashboardContent %}
-  <h2 class="body-ah">Links sponsored by {% if request.user.is_staff %}<a href="{% url 'user_management_manage_registrar' %}?q={{registrar.name.split|join:'+'|lower}}#registrar-{{ registrar.id }}">{{ registrar }}</a>{% else %}{{ registrar}}{% endif %} for <a href="{% url 'user_management_manage_sponsored_user' %}?q={{target_user.email|urlencode}}#user-{{ target_user.id }}">{{ target_user }}</a></h2>
+  <h2 class="body-ah">Links sponsored by {% if user_management_perms.can_link_to_registrar_in_registrar_list %}<a href="{% url 'user_management_manage_registrar' %}?q={{registrar.name.split|join:'+'|lower}}#registrar-{{ registrar.id }}">{{ registrar }}</a>{% else %}{{ registrar}}{% endif %} for <a href="{% url 'user_management_manage_sponsored_user' %}?q={{target_user.email|urlencode}}#user-{{ target_user.id }}">{{ target_user }}</a></h2>
     <div class="col-xs-12 col-links">
       <div class="container item-rows"></div>
         {% for link in links %}
