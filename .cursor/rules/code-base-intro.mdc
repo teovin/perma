@@ -65,7 +65,7 @@ Perma.cc is a web archiving service that creates permanent links to web content.
 - `d pytest` - Run Python tests
 - `d npm test` - Run JavaScript tests
 - `d ./manage.py migrate` - Run database migrations
-- `d invoke lock-dependencies` - Update Python dependencies
+- `d invoke lock` - Update Python dependencies
 
 ### File Structure Conventions
 - Python: Follow Django conventions, use `perma_` prefix for app-specific modules

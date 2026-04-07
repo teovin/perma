@@ -12,7 +12,7 @@ except Exception as e:
     print(f"WARNING: Can't configure Django. {e}")
 
 # import sub-tasks
-from .dev import lock_dependencies, run
+from .dev import lock, run
 from . import dev
 
 # Special tasks
@@ -23,7 +23,7 @@ from . import merge_accounts
 
 ns = Collection()
 ns.add_task(run)
-ns.add_task(lock_dependencies)
+ns.add_task(lock)
 ns.add_collection(dev)
 ns.add_collection(once)
 ns.add_collection(wacz_conversion)

@@ -80,7 +80,7 @@ jobs:
           git config user.email "lil@law.harvard.edu"
           git config user.name "Github Actions"
 
-          docker compose exec web invoke lock-dependencies
+          docker compose exec web invoke lock
           if [[ `git status perma_web/requirements.txt --porcelain` ]] ; then
             git add perma_web/requirements.txt
             git commit -m "Update requirements.txt [skip ci]"

@@ -57,7 +57,7 @@ def run(ctx, port="0.0.0.0:8000", cert_file='perma-test.crt', key_file='perma-te
 
 
 @task
-def lock_dependencies(ctx, args=''):
+def lock(ctx, args=''):
     ctx.run(
         f'uv lock {args} && uv export --format requirements.txt -o requirements.txt',
         echo=True,
