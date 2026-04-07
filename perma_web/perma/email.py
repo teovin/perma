@@ -35,6 +35,11 @@ def send_user_email(to_address, template, context):
     email_text = render_email(template, context)
     title, email_text = email_text.split("\n\n", 1)
     title = title.split("TITLE: ")[-1]
+
+    # Apply custom subject prefix if provided in context
+    if context.get('subject_prefix'):
+        title = context['subject_prefix'] + title
+
     message = EmailMessage(
         title,
         email_text,

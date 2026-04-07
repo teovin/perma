@@ -428,6 +428,17 @@ def email_new_user(request, user, template='email/new_user.txt', context=None):
         )
     )
 
+    # Check if user's registrar has custom email configuration
+    custom_config = None
+    email_type = template.replace('email/', '').replace('.txt', '')
+
+    # Check if user belongs to an organization with a special registrar
+    org = None
+    if user.organizations.exists():
+        org = user.organizations.first()
+        registrar_id = org.registrar_id
+        custom_config = getattr(settings, 'CUSTOM_REGISTRAR_EMAILS', {}).get(registrar_id, {}).get(email_type)
+
     # Include context variables
     template_is_default = template == 'email/new_user.txt'
     context = context if context is not None else {}
@@ -438,8 +449,14 @@ def email_new_user(request, user, template='email/new_user.txt', context=None):
             'request': request,
             # Only query DB if we're using the default template; otherwise there's no need
             'suggested_registrars': suggest_registrars(user) if template_is_default else [],
+            'org_name': org.name if org else None,
         }
     )
+
+    # Use custom template if configured
+    if custom_config:
+        template = custom_config.get('template_file', template)
+        context.update(custom_config)
 
     send_user_email(user.raw_email, template, context)
 

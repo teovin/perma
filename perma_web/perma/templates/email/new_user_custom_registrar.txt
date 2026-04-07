@@ -1,0 +1,13 @@
+TITLE: A Perma.cc account has been created for you
+
+A Perma.cc account has been created for you by {{ org_name }}.
+
+In order to complete your account activation, please confirm your email address and set a password. It's as simple as clicking the link below. The link will be valid for the next 72 hours.
+
+    {{ activation_route }}
+
+{% if custom_closing %}
+{{ custom_closing }}
+{% endif %}
+
+{{ custom_sign_off }}
