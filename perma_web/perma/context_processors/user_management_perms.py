@@ -76,7 +76,7 @@ def build_user_management_perms(
                 "can_show_registrar_affiliation_for_registrar_user": allow_staff(user) and group_name == "registrar_user",
                 "can_view_registrar_links_copy": allow_staff(user),
                 "can_show_user_admin_console_link": allow_staff(user),
-                "can_show_view_links_button_for_registrar": group_name == "sponsored_user" and not allow_staff(user)
+                "can_show_view_links_button_for_registrar": allow_staff(user) and group_name == "sponsored_user"
             }
         )
 
