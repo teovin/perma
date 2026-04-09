@@ -75,25 +75,21 @@ RUN mkdir -p $HOME/.pki/nssdb \
     && uvx playwright install chromium firefox \
     && ln -sf "$(find /root/.cache/ms-playwright -name 'chrome' -type f -executable | head -1)" /usr/local/bin/playwright-chromium
 
-#
-# npm
-#
-
-# frontend requirements
+# Frontend requirements
 COPY perma_web/package.json /perma/perma_web
 COPY perma_web/npm-shrinkwrap.json /perma/perma_web
 RUN npm install \
     && rm package.json \
     && rm npm-shrinkwrap.json
 
-# worker requirements
+# Worker requirements
 COPY services/js-wacz/package.json /perma/services/js-wacz/package.json
 COPY services/js-wacz/package-lock.json /perma/services/js-wacz/package-lock.json
 RUN npm install --prefix /perma/services/js-wacz/ \
     && rm /perma/services/js-wacz/package.json \
     && rm /perma/services/js-wacz/package-lock.json
 
-# python requirements
+# Python requirements
 COPY perma_web/pyproject.toml perma_web/uv.lock /perma/perma_web/
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 RUN uv sync --frozen
