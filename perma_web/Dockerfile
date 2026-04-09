@@ -1,3 +1,9 @@
+# Extract Playwright version from uv.lock prior to building main image
+FROM registry.lil.tools/library/python:3.11-bookworm AS extract-playwright-version
+COPY perma_web/uv.lock /tmp/uv.lock
+RUN grep -A 1 '^name = "playwright"$' /tmp/uv.lock | grep version | cut -d'"' -f2 > /tmp/.playwright-version
+
+# Main image
 FROM registry.lil.tools/library/python:3.11-bookworm
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
@@ -44,6 +50,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install
 # uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# Copy Playwright version extracted in first stage
+COPY --from=extract-playwright-version /tmp/.playwright-version /tmp/.playwright-version
+
 # Install Playwright browsers for integration tests
 RUN  apt-get update && apt install -y --no-install-recommends libdbus-glib-1-2 \
     libnss3 \
@@ -72,7 +81,7 @@ RUN  apt-get update && apt install -y --no-install-recommends libdbus-glib-1-2 \
 
 RUN mkdir -p $HOME/.pki/nssdb \
     && certutil -d $HOME/.pki/nssdb -N --empty-password \
-    && uvx playwright install chromium firefox \
+    && uvx playwright@$(cat /tmp/.playwright-version) install chromium firefox \
     && ln -sf "$(find /root/.cache/ms-playwright -name 'chrome' -type f -executable | head -1)" /usr/local/bin/playwright-chromium
 
 # Frontend requirements
