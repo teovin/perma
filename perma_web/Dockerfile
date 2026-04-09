@@ -41,32 +41,8 @@ RUN apt-get update \
 # node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs=20.13.0-1nodesource1
 
-#
-# npm
-#
-
-# frontend requirements
-COPY perma_web/package.json /perma/perma_web
-COPY perma_web/npm-shrinkwrap.json /perma/perma_web
-RUN npm install \
-    && rm package.json \
-    && rm npm-shrinkwrap.json
-
-# worker requirements
-COPY services/js-wacz/package.json /perma/services/js-wacz/package.json
-COPY services/js-wacz/package-lock.json /perma/services/js-wacz/package-lock.json
-RUN npm install --prefix /perma/services/js-wacz/ \
-    && rm /perma/services/js-wacz/package.json \
-    && rm /perma/services/js-wacz/package-lock.json
-
 # uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
-# python requirements
-COPY perma_web/pyproject.toml perma_web/uv.lock /perma/perma_web/
-ENV UV_PROJECT_ENVIRONMENT=/opt/venv
-RUN uv sync --frozen
-ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Playwright browsers for integration tests
 RUN  apt-get update && apt install -y --no-install-recommends libdbus-glib-1-2 \
@@ -98,3 +74,27 @@ RUN mkdir -p $HOME/.pki/nssdb \
     && certutil -d $HOME/.pki/nssdb -N --empty-password \
     && playwright install chromium firefox \
     && ln -sf "$(find /root/.cache/ms-playwright -name 'chrome' -type f -executable | head -1)" /usr/local/bin/playwright-chromium
+
+#
+# npm
+#
+
+# frontend requirements
+COPY perma_web/package.json /perma/perma_web
+COPY perma_web/npm-shrinkwrap.json /perma/perma_web
+RUN npm install \
+    && rm package.json \
+    && rm npm-shrinkwrap.json
+
+# worker requirements
+COPY services/js-wacz/package.json /perma/services/js-wacz/package.json
+COPY services/js-wacz/package-lock.json /perma/services/js-wacz/package-lock.json
+RUN npm install --prefix /perma/services/js-wacz/ \
+    && rm /perma/services/js-wacz/package.json \
+    && rm /perma/services/js-wacz/package-lock.json
+
+# python requirements
+COPY perma_web/pyproject.toml perma_web/uv.lock /perma/perma_web/
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+RUN uv sync --frozen
+ENV PATH="/opt/venv/bin:$PATH"
