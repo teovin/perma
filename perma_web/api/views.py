@@ -395,12 +395,16 @@ class AuthenticatedLinkListView(BaseView):
         queryset = Link.objects\
             .order_by('-creation_timestamp')\
             .select_related('organization', 'organization__registrar', 'organization__shared_folder', 'capture_job', 'created_by')\
-            .prefetch_related('captures')\
-            .accessible_to(request.user)
+            .prefetch_related('captures')
 
-        # for /folders/:parent_id/archives, limit to links in folder
         if request.parent:
+            # For /folders/:parent_id/archives, limit to links in folder.
+            # The code that sets request.parent guarantees that folder is accessible to this user;
+            # no need for a check here.
             queryset = queryset.filter(folders=request.parent)
+        else:
+            # Otherwise, get all the links accessible to the user
+            queryset = queryset.accessible_to(request.user)
 
         return queryset
 
