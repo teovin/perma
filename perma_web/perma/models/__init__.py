@@ -1,10 +1,9 @@
 """
 Django models for the perma app, implemented in submodules (base.py, link.py, etc.).
 
-This package wires them together: application code can keep using imports such as
-'from perma.models import Link'. Two callables (get_default_archive_formats, get_empty_datetime_range)
-are also attached here because older migrations resolve them on ``perma.models`` (e.g. migrations
-0005 and 0046).
+Application code can keep using imports such as 'from perma.models import Link'.
+Two callables (get_default_archive_formats, get_empty_datetime_range) are also added here
+because older migrations resolve them on perma.models (migrations 0005 and 0046).
 """
 
 from .base import (
