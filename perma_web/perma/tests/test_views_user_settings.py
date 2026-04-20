@@ -207,7 +207,7 @@ def test_purchase_history_present_if_one_time_purchases(client, user_without_sub
     assert b'January 1, 1970' in response.content
 
 
-@patch('perma.models.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_subscribe_form_if_no_standing_subscription(prepped, client, user_without_subscription_or_purchase_history):
     user = user_without_subscription_or_purchase_history
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
@@ -322,7 +322,7 @@ def test_update_page_if_no_standing_subscription(client, user_without_subscripti
 
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-@patch('perma.models.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_update_page_if_standing_subscription(model_prepped, view_prepped, client, user_with_monthly_subscription):
     user = user_with_monthly_subscription
     model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
@@ -348,7 +348,7 @@ def test_update_page_if_standing_subscription(model_prepped, view_prepped, clien
 
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-@patch('perma.models.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_update_page_if_downgrade_scheduled(model_prepped, view_prepped, client, user_with_scheduled_downgrade):
     user = user_with_scheduled_downgrade
     model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
@@ -407,7 +407,7 @@ def test_update_page_if_cancellation_requested(prepped, client, user_with_reques
 
 # Subscriptions, Registrar Users
 
-@patch('perma.models.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_registrar_user_nonpaying_registrar(prepped, client, registrar_user_from_nonpaying_registrar):
     user = registrar_user_from_nonpaying_registrar
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
@@ -431,7 +431,7 @@ def test_registrar_user_nonpaying_registrar(prepped, client, registrar_user_from
     assert response.content.count(prepped.return_value) == individual_tier_count + bonus_package_count
 
 
-@patch('perma.models.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_paying_registrar_user_sees_both_subscribe_forms(prepped, client, registrar_user_from_paying_registrar_without_subscription):
     user = registrar_user_from_paying_registrar_without_subscription
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
@@ -454,7 +454,7 @@ def test_paying_registrar_user_sees_both_subscribe_forms(prepped, client, regist
     assert response.content.count(prepped.return_value) == tier_count + bonus_package_count
 
 
-@patch('perma.models.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_paying_registrar_user_sees_subscriptions_independently(prepped, client, registrar_user_from_registrar_with_monthly_subscription):
     user = registrar_user_from_registrar_with_monthly_subscription
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
