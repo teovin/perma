@@ -1,45 +1,37 @@
 Installing Perma
 ================
 
-Perma is a Python application built on the [Django](https://www.djangoproject.com/)
-web framework.
+Perma is a Python application built on the [Django](https://www.djangoproject.com/) web framework.
 
-Perma has a lot of moving pieces. We recommend using [Docker](https://www.docker.com/what-docker) for local development. If you are new to Docker, it may take some
-time before you are comfortable with its vocabulary and commands, but it allows you
-to jump right into coding instead of spending a lot of time getting all the services
-running on your machine.
+Perma has a lot of moving pieces. We recommend using [Docker](https://docs.docker.com/get-started/) for local development. If you are new to Docker, it may take some time before you are comfortable with its vocabulary and commands, but it allows you to jump right into coding instead of spending a lot of time getting all the services running on your machine.
 
 For advice about production deployments, [send us a note](mailto:info@perma.cc)!
 
-Be sure to check out [the developer documentation](./developer.md)
-for a list of command commands and other tips and tricks for working with Perma.
+Be sure to check out [the developer documentation](./developer.md) for a list of common commands and other tips and tricks for working with Perma.
 
 
 Dependencies
 ------------
 
-* [Git](http://git-scm.com/downloads)
-* [Docker](https://docs.docker.com/install/)
-* [mkcert](https://github.com/FiloSottile/mkcert) (for macOS installs, run `brew bundle`)
+* [Git](https://git-scm.com/install/)
+* [Docker](https://docs.docker.com/get-started/get-docker/)
+* [mkcert](https://github.com/FiloSottile/mkcert)
 
 
 Hosts
 -----
 
-Perma serves content at several hosts. To ensure that URLs resolve correctly,
-add the following domains to your computer's hosts file:
+Perma serves content at several hosts. To ensure that URLs resolve correctly, add the following domains to your computer's hosts file:
 
     127.0.0.1 perma.test api.perma.test rejouer.perma.test perma.minio.test
 
-For additional information on modifying your hosts file,
-[try this help doc](https://docs.rackspace.com/support/how-to/modify-your-hosts-file).
+For additional information on modifying your hosts file, [try this help doc](https://docs.rackspace.com/docs/modify-your-hosts-file).
 
 
 Shortcuts
 ---------
 
-Docker commands can be lengthy. To cut down on keystrokes, we recommend
-adding the following to your `.bash_profile`.
+Docker commands can be lengthy. To cut down on keystrokes, we recommend adding the following to your shell config (e.g. `~/.bash_profile` or `~/.zshrc`).
 
 ```
 alias d="docker compose exec web"
@@ -62,34 +54,32 @@ Start up the Docker containers in the background:
 
     $ docker compose up -d
 
-The first time this runs, it may take several minutes. With up-to-date docker images,
-it should only take a few seconds.
+The first time this runs, it may take several minutes. With up-to-date Docker images, it should only take a few seconds.
 
 Finally, initialize the databases and generate the SSL certificates and keys required to access your local Perma over SSL:
 
     $ bash init.sh
 
-You should now have a working installation of Perma! See [common commands](./developer.md#common-tasks-and-commands) to explore what you can do, like [running
-the application](./developer.md#run-perma) and [running the tests](/developer.md#run-all-the-tests).
+You should now have a working installation of Perma! See [common commands](./developer.md#common-tasks-and-commands) to explore what you can do, like [running the application](./developer.md#run-perma) and [running the tests](./developer.md#run-the-tests).
 
 When you are finished, spin down Docker containers by running:
 
     $ docker compose down
 
 
-Making Mac OS trust self-signed certificate if it doesn't
----------------------------------------------------------
-It _"sometimes"_ happen that `mkcert`'s setup is incomplete, and Mac OS doesn't trust the certificates it generated as a result.
+Making macOS trust a self-signed certificate if it doesn't
+----------------------------------------------------------
+It _sometimes_ happens that `mkcert`'s setup is incomplete, and macOS doesn't trust the certificates it generated as a result.
 
 **Here's how to fix it:**
 - Go to `Applications > Utilities > Keychain Access`
 - Click on the `login` filter
 - Drag and drop the `rootCA.pem` file `mkcert` generated onto the UI
 - Look for the certificate in the list: it should start with `mkcert` followed by the name of your machine
-- Right-click on it and pick _"Get Info"_
-- Unfold the _"Trust"_ dropdown, and pick _"Always trust"_ for the relevant categories. 
+- Right-click on it and pick `Get Info`
+- Unfold the `Trust` dropdown, and pick `Always Trust` for the relevant categories.
 
-If you're still encountering issues, you may want to hit these urls in your browser and manually bypass the security alerts: 
+If you're still encountering issues, you may want to open these URLs in your browser and manually bypass the security alerts:
 ```
 https://perma.test:8000
 https://rejouer.perma.test:8080
