@@ -3,44 +3,137 @@ Perma - developer notes
 
 This document contains tips and tricks for working with Perma.
 
-See the [installation documentation](./install.md) to get up and running.
+- [Installing Perma](#installing-perma)
+  - [Dependencies](#dependencies)
+  - [Hosts](#hosts)
+  - [Shortcuts](#shortcuts)
+  - [Installation](#installation)
+- [Common tasks and commands](#common-tasks-and-commands)
+  - [Run Perma](#run-perma)
+  - [Run the tests](#run-the-tests)
+  - [Run a particular test (Python only)](#run-a-particular-test-python-only)
+  - [Update the Python dependencies](#update-the-python-dependencies)
+  - [Update the Node dependencies](#update-the-node-dependencies)
+  - [Migrate the database](#migrate-the-database)
+  - [Reset the database](#reset-the-database)
+  - [Run arbitrary commands](#run-arbitrary-commands)
+- [Git and GitHub](#git-and-github)
+- [Logs](#logs)
+- [Code style and techniques](#code-style-and-techniques)
+  - [User roles and permissions tests](#user-roles-and-permissions-tests)
+  - [Sending email](#sending-email)
+  - [Asset pipeline](#asset-pipeline)
+  - [Managing static files and user-generated files](#managing-static-files-and-user-generated-files)
+  - [Hosting fonts locally](#hosting-fonts-locally)
+- [Schema and data migrations](#schema-and-data-migrations)
+  - [Schema migrations and data migrations](#schema-migrations-and-data-migrations)
+  - [Track migrations in Git and get started](#track-migrations-in-git-and-get-started)
+  - [Visualize schema](#visualize-schema)
+- [Testing and Test Coverage](#testing-and-test-coverage)
+  - [Linting with Flake8](#linting-with-flake8)
+- [Working with Celery](#working-with-celery)
+- [Working with Redis](#working-with-redis)
+- [Running with DEBUG=False locally](#running-with-debugfalse-locally)
+- [Perma Payments](#perma-payments)
+  - [Test Perma Interaction with Perma Payments](#test-perma-interaction-with-perma-payments)
+- [Scoop](#scoop)
+- [Working with Superset](#working-with-superset)
 
-  - [Perma - developer notes](#perma---developer-notes)
-   - [Common tasks and commands](#common-tasks-and-commands)
-     - [Run Perma](#run-perma)
-     - [Run the tests](#run-the-tests)
-     - [Run a particular test (Python only)](#run-a-particular-test-python-only)
-     - [Update the Python dependencies](#update-the-python-dependencies)
-     - [Update the Node dependencies](#update-the-node-dependencies)
-     - [Migrate the database](#migrate-the-database)
-     - [Reset the database](#reset-the-database)
-     - [Run arbitrary commands](#run-arbitrary-commands)
-   - [Git and GitHub](#git-and-github)
-   - [Logs](#logs)
-   - [Code style and techniques](#code-style-and-techniques)
-     - [User roles and permissions tests](#user-roles-and-permissions-tests)
-     - [Sending email](#sending-email)
-     - [Asset pipeline](#asset-pipeline)
-     - [Managing static files and user-generated files](#managing-static-files-and-user-generated-files)
-     - [Hosting fonts locally](#hosting-fonts-locally)
-   - [Schema and data migrations](#schema-and-data-migrations)
-     - [Schema migrations and data migrations](#schema-migrations-and-data-migrations)
-     - [Track migrations in Git and get started](#track-migrations-in-git-and-get-started)
-     - [Visualize schema](#visualize-schema)
-   - [Testing and Test Coverage](#testing-and-test-coverage)
-     - [Linting with Flake8](#linting-with-flake8)
-   - [Working with Celery](#working-with-celery)
-   - [Working with Redis](#working-with-redis)
-   - [Running with DEBUG=False locally](#running-with-debugfalse-locally)
-   - [Perma Payments](#perma-payments)
-     - [Test Perma Interaction with Perma Payments](#test-perma-interaction-with-perma-payments)
-   - [Scoop](#scoop)
-   - [Working with Superset](#working-with-superset)
+Installing Perma
+-------------------------
+
+Perma is a Python application built on the [Django](https://www.djangoproject.com/) web framework.
+
+Perma has a lot of moving pieces. We recommend using [Docker](https://docs.docker.com/get-started/) for local development. If you are new to Docker, it may take some time before you are comfortable with its vocabulary and commands, but it allows you to jump right into coding instead of spending a lot of time getting all the services running on your machine.
+
+For advice about production deployments, [send us a note](mailto:info@perma.cc)!
+
+### Dependencies
+
+* [Git](https://git-scm.com/install/)
+* [Docker](https://docs.docker.com/get-started/get-docker/)
+* [mkcert](https://github.com/FiloSottile/mkcert)
+
+### Hosts
+
+Perma serves content at several hosts. To ensure that URLs resolve correctly, add the following domains to your computer's hosts file:
+
+```
+127.0.0.1 perma.test api.perma.test rejouer.perma.test perma.minio.test
+```
+
+For additional information on modifying your hosts file, [try this help doc](https://docs.rackspace.com/docs/modify-your-hosts-file).
+
+### Shortcuts
+
+Docker commands can be lengthy. To cut down on keystrokes, we recommend adding the following to your shell config (e.g. `~/.bash_profile` or `~/.zshrc`).
+
+```
+alias d="docker compose exec web"
+```
+
+### Installation
+
+Then check out the code:
+
+```
+git clone https://github.com/harvard-lil/perma.git
+cd perma
+```
+
+Using `pull` first after fetching new code will avoid rebuilding images locally:
+
+```
+docker compose pull
+```
+
+Start up the Docker containers in the background:
+
+```
+docker compose up -d
+```
+
+The first time this runs, it may take several minutes. With up-to-date Docker images, it should only take a few seconds.
+
+Finally, initialize the databases and generate the SSL certificates and keys required to access your local Perma over SSL:
+
+```
+bash init.sh
+```
+
+You should now have a working installation of Perma! See [common commands](./developer.md#common-tasks-and-commands) to explore what you can do, like [running the application](./developer.md#run-perma) and [running the tests](./developer.md#run-the-tests).
+
+When you are finished, spin down Docker containers by running:
+
+```
+docker compose down
+```
+
+#### Making macOS trust a self-signed certificate if it doesn't
+
+It _sometimes_ happens that `mkcert`'s setup is incomplete, and macOS doesn't trust the certificates it generated as a result.
+
+**Here's how to fix it:**
+
+- Go to `Applications > Utilities > Keychain Access`
+- Click on the `login` filter
+- Drag and drop the `rootCA.pem` file `mkcert` generated onto the UI
+- Look for the certificate in the list: it should start with `mkcert` followed by the name of your machine
+- Right-click on it and pick `Get Info`
+- Unfold the `Trust` dropdown, and pick `Always Trust` for the relevant categories.
+
+If you're still encountering issues, you may want to open these URLs in your browser and manually bypass the security alerts:
+
+```
+https://perma.test:8000
+https://rejouer.perma.test:8080
+https://perma.minio.test:9000
+```
 
 Common tasks and commands
 -------------------------
 
-These commands assume you have configured your shell with the alias defined in the [shortcuts](./install.md#shortcuts) section of the installation docs, and that Perma's Docker containers are up and running in the background:
+These commands assume you have configured your shell with the alias defined in the [shortcuts](#shortcuts) section, and that Perma's Docker containers are up and running in the background:
 -  run `docker compose up -d` to start the containers
 -  run `docker compose down` to stop them when you are finished.
 
