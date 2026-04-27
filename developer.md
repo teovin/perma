@@ -48,7 +48,9 @@ These commands assume you have configured your shell with the alias defined in t
 
 ### Run Perma
 
-`d invoke run`
+```
+d invoke run
+```
 
 That's it! You should now be able to load Perma in your browser at `https://perma.test:8000/`. It will take a few seconds for the first page to load, while we wait for Perma's CSS, JS and other assets to be compiled.
 
@@ -65,8 +67,10 @@ Press `CONTROL-C` to stop the server.
 
 ### Run the tests
 
-`d pytest`
-`d npm test`
+```
+d pytest
+d npm test
+```
 
 See [Testing and Test Coverage](#testing-and-test-coverage) for more information about testing Perma.
 
@@ -74,8 +78,10 @@ See [Testing and Test Coverage](#testing-and-test-coverage) for more information
 
 Python tests are run via pytest. Pytest supports several ways to [select and run tests](https://docs.pytest.org/en/latest/how-to/usage.html#specifying-tests-selecting-tests), including a super-convenient keyword-matching option:
 
-`d pytest -k "name_of_a_test_that_failed"`
-`d pytest -k "a_specific_test_module"`
+```
+d pytest -k "name_of_a_test_that_failed"
+d pytest -k "a_specific_test_module"
+```
 
 See [Testing and Test Coverage](#testing-and-test-coverage) for more information about testing Perma.
 
@@ -83,13 +89,13 @@ See [Testing and Test Coverage](#testing-and-test-coverage) for more information
 
 We use [uv](https://docs.astral.sh/uv/) to manage Python dependencies. Requirements are stored in `pyproject.toml`. To add, remove, or modify a dependency, you can update that file. If you like, you may then run the following to generate lockfiles (`uv.lock` and `requirements.txt`):
 
-```sh
+```
 d invoke lock
 ```
 
 To upgrade a single requirement to the latest version:
 
-```sh
+```
 d invoke lock --args "--upgrade-package package_name"
 ```
 
@@ -100,14 +106,16 @@ Uninstall packages: `d npm uninstall package_name`
 
 Update a single package:
 - if necessary, change the pinned version in package.json
-- `d npm update package_name`
+- Run: `d npm update package_name`
 
 Update all dependencies: `d npm update`
 
 ### Migrate the database
 
-`d ./manage.py makemigrations`
-`d ./manage.py migrate`
+```
+d ./manage.py makemigrations
+d ./manage.py migrate
+```
 
 For more information on migrations, see [Schema and data migrations](#schema-and-data-migrations).
 
@@ -169,7 +177,9 @@ On the development server, emails are dumped to the standard out courtesy of EMA
 
 Front-end assets are processed and packaged by Webpack. Assets can be compiled with this command:
 
-    docker compose exec web npm run build
+```
+docker compose exec web npm run build
+```
 
 This is automatically run in the background by `d invoke run`, so there is usually no need to run it manually.
 
@@ -228,19 +238,27 @@ Schema migrations are used when changing the model structure (adding, removing, 
 
 The most straightforward schema change might be the addition of a new model or a new field on a model. When you make a straightforward change to the model, your command might look like this:
 
-    $ d ./manage.py makemigrations
+```
+d ./manage.py makemigrations
+```
 
-This will create a migration file for you on disk, something like,
+This will create a migration file for you on disk, something like:
 
-    $ cat perma_web/perma/migrations/0003_auto__add_org__add_field_linkuser_org.py
+```
+cat perma_web/perma/migrations/0003_auto__add_org__add_field_linkuser_org.py
+```
 
 Even though you've changed your models file and created a migration (just a Python file on disk), your database remains unchanged. You'll need to apply the migration to update your database:
 
-    $ d ./manage.py migrate
+```
+d ./manage.py migrate
+```
 
 Now, your database, your model, and your migration should all be at the same point. You can list your migrations using the below command:
 
-    $ d ./manage.py showmigrations
+```
+d ./manage.py showmigrations
+```
 
 Data migrations follow the same flow, but add a step in the middle. See the [Django docs](https://docs.djangoproject.com/en/stable/topics/migrations/#data-migrations) for details on how to perform a data migration.
 
@@ -261,9 +279,11 @@ You should then be able to run as usual, and log into any account using the pass
 
 You should commit your migrations to your repository and push to GitHub.
 
-    $ git add perma_web/perma/migrations/0003_auto__add_org__add_field_linkuser_org.py
-    $ git commit -m "Added migration"
-    $ git push
+```
+git add perma_web/perma/migrations/0003_auto__add_org__add_field_linkuser_org.py
+git commit -m "Added migration"
+git push
+```
 
 
 ### Visualize schema
@@ -341,15 +361,21 @@ First, head over to the [`Perma Payments` repo](https://github.com/harvard-lil/p
 
 Once it's running, spin up Perma... but with a slightly different command than usual, so that it doesn't try to create its own Perma Payments, but instead uses the already-running one:
 
-- `docker compose -f docker-compose.yml up -d`
+```
+docker compose -f docker-compose.yml up -d
+```
 
 Then, run Perma's dev server as usual:
 
-`docker compose exec web invoke run`
+```
+docker compose exec web invoke run
+```
 
 When you are finished, take down the Perma containers by running:
 
-`docker compose -f docker-compose.yml down`
+```
+docker compose -f docker-compose.yml down
+```
 
 Don't worry if you get the following error:
 
@@ -372,15 +398,21 @@ First, head over to the [`Scoop API` repo](https://github.com/harvard-lil/perma-
 
 Once it's running, spin up Perma... but with a slightly different command than usual, so that it doesn't try to create its own Scoop API, but instead uses the already-running one:
 
-- `docker compose -f docker-compose.yml up -d`
+```
+docker compose -f docker-compose.yml up -d
+```
 
 Then, run Perma's dev server as usual:
 
-`docker compose exec web invoke run`
+```
+docker compose exec web invoke run
+```
 
 When you are finished, take down the Perma containers by running:
 
-`docker compose -f docker-compose.yml down`
+```
+docker compose -f docker-compose.yml down
+```
 
 Don't worry if you get the following error:
 
@@ -392,8 +424,10 @@ The Scoop API is still running: the network is maintained until both projects ar
 
 Superset is a data visualization tool that connects to the Perma database and allows users to create saved SQL queries, datasets, charts, and dashboards. To experiment with the service, run the following commands to stop the running Docker containers and build the service image.
 
-- `docker compose down`
-- `docker compose up -d --build`
+```
+docker compose down
+docker compose up -d --build
+```
 
 Navigate to `http://localhost:8088/` and log in to the service using the credentials specified in `docker-compose.override.yml`. Once logged in, the existing objects should be imported into the local playground.
 
