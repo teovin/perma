@@ -28,7 +28,7 @@ See the [installation documentation](./install.md) to get up and running.
      - [Track migrations in Git and get started](#track-migrations-in-git-and-get-started)
      - [Visualize schema](#visualize-schema)
    - [Testing and Test Coverage](#testing-and-test-coverage)
-     - [Linting with flake8](#linting-with-flake8)
+     - [Linting with Flake8](#linting-with-flake8)
    - [Working with Celery](#working-with-celery)
    - [Working with Redis](#working-with-redis)
    - [Running with DEBUG=False locally](#running-with-debugfalse-locally)
@@ -285,7 +285,7 @@ JavaScript tests live in `spec/`.
 See [Common tasks and commands](#common-tasks-and-commands) for commands to run the tests.
 
 
-### Linting with flake8
+### Linting with Flake8
 
 All code must show zero warnings or errors when running `uv run flake8 .` in `perma_web/`.
 
