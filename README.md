@@ -16,7 +16,7 @@ Perma.cc helps authors and journals create permanent archived citations in their
 
 ## Installation
 
-If you're installing Perma.cc, see [the installation doc](https://github.com/harvard-lil/perma/blob/develop/install.md)
+If you're installing Perma.cc, see [the installation doc](https://github.com/harvard-lil/perma/blob/develop/install.md).
 
 ## Developing in Perma.cc
 
