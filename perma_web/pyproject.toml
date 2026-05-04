@@ -34,6 +34,7 @@ dependencies = [
     "tempdir~=0.7.1",
     "timegate",
     "tqdm~=4.66.4",
+    "typing-extensions>=4.12.0",
     "ua-parser~=0.10.0",
     "uwsgitop~=0.11",
     "warcio~=1.7.4",
