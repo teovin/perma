@@ -6,7 +6,20 @@ from rest_framework.routers import APIRootView
 
 from perma.urls import guid_pattern
 
-from . import views
+from .resources.batches import LinkBatchesDetailExportView, LinkBatchesDetailView, LinkBatchesListView
+from .resources.capture_jobs import CaptureJobDetailView, CaptureJobListView
+from .resources.folders import FolderDetailView, FolderListView
+from .resources.links import (
+    AuthenticatedLinkDetailView,
+    AuthenticatedLinkDownloadView,
+    AuthenticatedLinkListExportView,
+    AuthenticatedLinkListView,
+    MoveLinkView,
+    PublicLinkListView
+)
+from .resources.misc import DeveloperDocsView, InternalDailyLinkCountsView
+from .resources.organizations import OrganizationDetailView, OrganizationListView
+from .resources.users import LinkUserView
 
 # list views that should appear in the HTML version of the API root
 root_view = APIRootView.as_view(api_root_dict={
@@ -28,61 +41,61 @@ urlpatterns = [
     # /v1
     re_path('^v1/', include([
         # /folders
-        re_path(legacy_user_prefix + r'folders/?$', views.FolderListView.as_view(), name='folders'),
+        re_path(legacy_user_prefix + r'folders/?$', FolderListView.as_view(), name='folders'),
         # /folders/:id
-        re_path(legacy_user_prefix + r'folders/(?P<pk>[0-9]+)/?$', views.FolderDetailView.as_view()),
+        re_path(legacy_user_prefix + r'folders/(?P<pk>[0-9]+)/?$', FolderDetailView.as_view()),
         # /folders/:id/folders
-        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/folders/?$', views.FolderListView.as_view()),
+        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/folders/?$', FolderListView.as_view()),
         # /folders/:id/folders/:id
-        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/folders/(?P<pk>[0-9]+)/?$', views.FolderDetailView.as_view()),
+        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/folders/(?P<pk>[0-9]+)/?$', FolderDetailView.as_view()),
         # /folders/:id/archives
-        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/archives/?$', views.AuthenticatedLinkListView.as_view()),
+        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/archives/?$', AuthenticatedLinkListView.as_view()),
         # /folders/:id/archives/export
-        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/archives/export/?$', views.AuthenticatedLinkListExportView.as_view()),
+        re_path(r'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/archives/export/?$', AuthenticatedLinkListExportView.as_view()),
         # /folders/:id/archives/:guid
-        re_path(fr'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/archives/{guid_pattern}/?$', views.MoveLinkView.as_view()),
+        re_path(fr'^(?P<parent_type>folders)/(?P<parent_id>[0-9]+)/archives/{guid_pattern}/?$', MoveLinkView.as_view()),
 
         # /public/archives
-        re_path(r'^public/archives/?$', views.PublicLinkListView.as_view(), name='public_archives'),
+        re_path(r'^public/archives/?$', PublicLinkListView.as_view(), name='public_archives'),
         # /archives
-        re_path(legacy_user_prefix + r'archives/?$', views.AuthenticatedLinkListView.as_view(), name='archives'),
+        re_path(legacy_user_prefix + r'archives/?$', AuthenticatedLinkListView.as_view(), name='archives'),
         # /archives/export
-        re_path(legacy_user_prefix + r'archives/export/?$', views.AuthenticatedLinkListExportView.as_view(), name='archives_export'),
+        re_path(legacy_user_prefix + r'archives/export/?$', AuthenticatedLinkListExportView.as_view(), name='archives_export'),
         # /archives/batches
-        re_path(legacy_user_prefix + r'archives/batches/?$', views.LinkBatchesListView.as_view(), name='link_batches'),
+        re_path(legacy_user_prefix + r'archives/batches/?$', LinkBatchesListView.as_view(), name='link_batches'),
         # /archives/batches/:id
-        re_path(legacy_user_prefix + r'archives/batches/(?P<pk>[0-9]+)/?$', views.LinkBatchesDetailView.as_view(), name='link_batch'),
+        re_path(legacy_user_prefix + r'archives/batches/(?P<pk>[0-9]+)/?$', LinkBatchesDetailView.as_view(), name='link_batch'),
         # /archives/batches/:id/export
-        re_path(legacy_user_prefix + r'archives/batches/(?P<pk>[0-9]+)/export/?$', views.LinkBatchesDetailExportView.as_view(), name='link_batch_export'),
+        re_path(legacy_user_prefix + r'archives/batches/(?P<pk>[0-9]+)/export/?$', LinkBatchesDetailExportView.as_view(), name='link_batch_export'),
         # /archives/:guid
-        re_path(legacy_user_prefix + fr'archives/{guid_pattern}/?$', views.AuthenticatedLinkDetailView.as_view(), name='archives'),
+        re_path(legacy_user_prefix + fr'archives/{guid_pattern}/?$', AuthenticatedLinkDetailView.as_view(), name='archives'),
         # /archives/:guid/download
-        re_path(legacy_user_prefix + fr'archives/{guid_pattern}/download/?$', views.AuthenticatedLinkDownloadView.as_view(), name='archives_download'),
+        re_path(legacy_user_prefix + fr'archives/{guid_pattern}/download/?$', AuthenticatedLinkDownloadView.as_view(), name='archives_download'),
 
         # /capture_jobs
-        re_path(legacy_user_prefix + r'capture_jobs/?$', views.CaptureJobListView.as_view(), name='capture_jobs'),
+        re_path(legacy_user_prefix + r'capture_jobs/?$', CaptureJobListView.as_view(), name='capture_jobs'),
         # /capture_jobs/:id
-        re_path(legacy_user_prefix + r'capture_jobs/(?P<pk>[0-9]+)/?$', views.CaptureJobDetailView.as_view()),
+        re_path(legacy_user_prefix + r'capture_jobs/(?P<pk>[0-9]+)/?$', CaptureJobDetailView.as_view()),
         # /capture_jobs/:guid
-        re_path(legacy_user_prefix + fr'capture_jobs/{guid_pattern}/?$', views.CaptureJobDetailView.as_view()),
+        re_path(legacy_user_prefix + fr'capture_jobs/{guid_pattern}/?$', CaptureJobDetailView.as_view()),
 
         # /organizations
-        re_path(legacy_user_prefix + r'organizations/?$', views.OrganizationListView.as_view(), name='organizations'),
+        re_path(legacy_user_prefix + r'organizations/?$', OrganizationListView.as_view(), name='organizations'),
         # /organizations/:id
-        re_path(legacy_user_prefix + r'organizations/(?P<pk>[0-9]+)/?$', views.OrganizationDetailView.as_view()),
+        re_path(legacy_user_prefix + r'organizations/(?P<pk>[0-9]+)/?$', OrganizationDetailView.as_view()),
 
         # /user
-        re_path(r'^user/?$', views.LinkUserView.as_view(), name='user'),
+        re_path(r'^user/?$', LinkUserView.as_view(), name='user'),
 
         # /internal/daily_link_counts
-        re_path(r'^internal/daily_link_counts/?$', views.InternalDailyLinkCountsView.as_view(), name='internal_daily_link_counts'),
+        re_path(r'^internal/daily_link_counts/?$', InternalDailyLinkCountsView.as_view(), name='internal_daily_link_counts'),
 
         # / ('/v1/' only, not '/v1')
         re_path(r'^$', root_view)
     ])),
 
     # redirect plain api.perma.cc/ and perma.cc/api/ to docs:
-    re_path(r'^$', views.DeveloperDocsView.as_view())
+    re_path(r'^$', DeveloperDocsView.as_view())
 ]
 
 ### error handlers ###
