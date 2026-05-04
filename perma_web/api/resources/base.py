@@ -27,7 +27,9 @@ class BaseView(APIView):
     ### helpers ###
 
     def get_queryset(self, queryset=None):
-        """Return queryset, or self.queryset, or raise config error."""
+        """
+        Return queryset, or self.queryset, or raise config error.
+        """
         if queryset is None:
             if self.queryset is None:
                 raise NotImplementedError("No queryset configured on subclass.")
@@ -37,7 +39,7 @@ class BaseView(APIView):
     def filter_queryset(self, queryset):
         """
         Given a queryset, filter it with whichever filter backend is in use.
-        Copied from GenericAPIView
+        Copied from GenericAPIView.
         """
         try:
             for backend in list(self.filter_backends):

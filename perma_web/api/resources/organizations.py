@@ -10,7 +10,9 @@ class OrganizationListView(BaseView):
     ordering_fields = ('name', 'registrar')
 
     def get(self, request, format=None):
-        """ List orgs. """
+        """
+        List orgs.
+        """
         queryset = Organization.objects.accessible_to(request.user).select_related('registrar', 'shared_folder')
         return self.simple_list(request, queryset)
 
@@ -20,5 +22,7 @@ class OrganizationDetailView(BaseView):
     serializer_class = OrganizationSerializer
 
     def get(self, request, pk, format=None):
-        """ Single org details. """
+        """
+        Single org details
+        """
         return self.simple_get(request, pk)

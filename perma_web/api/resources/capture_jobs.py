@@ -9,7 +9,9 @@ class CaptureJobListView(BaseView):
     serializer_class = CaptureJobSerializer
 
     def get(self, request, format=None):
-        """ List capture_jobs for user. """
+        """
+        List capture_jobs for user.
+        """
         queryset = CaptureJob.objects.select_related('link').filter(link__created_by_id=request.user.pk, status__in=['pending', 'in_progress'])
         return self.simple_list(request, queryset)
 
@@ -20,7 +22,9 @@ class CaptureJobDetailView(BaseView):
     serializer_class = CaptureJobSerializer
 
     def get(self, request, pk=None, guid=None, format=None):
-        """ Single capture_job details. """
+        """
+        Single capture_job details
+        """
         if guid:
             # We were called as /capture_jobs/:guid
             # Return capture_job for given link_id

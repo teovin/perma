@@ -19,7 +19,7 @@ from .links import ( # noqa: F401
     AuthenticatedLinkListExportView,
     AuthenticatedLinkDetailView,
     AuthenticatedLinkDownloadView,
-    MoveLinkView,
+    MoveLinkView
 )
 from .misc import ( # noqa: F401
     DeveloperDocsView, 

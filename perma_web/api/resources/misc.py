@@ -18,9 +18,11 @@ from ..serializers import InternalDailyLinkCountsQuerySerializer
 # /api/
 class DeveloperDocsView(APIView):
     def get(self, request, format=None):
-        """reverse to Developer Docs to fetch correct url (view) named as 'dev_docs'"""
+        """
+        reverse to Developer Docs to fetch correct url (view) named as 'dev_docs'.
+        Redirect to Dev Docs.
+        """
         absolute_url_to_redirect_to = f"{ self.request.scheme }://{ settings.HOST }{ reverse('dev_docs', urlconf='perma.urls') }"
-        """ Redirect to Dev Docs """
         return HttpResponseRedirect(absolute_url_to_redirect_to)
 
 

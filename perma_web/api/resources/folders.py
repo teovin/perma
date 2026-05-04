@@ -14,7 +14,9 @@ class FolderListView(BaseView):
 
     @load_parent
     def get(self, request, format=None):
-        """ List folders for user. """
+        """
+        List folders for user.
+        """
         if request.parent:
             # for /folders/:parent_id/folders, list subfolders of parent folder
             queryset = Folder.objects.filter(parent=request.parent)
@@ -25,7 +27,9 @@ class FolderListView(BaseView):
 
     @load_parent
     def post(self, request, format=None):
-        """ Create folder. """
+        """
+        Create folder.
+        """
         # if parent folder is not supplied in post data, try to get it from /folders/:parent_id:
         data = request.data.copy()
         if request.parent:
@@ -47,24 +51,30 @@ class FolderDetailView(BaseView):
 
     @load_parent
     def get(self, request, pk, format=None):
-        """ Single folder details. """
+        """
+        Single folder details
+        """
         return self.simple_get(request, pk)
 
     def folder_update(self, request, pk, data):
-        """ Helper for updating folder details -- used by patch and put methods. """
+        """
+        Helper for updating folder details -- used by patch and put methods.
+        """
         obj = self.get_object_for_user_by_pk(request.user, pk)
         return self.simple_update(obj, data)
 
     @load_parent
     def patch(self, request, pk, format=None):
-        """ Update folder. """
+        """
+        Update folder.
+        """
         return self.folder_update(request, pk, request.data)
 
     @load_parent
     def put(self, request, pk, format=None):
         """
-            Move folder.
-            For nested endpoint, PUT /folders/:id into /folders/:parent_id.
+        Move folder.
+        For nested endpoint, PUT /folders/:id into /folders/:parent_id.
         """
         if not request.parent:
             raise_general_validation_error("PUT is only valid for nested folder endpoints.")
@@ -82,7 +92,9 @@ class FolderDetailView(BaseView):
 
     @load_parent
     def delete(self, request, pk, format=None):
-        """ Delete folder. """
+        """
+        Delete folder.
+        """
         folder = self.get_object_for_user_by_pk(request.user, pk)
 
         # delete validations

@@ -27,7 +27,9 @@ class LinkBatchesListView(BaseView):
         .order_by('-started_on'))
 
     def get(self, request, format=None):
-        """ List link batches for user. """
+        """
+        List link batches for user.
+        """
         return self.simple_list(
             request,
             queryset=self.queryset.filter(created_by=request.user.pk),
@@ -35,7 +37,9 @@ class LinkBatchesListView(BaseView):
         )
 
     def post(self, request, format=None):
-        """ Create link batch. """
+        """
+        Create link batch.
+        """
         # mark batch with user
         if not request.user.is_authenticated:
             raise PermissionDenied()
@@ -90,14 +94,18 @@ class LinkBatchesDetailView(BaseView):
     queryset = LinkBatchesListView.queryset.select_related('target_folder')
 
     def get(self, request, pk, format=None):
-        """ Single link batch details. """
+        """
+        Single link batch details
+        """
         return self.simple_get(request, pk)
 
 
 # /batches/:id/export
 class LinkBatchesDetailExportView(LinkBatchesDetailView):
     def get(self, request, pk, format=None):
-        """ Single link batch details. """
+        """
+        Single link batch details
+        """
         api_response = self.simple_get(request, pk)
         formatted_data = [
             {

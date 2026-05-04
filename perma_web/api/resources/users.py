@@ -11,6 +11,8 @@ class LinkUserView(BaseView):
 
     @load_parent
     def get(self, request, format=None):
-        """Get current user details."""
+        """
+        Get current user details.
+        """
         serializer = self.serializer_class(request.user)
         return Response(serializer.data)

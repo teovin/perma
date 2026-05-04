@@ -62,7 +62,9 @@ class PublicLinkListView(BaseView):
     serializer_class = LinkSerializer
 
     def get(self, request, format=None):
-        """ List public links. """
+        """
+        List public links.
+        """
 
         queryset = Link.objects\
             .order_by('-creation_timestamp')\
@@ -81,8 +83,8 @@ class AuthenticatedLinkListView(BaseView):
     @staticmethod
     def get_folder_from_request(request):
         """
-            Helper method to load folder from request.data['folder'].
-            Used by AuthenticatedLinkListView.post and AuthenticatedLinkDetailView.patch.
+        Helper method to load folder from request.data['folder'].
+        Used by AuthenticatedLinkListView.post and AuthenticatedLinkDetailView.patch.
         """
         if request.data.get('folder'):
             try:
@@ -94,8 +96,8 @@ class AuthenticatedLinkListView(BaseView):
     @staticmethod
     def load_links(request):
         """
-            Helper method to load links.
-            Used by AuthenticatedLinkListView.get and AuthenticatedLinkListExportView.get
+        Helper method to load links.
+        Used by AuthenticatedLinkListView.get and AuthenticatedLinkListExportView.get.
         """
         queryset = Link.objects\
             .order_by('-creation_timestamp')\
@@ -111,12 +113,16 @@ class AuthenticatedLinkListView(BaseView):
 
     @load_parent
     def get(self, request, format=None):
-        """ List links for user. """
+        """
+        List links for user.
+        """
         return self.simple_list(request, self.load_links(request))
 
     @load_parent
     def post(self, request, format=None):
-        """ Create new link. """
+        """
+        Create new link.
+        """
         data = request.data
 
         human = request.data.get('human', False)
@@ -295,11 +301,15 @@ class AuthenticatedLinkDetailView(BaseView):
     serializer_class = AuthenticatedLinkSerializer
 
     def get(self, request, guid, format=None):
-        """ Single link details. """
+        """
+        Single link details
+        """
         return self.simple_get(request, guid)
 
     def patch(self, request, guid, format=None):
-        """ Update link. """
+        """
+        Update link.
+        """
         link = self.get_object_for_user_by_pk(request.user, guid)
 
         was_private = link.is_private
@@ -352,7 +362,9 @@ class AuthenticatedLinkDetailView(BaseView):
         raise ValidationError(serializer.errors)
 
     def delete(self, request, guid, format=None):
-        """ Delete link. """
+        """
+        Delete link.
+        """
         link = self.get_object_for_user_by_pk(request.user, guid)
 
         if not request.user.can_delete(link):
@@ -379,7 +391,9 @@ class AuthenticatedLinkDownloadView(BaseView):
     serializer_class = AuthenticatedLinkSerializer
 
     def get(self, request, guid, format=None):
-        """ Download warc. """
+        """
+        Download WARC.
+        """
         link = self.get_object_for_user_by_pk(request.user, guid)
         file_format = get_download_file_format(request)
         if link.replacement_link_id:
@@ -395,7 +409,7 @@ class MoveLinkView(BaseView):
     @load_parent
     def put(self, request, guid, format=None):
         """
-            Move link to new folder.
+        Move link to new folder.
         """
         link = self.get_object_for_user_by_pk(request.user, guid)
         if request.parent.is_sponsored_root_folder:
