@@ -639,7 +639,8 @@ def test_annotate_tier_monthly_active_subscription_upgrade_first_of_month(custom
         'status': 'Current',
         'rate': '0.10',
         'frequency': 'monthly',
-        'link_limit': 0
+        'link_limit': 0,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -663,7 +664,8 @@ def test_annotate_tier_monthly_active_subscription_upgrade_mid_month(customers):
         'status': 'Current',
         'rate': '0.10',
         'frequency': 'monthly',
-        'link_limit': 0
+        'link_limit': 0,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -687,7 +689,8 @@ def test_annotate_tier_monthly_active_subscription_upgrade_last_of_month(custome
         'status': 'Current',
         'rate': '0.10',
         'frequency': 'monthly',
-        'link_limit': 0
+        'link_limit': 0,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -717,7 +720,8 @@ def test_annotate_tier_monthly_active_subscription_downgrade_first_of_month(cust
         'status': 'Current',
         'rate': '9999.10',
         'frequency': 'monthly',
-        'link_limit': 9999
+        'link_limit': 9999,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -741,7 +745,8 @@ def test_annotate_tier_monthly_active_subscription_downgrade_mid_month(customers
         'status': 'Current',
         'rate': '9999.10',
         'frequency': 'monthly',
-        'link_limit': 9999
+        'link_limit': 9999,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -765,7 +770,8 @@ def test_annotate_tier_monthly_active_subscription_downgrade_last_of_month(custo
         'status': 'Current',
         'rate': '9999.10',
         'frequency': 'monthly',
-        'link_limit': 9999
+        'link_limit': 9999,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
