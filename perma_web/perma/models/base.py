@@ -14,7 +14,6 @@ from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
 
 from perma.exceptions import InvalidTransmissionException, PermaPaymentsCommunicationException
 from perma.utils import (
-    first_day_of_next_month,
     pp_date_from_post,
     prep_for_perma_payments,
     process_perma_payments_transmission,
