@@ -17,7 +17,7 @@ from perma.models import (
     most_active_org_in_time_period,
     subscription_is_active
 )
-from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month, today_next_year, years_ago_today
+from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month, today_next_month, today_next_year, years_ago_today
 
 from conftest import GENESIS
 import pytest
@@ -527,7 +527,7 @@ def test_annotate_tier_monthly_no_subscription_first_of_month(customers):
 
 def test_annotate_tier_monthly_no_subscription_mid_month(customers):
     now = GENESIS.replace(day=16)
-    next_month = first_day_of_next_month(now)
+    next_month = today_next_month(now)
     next_year = today_next_year(now)
     subscription = None
     for customer in customers:
@@ -539,8 +539,8 @@ def test_annotate_tier_monthly_no_subscription_mid_month(customers):
         customer.annotate_tier(tier, subscription, now, next_month, next_year)
         assert tier['type'] == 'upgrade'
         assert tier['link_limit_effective_timestamp'] == now.timestamp()
-        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio'] / 31 * 16).quantize(Decimal('.01'))
-        assert tier['recurring_amount'] != tier['todays_charge']
+        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio']).quantize(Decimal('.01'))
+        assert tier['recurring_amount'] == tier['todays_charge']
         assert tier['next_payment'] == next_month
 
 
@@ -549,7 +549,7 @@ def test_annotate_tier_monthly_no_subscription_last_of_month(is_active, customer
     is_active.return_value = True
 
     now = GENESIS.replace(day=31)
-    next_month = first_day_of_next_month(now)
+    next_month = today_next_month(now)
     next_year = today_next_year(now)
     subscription = None
     for customer in customers:
@@ -561,8 +561,8 @@ def test_annotate_tier_monthly_no_subscription_last_of_month(is_active, customer
         customer.annotate_tier(tier, subscription, now, next_month, next_year)
         assert tier['type'] == 'upgrade'
         assert tier['link_limit_effective_timestamp'] == now.timestamp()
-        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio'] / 31).quantize(Decimal('.01'))
-        assert tier['recurring_amount'] != tier['todays_charge']
+        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio']).quantize(Decimal('.01'))
+        assert tier['recurring_amount'] == tier['todays_charge']
         assert tier['next_payment'] == next_month
 
 
