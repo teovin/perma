@@ -728,7 +728,21 @@ class BaseAddUserToGroup(UpdateView):
         a given group if they already exist.
     """
     is_batch = False
-    
+    user_added_email_template = 'email/new_user_added_by_other.txt'
+
+    def get_user_added_email_on_behalf_of(self, form):
+        """Return display name for org/registrar, or None if not applicable."""
+        return None
+
+    def get_user_added_email_context(self, form):
+        context = {
+            'requester_name': self.request.user.get_full_name(),
+        }
+        on_behalf_of = self.get_user_added_email_on_behalf_of(form)
+        if on_behalf_of is not None:
+            context['on_behalf_of'] = str(on_behalf_of)
+        return context
+
     def __init__(self, **kwargs):
         super(BaseAddUserToGroup, self).__init__(**kwargs)
         self.extra_context = {}
@@ -804,7 +818,7 @@ class BaseAddUserToGroup(UpdateView):
                     self.request,
                     self.object,
                     self.user_added_email_template,
-                    {'form': form}
+                    self.get_user_added_email_context(form),
                 )
                 add_message(
                     messages.SUCCESS,
@@ -856,9 +870,11 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_to_organization_confirm.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
     confirmation_email_template = 'email/user_added_to_organization.txt'
-    user_added_email_template = 'email/new_user_added_to_org_by_other.txt'
     new_user_form = UserFormWithOrganization
     existing_user_form = UserAddOrganizationForm
+
+    def get_user_added_email_on_behalf_of(self, form):
+        return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
         """ Filter organizations to those current user can access. """
@@ -900,9 +916,11 @@ class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_to_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_registrar_user')
     confirmation_email_template = 'email/user_added_to_registrar.txt'
-    user_added_email_template = 'email/new_user_added_to_registrar_by_other.txt'
     new_user_form = UserFormWithRegistrar
     existing_user_form = UserAddRegistrarForm
+
+    def get_user_added_email_on_behalf_of(self, form):
+        return form.cleaned_data['registrar']
 
     def get_form_kwargs(self):
         """ Filter registrars to those current user can access. """
@@ -933,9 +951,11 @@ class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_to_sponsoring_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_sponsored_user')
     confirmation_email_template = 'email/user_added_to_sponsoring_registrar.txt'
-    user_added_email_template = 'email/new_user_added_to_sponsoring_registrar_by_other.txt'
     new_user_form = UserFormWithSponsoringRegistrar
     existing_user_form = UserAddSponsoringRegistrarForm
+
+    def get_user_added_email_on_behalf_of(self, form):
+        return form.cleaned_data['sponsoring_registrars']
 
     def get_form_kwargs(self):
         """ Filter registrars to those current user can access. """
@@ -958,7 +978,6 @@ class AddUserToAdmin(RequireAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_to_admin_confirm.html'
     success_url = reverse_lazy('user_management_manage_admin_user')
     confirmation_email_template = 'email/user_added_to_admin.txt'
-    user_added_email_template = 'email/new_user_added_by_other.txt'
     new_user_form = UserFormWithAdmin
     existing_user_form = UserAddAdminForm
 
@@ -970,7 +989,6 @@ class AddUserToAdmin(RequireAdminUser, BaseAddUserToGroup):
 class AddRegularUser(RequireAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_confirm.html'
     success_url = reverse_lazy('user_management_manage_user')
-    user_added_email_template = 'email/new_user_added_by_other.txt'
     new_user_form = UserForm
     existing_user_form = UserForm
 

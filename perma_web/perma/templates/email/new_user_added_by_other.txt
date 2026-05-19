@@ -1,5 +1,5 @@
 TITLE: A Perma.cc account has been created for you
 
-A Perma.cc account has been created for you by {{ request.user.get_full_name }}.
+A Perma.cc account has been created for you by {{ requester_name }}{% if on_behalf_of %} on behalf of {{ on_behalf_of }}{% endif %}.
 
 {% include 'email/includes/activation.txt' %}
