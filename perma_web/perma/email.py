@@ -32,41 +32,6 @@ def render_email(template, context, request=None):
 
 
 ###
-### Activation links for new-user emails
-###
-
-def get_activation_email_context(
-    user: LinkUser,
-    *,
-    request: HttpRequest | None = None,
-    host: str | None = None,
-) -> dict[str, str | int]:
-    """
-    Build activation_route and activation_expires for new-user email templates.
-
-    Uses Django's password_reset_confirm flow. Pass request for sync sends, or host
-    (e.g. "https://perma.cc") for async/Celery sends where no request is available.
-    """
-    path = reverse(
-        'password_reset_confirm',
-        args=[
-            urlsafe_base64_encode(force_bytes(user.pk)),
-            default_token_generator.make_token(user),
-        ],
-    )
-    if request is not None:
-        activation_route = request.build_absolute_uri(path)
-    elif host is not None:
-        activation_route = f'{host}{path}'
-    else:
-        raise ValueError('request or host is required')
-    return {
-        'activation_route': activation_route,
-        'activation_expires': settings.PASSWORD_RESET_TIMEOUT,
-    }
-
-
-###
 ### Send email
 ###
 
@@ -234,3 +199,38 @@ def registrar_users_plus_stats(registrars=None, year=None):
                            "most_active_org": registrar.most_active_org_in_time_period(start_time, end_time),
                            "registrar_users": registrar_users })
     return users
+
+
+###
+### Signup and activation helpers
+###
+
+def get_activation_email_context(
+    user: LinkUser,
+    *,
+    request: HttpRequest | None = None,
+    host: str | None = None,
+) -> dict[str, str | int]:
+    """
+    Build activation_route and activation_expires for new-user email templates.
+
+    Uses Django's password_reset_confirm flow. Pass request for sync sends, or host
+    (e.g. "https://perma.cc") for async/Celery sends where no request is available.
+    """
+    path = reverse(
+        'password_reset_confirm',
+        args=[
+            urlsafe_base64_encode(force_bytes(user.pk)),
+            default_token_generator.make_token(user),
+        ],
+    )
+    if request is not None:
+        activation_route = request.build_absolute_uri(path)
+    elif host is not None:
+        activation_route = f'{host}{path}'
+    else:
+        raise ValueError('request or host is required')
+    return {
+        'activation_route': activation_route,
+        'activation_expires': settings.PASSWORD_RESET_TIMEOUT,
+    }
