@@ -796,11 +796,13 @@ class BaseAddUserToGroup(UpdateView):
             messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
 
         def send_bulk_addition_emails(users, email_function, template):
-            extra_context = {
-                'org': form.cleaned_data['organizations'].name,
-                'requester': self.request.user.get_full_name(),
-                'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
-            }
+            if email_function == 'email_new_user':
+                extra_context = self.get_user_added_email_context(form)
+            else:
+                extra_context = {
+                    'org': form.cleaned_data['organizations'].name,
+                    'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
+                }
             host = f"{self.request.scheme}://{self.request.get_host()}"
 
             for obj in users.values():
@@ -897,9 +899,11 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
     template_name = 'user_management/add_multiple_users_to_org.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
     confirmation_email_template = 'email/user_added_to_organization_from_bulk_form.txt'
-    user_added_email_template = 'email/new_user_added_to_org_by_other_from_bulk_form.txt'
     new_user_form = MultipleUsersFormWithOrganization
     is_batch = True
+
+    def get_user_added_email_on_behalf_of(self, form):
+        return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
         """ Filter organizations to those current user can access. """
