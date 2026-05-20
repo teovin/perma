@@ -730,10 +730,12 @@ class UserAddedEmailContext(TypedDict):
     on_behalf_of: NotRequired[str]
 
 
-class BulkUserConfirmationEmailContext(TypedDict):
-    """Template context for user_added_to_organization_from_bulk_form.txt."""
-    org: str
+class UserConfirmationEmailContext(TypedDict, total=False):
+    """Template context for existing-user confirmation emails (values must be JSON-serializable for bulk Celery tasks)."""
     account_settings_page: str
+    org: str
+    registrar: str
+    sponsoring_registrar: str
 
 
 BulkAdditionEmailFunction = Literal['email_new_user', 'send_user_email']
@@ -748,7 +750,12 @@ class BaseAddUserToGroup(UpdateView):
     user_added_email_template: str = 'email/new_user_added_by_other.txt'
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Organization | Registrar | None:
-        """Return org/registrar to mention in the email, or None if not applicable."""
+        """
+        Return org/registrar to mention in the new-user email, or None if not applicable.
+
+        When not None, the value is passed as on_behalf_of in user_added_email_template.
+        All values must be JSON-serializable (str()'d in get_user_added_email_context) for bulk Celery tasks.
+        """
         return None
 
     def get_user_added_email_context(self, form: Form) -> UserAddedEmailContext:
@@ -758,6 +765,23 @@ class BaseAddUserToGroup(UpdateView):
         on_behalf_of = self.get_user_added_email_on_behalf_of(form)
         if on_behalf_of is not None:
             context['on_behalf_of'] = str(on_behalf_of)
+        return context
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        """
+        Return template-specific confirmation context keys, or {} if not applicable.
+
+        Keys must match the variables used in confirmation_email_template
+        (e.g. org, registrar, sponsoring_registrar). All values must be
+        JSON-serializable strings for bulk Celery tasks.
+        """
+        return {}
+
+    def get_user_confirmation_email_context(self, form: Form) -> UserConfirmationEmailContext:
+        context: UserConfirmationEmailContext = {
+            'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
+        }
+        context.update(self.get_confirmation_email_extra_context(form))
         return context
 
     def __init__(self, **kwargs):
@@ -817,14 +841,11 @@ class BaseAddUserToGroup(UpdateView):
             email_function: BulkAdditionEmailFunction,
             template: str,
         ) -> None:
-            extra_context: UserAddedEmailContext | BulkUserConfirmationEmailContext
+            extra_context: UserAddedEmailContext | UserConfirmationEmailContext
             if email_function == 'email_new_user':
                 extra_context = self.get_user_added_email_context(form)
             else:
-                extra_context = {
-                    'org': form.cleaned_data['organizations'].name,
-                    'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
-                }
+                extra_context = self.get_user_confirmation_email_context(form)
             host = f"{self.request.scheme}://{self.request.get_host()}"
 
             for obj in users.values():
@@ -853,10 +874,7 @@ class BaseAddUserToGroup(UpdateView):
                 send_user_email(
                     self.object.raw_email,
                     self.confirmation_email_template,
-                    {
-                        'account_settings_page': f"https://{self.request.get_host()}{reverse('settings_profile')}",
-                        'form': form
-                    }
+                    self.get_user_confirmation_email_context(form),
                 )
                 add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
         else:
@@ -897,6 +915,9 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
     new_user_form = UserFormWithOrganization
     existing_user_form = UserAddOrganizationForm
 
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'org': str(form.cleaned_data['organizations'])}
+
     def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
         return form.cleaned_data['organizations']
 
@@ -920,9 +941,12 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
 class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/add_multiple_users_to_org.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
-    confirmation_email_template = 'email/user_added_to_organization_from_bulk_form.txt'
+    confirmation_email_template = 'email/user_added_to_organization.txt'
     new_user_form = MultipleUsersFormWithOrganization
     is_batch = True
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'org': str(form.cleaned_data['organizations'])}
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
         return form.cleaned_data['organizations']
@@ -944,6 +968,9 @@ class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
     confirmation_email_template = 'email/user_added_to_registrar.txt'
     new_user_form = UserFormWithRegistrar
     existing_user_form = UserAddRegistrarForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'registrar': str(form.cleaned_data['registrar'])}
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
         return form.cleaned_data['registrar']
@@ -979,6 +1006,9 @@ class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
     confirmation_email_template = 'email/user_added_to_sponsoring_registrar.txt'
     new_user_form = UserFormWithSponsoringRegistrar
     existing_user_form = UserAddSponsoringRegistrarForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'sponsoring_registrar': str(form.cleaned_data['sponsoring_registrars'])}
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
         return form.cleaned_data['sponsoring_registrars']
