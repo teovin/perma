@@ -4,17 +4,19 @@ import uuid
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.tokens import default_token_generator
 from django.db import transaction
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
 from ratelimit.decorators import ratelimit
 
-from perma.email import send_admin_email, send_user_email, send_user_email_copy_admins
+from perma.email import (
+    get_activation_email_context,
+    send_admin_email,
+    send_user_email,
+    send_user_email_copy_admins,
+)
 from perma.forms import (
     ApproveRegistrarForm,
     CreateUserFormWithCourt,
@@ -417,17 +419,6 @@ def email_new_user(request, user, template='email/new_user.txt', context=None):
     """
     Send email to newly created accounts
     """
-    # This uses the forgot-password flow; logic is borrowed from auth_forms.PasswordResetForm.save()
-    activation_route = request.build_absolute_uri(
-        reverse(
-            'password_reset_confirm',
-            args=[
-                urlsafe_base64_encode(force_bytes(user.pk)),
-                default_token_generator.make_token(user),
-            ],
-        )
-    )
-
     # Check if user's registrar has custom email configuration
     custom_config = None
     email_type = template.replace('email/', '').replace('.txt', '')
@@ -442,10 +433,9 @@ def email_new_user(request, user, template='email/new_user.txt', context=None):
     # Include context variables
     template_is_default = template == 'email/new_user.txt'
     context = context if context is not None else {}
+    context.update(get_activation_email_context(user, request=request))
     context.update(
         {
-            'activation_expires': settings.PASSWORD_RESET_TIMEOUT,
-            'activation_route': activation_route,
             'request': request,
             # Only query DB if we're using the default template; otherwise there's no need
             'suggested_registrars': suggest_registrars(user) if template_is_default else [],

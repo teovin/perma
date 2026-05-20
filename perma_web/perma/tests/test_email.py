@@ -1,9 +1,49 @@
+import pytest
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.db.models.query import QuerySet
 from django.http import HttpRequest
+from django.test import RequestFactory
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
-from perma.email import registrar_users_plus_stats, send_user_email_copy_admins
+from perma.email import get_activation_email_context, registrar_users_plus_stats, send_user_email_copy_admins
 from perma.models import LinkUser, Organization, Registrar
+
+
+def test_get_activation_email_context_with_request(link_user_factory):
+    user = link_user_factory()
+    request = RequestFactory().get('/')
+    context = get_activation_email_context(user, request=request)
+    assert context['activation_expires'] == settings.PASSWORD_RESET_TIMEOUT
+    expected_path = reverse(
+        'password_reset_confirm',
+        args=[
+            urlsafe_base64_encode(force_bytes(user.pk)),
+            default_token_generator.make_token(user),
+        ],
+    )
+    assert context['activation_route'] == request.build_absolute_uri(expected_path)
+
+
+def test_get_activation_email_context_with_host(link_user_factory):
+    user = link_user_factory()
+    context = get_activation_email_context(user, host='https://perma.cc')
+    assert context['activation_expires'] == settings.PASSWORD_RESET_TIMEOUT
+    expected_path = reverse(
+        'password_reset_confirm',
+        args=[
+            urlsafe_base64_encode(force_bytes(user.pk)),
+            default_token_generator.make_token(user),
+        ],
+    )
+    assert context['activation_route'] == f'https://perma.cc{expected_path}'
+
+
+def test_get_activation_email_context_requires_request_or_host(link_user_factory):
+    with pytest.raises(ValueError, match='request or host'):
+        get_activation_email_context(link_user_factory())
 
 
 def test_send_user_email_copy_admins(mailoutbox):

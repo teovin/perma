@@ -1,10 +1,14 @@
 import logging
 
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.http import HttpRequest
 from django.template import Context, RequestContext, engines
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from .models import Registrar, LinkUser
 from .utils import tz_datetime
@@ -25,6 +29,41 @@ def render_email(template, context, request=None):
     else:
         ctx = Context(context, autoescape=False)
     return engine.get_template(template).render(ctx)
+
+
+###
+### Activation links for new-user emails
+###
+
+def get_activation_email_context(
+    user: LinkUser,
+    *,
+    request: HttpRequest | None = None,
+    host: str | None = None,
+) -> dict[str, str | int]:
+    """
+    Build activation_route and activation_expires for new-user email templates.
+
+    Uses Django's password_reset_confirm flow. Pass request for sync sends, or host
+    (e.g. "https://perma.cc") for async/Celery sends where no request is available.
+    """
+    path = reverse(
+        'password_reset_confirm',
+        args=[
+            urlsafe_base64_encode(force_bytes(user.pk)),
+            default_token_generator.make_token(user),
+        ],
+    )
+    if request is not None:
+        activation_route = request.build_absolute_uri(path)
+    elif host is not None:
+        activation_route = f'{host}{path}'
+    else:
+        raise ValueError('request or host is required')
+    return {
+        'activation_route': activation_route,
+        'activation_expires': settings.PASSWORD_RESET_TIMEOUT,
+    }
 
 
 ###

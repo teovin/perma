@@ -28,10 +28,6 @@ from django.db.models import F
 from django.db.models.functions import Greatest, Now
 from django.conf import settings
 from django.utils import timezone
-from django.urls import reverse
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
-from django.contrib.auth.tokens import default_token_generator
 from django.template.defaultfilters import pluralize, filesizeformat
 
 from perma.models import LinkUser, Link, Capture, \
@@ -42,7 +38,7 @@ from perma.utils import (
     get_ia_session, ia_global_task_limit_approaching,
     ia_perma_task_limit_approaching, ia_bucket_task_limit_approaching,
     copy_file_data, date_range, send_to_scoop, calculate_s3_etag)
-from perma.email import send_user_email
+from perma.email import get_activation_email_context, send_user_email
 from perma.wsgi_utils import retry_on_exception
 
 import logging
@@ -1628,14 +1624,7 @@ def send_user_email_from_bulk_addition(user_email, context, template, host=None,
     """
     if is_new_user:
         user = LinkUser.objects.get(raw_email=user_email)
-        path = reverse('password_reset_confirm',
-                       args=[
-                           urlsafe_base64_encode(force_bytes(user.pk)),
-                           default_token_generator.make_token(user)
-                       ])
-        activation_route = f'{host}{path}'
-        context['activation_expires'] = settings.PASSWORD_RESET_TIMEOUT
-        context['activation_route'] = activation_route
+        context.update(get_activation_email_context(user, host=host))
 
     send_user_email(user_email, template, context)
 
