@@ -1,5 +1,5 @@
 import logging
-from typing import Literal, NotRequired, TypedDict
+from typing import NotRequired, TypedDict
 
 from django.conf import settings
 from django.contrib import messages
@@ -738,9 +738,6 @@ class UserConfirmationEmailContext(TypedDict, total=False):
     sponsoring_registrar: str
 
 
-BulkAdditionEmailFunction = Literal['email_new_user', 'send_user_email']
-
-
 class BaseAddUserToGroup(UpdateView):
     """
         Base class for views that take an email address and either add a new user, or add the user to
@@ -783,6 +780,39 @@ class BaseAddUserToGroup(UpdateView):
         }
         context.update(self.get_confirmation_email_extra_context(form))
         return context
+
+    def _enqueue_bulk_emails(
+        self,
+        users: dict[str, LinkUser],
+        *,
+        template: str,
+        context: UserAddedEmailContext | UserConfirmationEmailContext,
+        is_new_user: bool,
+    ) -> None:
+        host = f"{self.request.scheme}://{self.request.get_host()}"
+        for user in users.values():
+            try:
+                send_user_email_from_bulk_addition.delay(
+                    user.raw_email, context, template, host, is_new_user=is_new_user,
+                )
+            except Exception:
+                logger.exception(f"Failed to send email to {user.raw_email}")
+
+    def _send_bulk_new_user_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=self.user_added_email_template,
+            context=self.get_user_added_email_context(form),
+            is_new_user=True,
+        )
+
+    def _send_bulk_confirmation_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=self.confirmation_email_template,
+            context=self.get_user_confirmation_email_context(form),
+            is_new_user=False,
+        )
 
     def __init__(self, **kwargs):
         super(BaseAddUserToGroup, self).__init__(**kwargs)
@@ -836,27 +866,6 @@ class BaseAddUserToGroup(UpdateView):
         def add_message(level, title, body):
             messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
 
-        def send_bulk_addition_emails(
-            users: dict[str, LinkUser],
-            email_function: BulkAdditionEmailFunction,
-            template: str,
-        ) -> None:
-            extra_context: UserAddedEmailContext | UserConfirmationEmailContext
-            if email_function == 'email_new_user':
-                extra_context = self.get_user_added_email_context(form)
-            else:
-                extra_context = self.get_user_confirmation_email_context(form)
-            host = f"{self.request.scheme}://{self.request.get_host()}"
-
-            for obj in users.values():
-                try:
-                    if email_function == 'email_new_user':
-                        send_user_email_from_bulk_addition.delay(obj.raw_email, extra_context, template, host, is_new_user=True)
-                    else:
-                        send_user_email_from_bulk_addition.delay(obj.raw_email, extra_context, template, is_new_user=False)
-                except Exception as e:
-                    logger.exception(f"Failed to send email to {obj.raw_email}: {e}")
-
         if not self.is_batch:
             if self.is_new:
                 email_new_user(
@@ -879,9 +888,9 @@ class BaseAddUserToGroup(UpdateView):
                 add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
         else:
             if form.created_users:
-                send_bulk_addition_emails(form.created_users, 'email_new_user', self.user_added_email_template)
+                self._send_bulk_new_user_emails(form, form.created_users)
             if form.updated_users:
-                send_bulk_addition_emails(form.updated_users, 'send_user_email', self.confirmation_email_template)
+                self._send_bulk_confirmation_emails(form, form.updated_users)
 
             success_message = (
                 "New users will receive an email with instructions on how to activate their accounts and create a password.<br>"
