@@ -463,7 +463,7 @@ def email_new_user(request, user, template='email/new_user.txt', context=None):
 
 def email_pending_registrar_user(request: HttpRequest, user: LinkUser):
     """Send email to a newly created user whose registrar is pending."""
-    email_new_user(request, user, template='email/pending_registrar.txt')
+    email_new_user(request, user, template='email/new_user_from_pending_registrar_form.txt')
 
 
 def email_library_registrar_request(request: HttpRequest, pending_registrar: Registrar):
