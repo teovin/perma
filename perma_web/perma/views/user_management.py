@@ -743,7 +743,6 @@ class BaseAddUserToGroup(UpdateView):
         Base class for views that take an email address and either add a new user, or add the user to
         a given group if they already exist.
     """
-    is_batch: bool = False
     user_added_email_template: str = 'email/new_user_added_by_other.txt'
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Organization | Registrar | None:
@@ -780,39 +779,6 @@ class BaseAddUserToGroup(UpdateView):
         }
         context.update(self.get_confirmation_email_extra_context(form))
         return context
-
-    def _enqueue_bulk_emails(
-        self,
-        users: dict[str, LinkUser],
-        *,
-        template: str,
-        context: UserAddedEmailContext | UserConfirmationEmailContext,
-        is_new_user: bool,
-    ) -> None:
-        host = f"{self.request.scheme}://{self.request.get_host()}"
-        for user in users.values():
-            try:
-                send_user_email_from_bulk_addition.delay(
-                    user.raw_email, context, template, host, is_new_user=is_new_user,
-                )
-            except Exception:
-                logger.exception(f"Failed to send email to {user.raw_email}")
-
-    def _send_bulk_new_user_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
-        self._enqueue_bulk_emails(
-            users,
-            template=self.user_added_email_template,
-            context=self.get_user_added_email_context(form),
-            is_new_user=True,
-        )
-
-    def _send_bulk_confirmation_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
-        self._enqueue_bulk_emails(
-            users,
-            template=self.confirmation_email_template,
-            context=self.get_user_confirmation_email_context(form),
-            is_new_user=False,
-        )
 
     def __init__(self, **kwargs):
         super(BaseAddUserToGroup, self).__init__(**kwargs)
@@ -866,53 +832,25 @@ class BaseAddUserToGroup(UpdateView):
         def add_message(level, title, body):
             messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
 
-        if not self.is_batch:
-            if self.is_new:
-                email_new_user(
-                    self.request,
-                    self.object,
-                    self.user_added_email_template,
-                    self.get_user_added_email_context(form),
-                )
-                add_message(
-                    messages.SUCCESS,
-                    "Account created!",
-                    f"<strong>{self.object.email}</strong> will receive an email with instructions on how to activate the account and create a password."
-                )
-            else:
-                send_user_email(
-                    self.object.raw_email,
-                    self.confirmation_email_template,
-                    self.get_user_confirmation_email_context(form),
-                )
-                add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
-        else:
-            if form.created_users:
-                self._send_bulk_new_user_emails(form, form.created_users)
-            if form.updated_users:
-                self._send_bulk_confirmation_emails(form, form.updated_users)
-
-            success_message = (
-                "New users will receive an email with instructions on how to activate their accounts and create a password.<br>"
-                "Existing users will receive an email notifying them about their updated organization affiliation."
+        if self.is_new:
+            email_new_user(
+                self.request,
+                self.object,
+                self.user_added_email_template,
+                self.get_user_added_email_context(form),
             )
-
-            if form.ineligible_users:
-                ineligible_user_emails = ", ".join(form.ineligible_users)
-                error_message = (
-                    f"The following users were not added to {form.cleaned_data['organizations']} because they are "
-                    f"already a registrar user or admin user and cannot be added to an individual organization: {ineligible_user_emails}"
-                )
-                if form.created_users or form.updated_users:
-                    add_message(
-                        messages.SUCCESS,
-                        "Success!",
-                        f"{success_message}<br><br>Note: {error_message}"
-                    )
-                else:
-                    add_message(messages.ERROR, "Error!", error_message)
-            else:
-                add_message(messages.SUCCESS, "Success!", success_message)
+            add_message(
+                messages.SUCCESS,
+                "Account created!",
+                f"<strong>{self.object.email}</strong> will receive an email with instructions on how to activate the account and create a password."
+            )
+        else:
+            send_user_email(
+                self.object.raw_email,
+                self.confirmation_email_template,
+                self.get_user_confirmation_email_context(form),
+            )
+            add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
 
         return response
 
@@ -952,7 +890,81 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
     success_url = reverse_lazy('user_management_manage_organization_user')
     confirmation_email_template = 'email/user_added_to_organization.txt'
     new_user_form = MultipleUsersFormWithOrganization
-    is_batch = True
+
+    def _enqueue_bulk_emails(
+        self,
+        users: dict[str, LinkUser],
+        *,
+        template: str,
+        context: UserAddedEmailContext | UserConfirmationEmailContext,
+        is_new_user: bool,
+    ) -> None:
+        host = f"{self.request.scheme}://{self.request.get_host()}"
+        for user in users.values():
+            try:
+                send_user_email_from_bulk_addition.delay(
+                    user.raw_email, context, template, host, is_new_user=is_new_user,
+                )
+            except Exception:
+                logger.exception(f"Failed to send email to {user.raw_email}")
+
+    def _send_bulk_new_user_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=self.user_added_email_template,
+            context=self.get_user_added_email_context(form),
+            is_new_user=True,
+        )
+
+    def _send_bulk_confirmation_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=self.confirmation_email_template,
+            context=self.get_user_confirmation_email_context(form),
+            is_new_user=False,
+        )
+
+    def form_valid(self, form):
+        """
+        CSV bulk-add creates or updates many users in one submit.
+
+        Skip BaseAddUserToGroup.form_valid (single-user emails and messages). Call
+        super(BaseAddUserToGroup, self) to run only UpdateView's save-and-redirect,
+        then send bulk emails and show batch-specific flash messages.
+        """
+        response = super(BaseAddUserToGroup, self).form_valid(form)
+
+        def add_message(level, title, body):
+            messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
+
+        if form.created_users:
+            self._send_bulk_new_user_emails(form, form.created_users)
+        if form.updated_users:
+            self._send_bulk_confirmation_emails(form, form.updated_users)
+
+        success_message = (
+            "New users will receive an email with instructions on how to activate their accounts and create a password.<br>"
+            "Existing users will receive an email notifying them about their updated organization affiliation."
+        )
+
+        if form.ineligible_users:
+            ineligible_user_emails = ", ".join(form.ineligible_users)
+            error_message = (
+                f"The following users were not added to {form.cleaned_data['organizations']} because they are "
+                f"already a registrar user or admin user and cannot be added to an individual organization: {ineligible_user_emails}"
+            )
+            if form.created_users or form.updated_users:
+                add_message(
+                    messages.SUCCESS,
+                    "Success!",
+                    f"{success_message}<br><br>Note: {error_message}"
+                )
+            else:
+                add_message(messages.ERROR, "Error!", error_message)
+        else:
+            add_message(messages.SUCCESS, "Success!", success_message)
+
+        return response
 
     def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
         return {'org': str(form.cleaned_data['organizations'])}
