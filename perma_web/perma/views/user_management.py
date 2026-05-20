@@ -28,7 +28,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import UpdateView
 from ratelimit.decorators import ratelimit
 
-from perma.email import send_user_email
+from perma.email import get_activation_email_context, send_user_email
 from perma.forms import (
     OrganizationForm,
     OrganizationWithRegistrarForm,
@@ -1435,13 +1435,12 @@ def reset_password(request):
             target_user = None
         if target_user:
             if not target_user.is_confirmed:
-                # This is a weird area... We're doing this, for now, to help
-                # smooth things for the users who sign up while we are transitioning
-                # to new activation links. We think it will be less confusing for them
-                # to receive a "password reset" email, since we ARE asking them to fill
-                # our that form, rather than a welcome email. We can readdress later...
-                # this whole architecture needs some tidying.
-                email_new_user(request, target_user, template="email/unactivated_user_reset_email.txt")
+                # Same activation URL as sign-up; copy matches the password-reset form they used.
+                send_user_email(
+                    target_user.raw_email,
+                    'email/unactivated_user_reset_email.txt',
+                    get_activation_email_context(target_user, request=request),
+                )
             if target_user.is_confirmed and not target_user.is_active:
                 return HttpResponseRedirect(reverse('user_management_account_is_deactivated'))
 
