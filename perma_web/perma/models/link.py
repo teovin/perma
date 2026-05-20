@@ -85,6 +85,51 @@ class LinkQuerySet(QuerySet):
     def ineligible_for_ia(self):
         return self.exclude(Link.DISCOVERABLE_FILTER, cached_can_play_back=True)
 
+    IA_FILE_UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES = (
+        'confirmed_present',
+        'upload_attempted',
+        'upload_submitted',
+        'deletion_attempted',
+        'deletion_submitted'
+    )
+
+    IA_FILE_DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES = (
+        'confirmed_present',
+        'deletion_attempted'
+    )
+
+    def ia_upload_required_from_privacy_toggle(self, limit=100):
+        """
+        Links marked for IA upload/re-upload that are currently eligible and do not
+        already have an in-flight or completed file on a daily Internet Archive item.
+        """
+        query = self.filter(
+            internet_archive_upload_status='upload_or_reupload_required', # this status is coming from privacy toggle
+        ).permanent().visible_to_ia().exclude(
+            internet_archive_files__item__span__isempty=False, # exclude if its ia item has a span (legacy single link items don't have spans)
+            internet_archive_files__status__in=self.IA_FILE_UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES, # statuses to exclude: upload_attempted, upload_submitted, confirmed_present, deletion_attempted, deletion_submitted
+        ).distinct()
+        
+        if limit:
+            query = query[:limit]
+        return query
+
+    def ia_deletion_required_from_privacy_toggle(self, limit=100):
+        """
+        Links marked for IA deletion that have a daily Internet Archive file eligible
+        to be deleted (present on IA or a prior deletion attempt to retry).
+        """
+        query = self.filter(
+            internet_archive_upload_status='deletion_required', # this status is coming from privacy toggle
+        ).permanent().filter(
+            internet_archive_files__item__span__isempty=False, # include if its ia item has a span (legacy single link items don't have spans)
+            internet_archive_files__status__in=self.IA_FILE_DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES, # statuses to include: confirmed_present, deletion_attempted
+        ).distinct()
+        
+        if limit:
+            query = query[:limit]
+        return query
+
     def ia_upload_pending(self, date_string, limit=100):
         # Get all Links we think should have been uploaded to IA,
         # and then filter out the ones that have already been uploaded

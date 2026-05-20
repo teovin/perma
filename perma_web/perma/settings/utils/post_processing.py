@@ -70,6 +70,14 @@ def post_process_settings(settings):
                 os.environ.get('IA_UPLOAD_END_DATESTRING') or None
             )
         },
+        'queue_internet_archive_uploads_required_from_privacy_toggle': {
+            'task': 'perma.celery_tasks.queue_internet_archive_uploads_required_from_privacy_toggle',
+            'schedule': crontab(minute="10,40"),
+        },
+        'queue_internet_archive_deletions_required_from_privacy_toggle': {
+            'task': 'perma.celery_tasks.queue_internet_archive_deletions_required_from_privacy_toggle',
+            'schedule': crontab(minute="20,50"),
+        },
         'confirm_files_uploaded_to_internet_archive': {
             'task': 'perma.celery_tasks.queue_file_uploaded_confirmation_tasks',
             'schedule': crontab(minute="2-59/5"),

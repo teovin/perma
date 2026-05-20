@@ -18,7 +18,11 @@ from rest_framework.views import APIView
 import surt
 
 from perma.utils import stream_archive_if_permissible
-from perma.celery_tasks import run_next_capture
+from perma.celery_tasks import (
+    run_next_capture,
+    request_internet_archive_deletion_from_privacy_toggle,
+    request_internet_archive_upload_from_privacy_toggle
+)
 from perma.models import Folder, CaptureJob, Link, Capture, Organization, LinkBatch
 
 from .utils import TastypiePagination, LongTastypiePagination, LimitedTastypiePagination, load_parent, raise_general_validation_error, \
@@ -632,9 +636,13 @@ class AuthenticatedLinkDetailView(BaseView):
                 if was_private:
                     # if link was private but has been marked public, mark it for upload.
                     link.internet_archive_upload_status = 'upload_or_reupload_required'
+                    logger.info(f"Link {link.guid} was toggled to public. Requesting the IA upload.")
+                    request_internet_archive_upload_from_privacy_toggle(link)
                 else:
                     # if link was public but has been marked private, mark it for deletion.
                     link.internet_archive_upload_status = 'deletion_required'
+                    logger.info(f"Link {link.guid} was toggled to private. Requesting the IA deletion.")
+                    request_internet_archive_deletion_from_privacy_toggle(link)
                 link.save(update_fields=["internet_archive_upload_status"])
 
             # include remaining links in response

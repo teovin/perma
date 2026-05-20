@@ -36,6 +36,7 @@ from django.template.defaultfilters import pluralize, filesizeformat
 
 from perma.models import LinkUser, Link, Capture, \
     CaptureJob, InternetArchiveItem, InternetArchiveFile, Folder, Sponsorship, UserOrganizationAffiliation
+from perma.models.link import LinkQuerySet
 from perma.exceptions import PermaPaymentsCommunicationException, ScoopAPINetworkException, ScoopAPIException
 from perma.utils import (
     remove_whitespace,
@@ -1198,6 +1199,92 @@ def queue_internet_archive_deletions(limit=None):
         pass
 
     logger.info(f"Queued { len(queued) } links for deletion ({queued[0]} through {queued[-1]}).")
+
+
+def request_internet_archive_upload_from_privacy_toggle(link):
+    """
+    Queue upload of a link to its creation-date daily Internet Archive item, if eligible.
+    Triggered by the privacy toggle in the API.
+    """
+    if not link.can_upload_to_internet_archive(): # can play back and not private and not unlisted
+        return False
+    upload_link_to_internet_archive.delay(link.guid)
+    return True
+
+
+def request_internet_archive_deletion_from_privacy_toggle(link):
+    """
+    Queue deletion of a link from its daily Internet Archive item, if a deletable file exists.
+    Triggered by the privacy toggle in the API.
+    """
+    is_deletable = InternetArchiveFile.objects.filter(
+        link_id=link.guid, # link.guid is the guid of the link
+        item__span__isempty=False, # its ia item has a span (exclude legacy single link items - these don't have spans)
+        status__in=LinkQuerySet.IA_FILE_DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES, # status is confirmed_present or deletion_attempted
+    ).exists()
+    
+    if not is_deletable:
+        return False
+    
+    delete_link_from_daily_item.delay(link.guid)
+    return True
+
+
+@shared_task
+def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
+    """
+    Queue upload tasks for permanent links marked upload_or_reupload_required that are
+    currently eligible for IA but do not already have an in-flight or completed daily file.
+    Backfills links that became public after their creation-date daily item was marked
+    complete, or that were not yet playable when first marked for upload.
+    """
+    to_upload = Link.objects.ia_upload_required_from_privacy_toggle(limit).iterator()
+    first_link_to_upload = next(to_upload, None)
+
+    if not first_link_to_upload:
+        logger.info("Found no upload_or_reupload_required links to upload.")
+        return
+
+    queued = []
+    try:
+        for link in itertools.chain([first_link_to_upload], to_upload):
+            upload_link_to_internet_archive.delay(link.guid)
+            queued.append(link.guid)
+    except SoftTimeLimitExceeded:
+        pass
+
+    logger.info(
+        f"Queued {len(queued)} upload_or_reupload_required links for upload "
+        f"({queued[0]} through {queued[-1]})."
+    )
+
+
+@shared_task
+def queue_internet_archive_deletions_required_from_privacy_toggle(limit=100):
+    """
+    Queue deletion tasks for permanent links marked deletion_required that have a daily
+    Internet Archive file eligible for deletion. Backfills when immediate deletion was
+    not queued or did not complete.
+    """
+    to_delete = Link.objects.ia_deletion_required_from_privacy_toggle(limit).iterator()
+    first_link_to_delete = next(to_delete, None)
+
+    if not first_link_to_delete:
+        logger.info("Found no deletion_required links to delete.")
+        return
+
+    queued = []
+    try:
+        for link in itertools.chain([first_link_to_delete], to_delete):
+            delete_link_from_daily_item.delay(link.guid)
+            queued.append(link.guid)
+    except SoftTimeLimitExceeded:
+        pass
+
+    logger.info(
+        f"Queued {len(queued)} deletion_required links for deletion "
+        f"({queued[0]} through {queued[-1]})."
+    )
 
 
 def queue_internet_archive_uploads_for_date(date_string, limit=100):
