@@ -1,10 +1,12 @@
 import logging
+from typing import Literal, NotRequired, TypedDict
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
+from django.forms import Form
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, F, Max, Sum
 from django.db.models.functions import Coalesce, Greatest
@@ -722,20 +724,35 @@ def edit_user_in_group(request, user_id, group_name):
 
 ### ADD USER TO GROUP ###
 
+class UserAddedEmailContext(TypedDict):
+    """Template context for new_user_added_by_other.txt (values must be JSON-serializable for bulk Celery tasks)."""
+    requester_name: str
+    on_behalf_of: NotRequired[str]
+
+
+class BulkUserConfirmationEmailContext(TypedDict):
+    """Template context for user_added_to_organization_from_bulk_form.txt."""
+    org: str
+    account_settings_page: str
+
+
+BulkAdditionEmailFunction = Literal['email_new_user', 'send_user_email']
+
+
 class BaseAddUserToGroup(UpdateView):
     """
         Base class for views that take an email address and either add a new user, or add the user to
         a given group if they already exist.
     """
-    is_batch = False
-    user_added_email_template = 'email/new_user_added_by_other.txt'
+    is_batch: bool = False
+    user_added_email_template: str = 'email/new_user_added_by_other.txt'
 
-    def get_user_added_email_on_behalf_of(self, form):
-        """Return display name for org/registrar, or None if not applicable."""
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization | Registrar | None:
+        """Return org/registrar to mention in the email, or None if not applicable."""
         return None
 
-    def get_user_added_email_context(self, form):
-        context = {
+    def get_user_added_email_context(self, form: Form) -> UserAddedEmailContext:
+        context: UserAddedEmailContext = {
             'requester_name': self.request.user.get_full_name(),
         }
         on_behalf_of = self.get_user_added_email_on_behalf_of(form)
@@ -795,7 +812,12 @@ class BaseAddUserToGroup(UpdateView):
         def add_message(level, title, body):
             messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
 
-        def send_bulk_addition_emails(users, email_function, template):
+        def send_bulk_addition_emails(
+            users: dict[str, LinkUser],
+            email_function: BulkAdditionEmailFunction,
+            template: str,
+        ) -> None:
+            extra_context: UserAddedEmailContext | BulkUserConfirmationEmailContext
             if email_function == 'email_new_user':
                 extra_context = self.get_user_added_email_context(form)
             else:
@@ -875,7 +897,7 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
     new_user_form = UserFormWithOrganization
     existing_user_form = UserAddOrganizationForm
 
-    def get_user_added_email_on_behalf_of(self, form):
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
         return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
@@ -902,7 +924,7 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
     new_user_form = MultipleUsersFormWithOrganization
     is_batch = True
 
-    def get_user_added_email_on_behalf_of(self, form):
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
         return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
@@ -923,7 +945,7 @@ class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
     new_user_form = UserFormWithRegistrar
     existing_user_form = UserAddRegistrarForm
 
-    def get_user_added_email_on_behalf_of(self, form):
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
         return form.cleaned_data['registrar']
 
     def get_form_kwargs(self):
@@ -958,7 +980,7 @@ class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
     new_user_form = UserFormWithSponsoringRegistrar
     existing_user_form = UserAddSponsoringRegistrarForm
 
-    def get_user_added_email_on_behalf_of(self, form):
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
         return form.cleaned_data['sponsoring_registrars']
 
     def get_form_kwargs(self):
