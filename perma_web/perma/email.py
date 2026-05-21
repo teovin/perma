@@ -280,8 +280,7 @@ def send_staff_invited_new_user_email(
 
     Pass `registrar_id` when the invite is tied to a registrar (org, registrar user,
     sponsorship, bulk org add) so CUSTOM_EMAILS_FOR_REGISTRAR can be applied. Use
-    ``None`` when there is no registrar (admin or individual user invites, or an
-    organization with no sponsoring registrar); custom templates are skipped.
+    ``None`` when there is no registrar (admin or individual user invites).
     """
     # Shallow-copy so updates (activation fields, registrar custom config) do not mutate the caller's dict.
     context = dict(context) if context is not None else {}
