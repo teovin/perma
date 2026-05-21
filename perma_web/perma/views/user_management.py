@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from typing import NotRequired, TypedDict
 
 from django.conf import settings
@@ -28,7 +29,11 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import UpdateView
 from ratelimit.decorators import ratelimit
 
-from perma.email import get_activation_email_context, send_user_email
+from perma.email import (
+    get_activation_email_context,
+    send_staff_invited_new_user_email,
+    send_user_email,
+)
 from perma.forms import (
     OrganizationForm,
     OrganizationWithRegistrarForm,
@@ -743,13 +748,20 @@ class BaseAddUserToGroup(UpdateView):
         Base class for views that take an email address and either add a new user, or add the user to
         a given group if they already exist.
     """
-    user_added_email_template: str = 'email/new_user_added_by_other.txt'
+
+    def send_new_user_activation_email(self, form: Form) -> None:
+        """Send staff-invited activation email. Override when a registrar applies."""
+        send_staff_invited_new_user_email(
+            self.object,
+            context=self.get_user_added_email_context(form),
+            request=self.request,
+        )
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Organization | Registrar | None:
         """
         Return org/registrar to mention in the new-user email, or None if not applicable.
 
-        When not None, the value is passed as on_behalf_of in user_added_email_template.
+        When not None, the value is passed as on_behalf_of in the staff-invited new-user email.
         All values must be JSON-serializable (str()'d in get_user_added_email_context) for bulk Celery tasks.
         """
         return None
@@ -833,12 +845,7 @@ class BaseAddUserToGroup(UpdateView):
             messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
 
         if self.is_new:
-            email_new_user(
-                self.request,
-                self.object,
-                self.user_added_email_template,
-                self.get_user_added_email_context(form),
-            )
+            self.send_new_user_activation_email(form)
             add_message(
                 messages.SUCCESS,
                 "Account created!",
@@ -855,7 +862,23 @@ class BaseAddUserToGroup(UpdateView):
         return response
 
 
-class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
+class RegistrarAffiliatedAddUserToGroup(BaseAddUserToGroup, ABC):
+    """Staff invites tied to a registrar (org, registrar user, sponsorship, bulk org)."""
+
+    @abstractmethod
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        """Registrar pk for CUSTOM_EMAILS_FOR_REGISTRAR lookup."""
+
+    def send_new_user_activation_email(self, form: Form) -> None:
+        send_staff_invited_new_user_email(
+            self.object,
+            registrar_id=self.get_invitation_registrar_id(form),
+            context=self.get_user_added_email_context(form),
+            request=self.request,
+        )
+
+
+class AddUserToOrganization(RequireOrgOrRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_organization_confirm.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
     confirmation_email_template = 'email/user_added_to_organization.txt'
@@ -864,6 +887,9 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
 
     def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
         return {'org': str(form.cleaned_data['organizations'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['organizations'].registrar_id
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
         return form.cleaned_data['organizations']
@@ -885,7 +911,7 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
         return True, ""
 
 
-class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
+class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/add_multiple_users_to_org.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
     confirmation_email_template = 'email/user_added_to_organization.txt'
@@ -895,15 +921,21 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
         self,
         users: dict[str, LinkUser],
         *,
-        template: str,
+        template: str | None,
         context: UserAddedEmailContext | UserConfirmationEmailContext,
         is_new_user: bool,
+        registrar_id: int,
     ) -> None:
         host = f"{self.request.scheme}://{self.request.get_host()}"
         for user in users.values():
             try:
                 send_user_email_from_bulk_addition.delay(
-                    user.raw_email, context, template, host, is_new_user=is_new_user,
+                    user.raw_email,
+                    context,
+                    template,
+                    host,
+                    is_new_user=is_new_user,
+                    registrar_id=registrar_id,
                 )
             except Exception:
                 logger.exception(f"Failed to send email to {user.raw_email}")
@@ -911,9 +943,10 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
     def _send_bulk_new_user_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
         self._enqueue_bulk_emails(
             users,
-            template=self.user_added_email_template,
+            template=None,
             context=self.get_user_added_email_context(form),
             is_new_user=True,
+            registrar_id=self.get_invitation_registrar_id(form),
         )
 
     def _send_bulk_confirmation_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
@@ -922,6 +955,7 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
             template=self.confirmation_email_template,
             context=self.get_user_confirmation_email_context(form),
             is_new_user=False,
+            registrar_id=self.get_invitation_registrar_id(form),
         )
 
     def form_valid(self, form):
@@ -969,6 +1003,9 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
     def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
         return {'org': str(form.cleaned_data['organizations'])}
 
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['organizations'].registrar_id
+
     def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
         return form.cleaned_data['organizations']
 
@@ -983,7 +1020,7 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
         return True, ""
 
 
-class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
+class AddUserToRegistrar(RequireRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_registrar_user')
     confirmation_email_template = 'email/user_added_to_registrar.txt'
@@ -992,6 +1029,9 @@ class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
 
     def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
         return {'registrar': str(form.cleaned_data['registrar'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['registrar'].pk
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
         return form.cleaned_data['registrar']
@@ -1021,7 +1061,7 @@ class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
         return True, ""
 
 
-class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
+class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_sponsoring_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_sponsored_user')
     confirmation_email_template = 'email/user_added_to_sponsoring_registrar.txt'
@@ -1030,6 +1070,9 @@ class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
 
     def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
         return {'sponsoring_registrar': str(form.cleaned_data['sponsoring_registrars'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['sponsoring_registrars'].pk
 
     def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
         return form.cleaned_data['sponsoring_registrars']

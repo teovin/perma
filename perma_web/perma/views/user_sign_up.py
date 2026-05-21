@@ -1,19 +1,17 @@
 import logging
-import re
 import uuid
 
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
-from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from ratelimit.decorators import ratelimit
 
 from perma.email import (
-    get_activation_email_context,
     send_admin_email,
+    send_signup_new_user_email,
     send_user_email,
     send_user_email_copy_admins,
 )
@@ -396,64 +394,16 @@ def firm_request_response(request):
     return render(request, 'registration/firm_request.html')
 
 
-def suggest_registrars(user: LinkUser, limit: int = 5) -> QuerySet[Registrar]:
-    """Suggest potential registrars for a user based on email domain.
-
-    This queries the database for registrars whose website matches the
-    base domain from the user's email address. For example, if the
-    user's email is `username@law.harvard.edu`, this will suggest
-    registrars whose domains end with `harvard.edu`.
-    """
-    _, email_domain = user.email.split('@')
-    base_domain = '.'.join(email_domain.rsplit('.', 2)[-2:])
-    pattern = f'^https?://([a-zA-Z0-9\\-\\.]+\\.)?{re.escape(base_domain)}(/.*)?$'
-    registrars = (
-        Registrar.objects.filter(status='approved')
-        .filter(website__iregex=pattern)
-        .order_by('-link_count', 'name')[:limit]
-    )
-    return registrars
-
-
 def email_new_user(request, user, template='email/new_user.txt', context=None):
-    """
-    Send email to newly created accounts
-    """
-    # Check if user's registrar has custom email configuration
-    custom_config = None
-    email_type = template.replace('email/', '').replace('.txt', '')
-
-    # Check if user belongs to an organization with a special registrar
-    org = None
-    if user.organizations.exists():
-        org = user.organizations.first()
-        registrar_id = org.registrar_id
-        custom_config = getattr(settings, 'CUSTOM_REGISTRAR_EMAILS', {}).get(registrar_id, {}).get(email_type)
-
-    # Include context variables
-    template_is_default = template == 'email/new_user.txt'
-    context = context if context is not None else {}
-    context.update(get_activation_email_context(user, request=request))
-    context.update(
-        {
-            'request': request,
-            # Only query DB if we're using the default template; otherwise there's no need
-            'suggested_registrars': suggest_registrars(user) if template_is_default else [],
-            'org_name': org.name if org else None,
-        }
-    )
-
-    # Use custom template if configured
-    if custom_config:
-        template = custom_config.get('template_file', template)
-        context.update(custom_config)
-
-    send_user_email(user.raw_email, template, context)
+    """Send signup activation email (self-signup, resend activation, etc.)."""
+    send_signup_new_user_email(request, user, template=template, context=context)
 
 
 def email_pending_registrar_user(request: HttpRequest, user: LinkUser):
     """Send email to a newly created user whose registrar is pending."""
-    email_new_user(request, user, template='email/new_user_from_pending_registrar_form.txt')
+    send_signup_new_user_email(
+        request, user, template='email/new_user_from_pending_registrar_form.txt',
+    )
 
 
 def email_library_registrar_request(request: HttpRequest, pending_registrar: Registrar):

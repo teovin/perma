@@ -38,7 +38,7 @@ from perma.utils import (
     get_ia_session, ia_global_task_limit_approaching,
     ia_perma_task_limit_approaching, ia_bucket_task_limit_approaching,
     copy_file_data, date_range, send_to_scoop, calculate_s3_etag)
-from perma.email import get_activation_email_context, send_user_email
+from perma.email import send_staff_invited_new_user_email, send_user_email
 from perma.wsgi_utils import retry_on_exception
 
 import logging
@@ -1618,13 +1618,23 @@ def warn_expiring_organization_users(warning_days=None):
 
 
 @shared_task
-def send_user_email_from_bulk_addition(user_email, context, template, host=None, is_new_user=False):
+def send_user_email_from_bulk_addition(
+    user_email,
+    context,
+    template=None,
+    host=None,
+    is_new_user=False,
+    *,
+    registrar_id: int,
+):
     """
-    Handles sending emails to users created/updated via the bulk org user addition form
+    Handles sending emails to users created/updated via the bulk org user addition form.
     """
     if is_new_user:
         user = LinkUser.objects.get(raw_email=user_email)
-        context.update(get_activation_email_context(user, host=host))
-
-    send_user_email(user_email, template, context)
+        send_staff_invited_new_user_email(
+            user, registrar_id=registrar_id, context=context, host=host,
+        )
+    else:
+        send_user_email(user_email, template, context)
 

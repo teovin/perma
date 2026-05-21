@@ -672,7 +672,7 @@ TEMPLATE_VISIBLE_SETTINGS = (
 # schema viewer
 VIEW_SCHEMA = False
 
-# Custom email templates for specific registrars
-# Format: {registrar_id: {email_type: {config_dict}}}
-# This should be configured in your local settings.py, not in this file
-CUSTOM_REGISTRAR_EMAILS = {}
+# Custom staff-invited new-user emails for specific registrars.
+# Format: {registrar_id: {template_file, subject, opening, closing}}
+# Used by send_staff_invited_new_user_email.
+CUSTOM_EMAILS_FOR_REGISTRAR = {}
