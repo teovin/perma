@@ -259,6 +259,7 @@ def send_signup_new_user_email(
     context: dict | None = None,
 ) -> None:
     """Send activation email for self-signup or resend activation."""
+    # Shallow-copy so updates (activation fields, suggested_registrars) do not mutate the caller's dict.
     context = dict(context) if context is not None else {}
     context.update(get_activation_email_context(user, request=request))
     context['request'] = request
@@ -278,11 +279,12 @@ def send_staff_invited_new_user_email(
     """Send activation email when staff add a new user.
 
     Pass `registrar_id` when the invite is tied to a registrar (org, registrar user,
-    sponsorship, bulk org add) so CUSTOM_EMAILS_FOR_REGISTRAR can be applied.
-    `registrar_id` may be omitted when accounts are not associated with a registrar,
-    as with admin or individual user invites.
+    sponsorship, bulk org add) so CUSTOM_EMAILS_FOR_REGISTRAR can be applied. Use
+    ``None`` when there is no registrar (admin or individual user invites, or an
+    organization with no sponsoring registrar); custom templates are skipped.
     """
-    context = context if context is not None else {}
+    # Shallow-copy so updates (activation fields, registrar custom config) do not mutate the caller's dict.
+    context = dict(context) if context is not None else {}
     context.update(get_activation_email_context(user, request=request, host=host))
     template = STAFF_INVITED_TEMPLATE
 
@@ -290,6 +292,8 @@ def send_staff_invited_new_user_email(
         custom_config = settings.CUSTOM_EMAILS_FOR_REGISTRAR.get(registrar_id)
         if custom_config:
             template = custom_config.get('template_file', STAFF_INVITED_CUSTOM_TEMPLATE)
-            context.update(custom_config)
+            context.update(
+                {k: v for k, v in custom_config.items() if k != 'template_file'}
+            )
 
     send_user_email(user.raw_email, template, context)
