@@ -28,6 +28,7 @@ from perma.utils import preserve_perma_wacz
 
 from .base import DeletableManager, DeletableModel, GenericStringTaggedItem
 from .folder import Folder
+from .internet_archive import InternetArchiveFile
 from .organization import Organization
 from .user import LinkUser
 
@@ -85,31 +86,20 @@ class LinkQuerySet(QuerySet):
     def ineligible_for_ia(self):
         return self.exclude(Link.DISCOVERABLE_FILTER, cached_can_play_back=True)
 
-    IA_FILE_UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES = (
-        'confirmed_present',
-        'upload_attempted',
-        'upload_submitted',
-        'deletion_attempted',
-        'deletion_submitted'
-    )
-
-    IA_FILE_DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES = (
-        'confirmed_present',
-        'deletion_attempted'
-    )
-
     def ia_upload_required_from_privacy_toggle(self, limit=100):
         """
         Links marked for IA upload/re-upload that are currently eligible and do not
         already have an in-flight or completed file on a daily Internet Archive item.
         """
+        blocked_link_ids = InternetArchiveFile.objects.filter(
+            item__span__isempty=False,
+            status__in=InternetArchiveFile.UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES,
+        ).values('link_id')
+
         query = self.filter(
-            internet_archive_upload_status='upload_or_reupload_required', # this status is coming from privacy toggle
-        ).permanent().visible_to_ia().exclude(
-            internet_archive_files__item__span__isempty=False, # exclude if its ia item has a span (legacy single link items don't have spans)
-            internet_archive_files__status__in=self.IA_FILE_UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES, # statuses to exclude: upload_attempted, upload_submitted, confirmed_present, deletion_attempted, deletion_submitted
-        ).distinct()
-        
+            internet_archive_upload_status='upload_or_reupload_required',
+        ).permanent().visible_to_ia().exclude(guid__in=blocked_link_ids)
+
         if limit is not None:
             query = query[:limit]
         return query
@@ -119,13 +109,13 @@ class LinkQuerySet(QuerySet):
         Links marked for IA deletion that have a daily Internet Archive file eligible
         to be deleted (present on IA or a prior deletion attempt to retry).
         """
+        deletable_link_ids = InternetArchiveFile.deletable_from_privacy_toggle().values('link_id')
+
         query = self.filter(
-            internet_archive_upload_status='deletion_required', # this status is coming from privacy toggle
-        ).permanent().filter(
-            internet_archive_files__item__span__isempty=False, # include if its ia item has a span (legacy single link items don't have spans)
-            internet_archive_files__status__in=self.IA_FILE_DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES, # statuses to include: confirmed_present, deletion_attempted
-        ).distinct()
-        
+            internet_archive_upload_status='deletion_required',
+            guid__in=deletable_link_ids,
+        ).permanent()
+
         if limit is not None:
             query = query[:limit]
         return query

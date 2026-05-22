@@ -155,6 +155,32 @@ class InternetArchiveFile(models.Model):
 
     WARC_FILENAME = '{guid}.warc.gz'
 
+    # Statuses describing a file we should NOT (re)upload to a daily IA item from the privacy toggle
+    UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES = (
+        'confirmed_present',
+        'upload_attempted',
+        'upload_submitted',
+        'deletion_attempted',
+        'deletion_submitted'
+    )
+
+    # Statuses describing a file we should request deletion for from the privacy toggle
+    DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES = (
+        'confirmed_present',
+        'deletion_attempted'
+    )
+
+    @classmethod
+    def deletable_from_privacy_toggle(cls):
+        """
+        Files associated with daily IA items (i.e. excluding legacy single-link items, which have an empty `span`)
+        whose status indicates we can ask IA to delete them in response to a privacy toggle.
+        """
+        return cls.objects.filter(
+            item__span__isempty=False,
+            status__in=cls.DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES,
+        )
+
     @classmethod
     def guid_from_filename(cls, filename):
         return filename.split('.')[0]
