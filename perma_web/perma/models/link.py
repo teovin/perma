@@ -110,7 +110,7 @@ class LinkQuerySet(QuerySet):
             internet_archive_files__status__in=self.IA_FILE_UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES, # statuses to exclude: upload_attempted, upload_submitted, confirmed_present, deletion_attempted, deletion_submitted
         ).distinct()
         
-        if limit:
+        if limit is not None:
             query = query[:limit]
         return query
 
@@ -126,7 +126,7 @@ class LinkQuerySet(QuerySet):
             internet_archive_files__status__in=self.IA_FILE_DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES, # statuses to include: confirmed_present, deletion_attempted
         ).distinct()
         
-        if limit:
+        if limit is not None:
             query = query[:limit]
         return query
 
@@ -150,7 +150,7 @@ class LinkQuerySet(QuerySet):
             ).visible_to_ia().exclude(
                 internet_archive_items__span__isempty=False
             )
-        if limit:
+        if limit is not None:
             query = query[:limit]
         return query
 
