@@ -1229,6 +1229,18 @@ def request_internet_archive_deletion_from_privacy_toggle(link):
     delete_link_from_daily_item.delay(link.guid)
     return True
 
+def queue_link_updates_to_ia(first_link_to_queue, to_queue, task):
+    """
+    Queue tasks to the Internet Archive.
+    """
+    queued = []
+    try:
+        for link in itertools.chain([first_link_to_queue], to_queue):
+            task.delay(link.guid)
+            queued.append(link.guid)
+    except SoftTimeLimitExceeded:
+        pass
+    return queued
 
 @shared_task
 def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
@@ -1245,18 +1257,9 @@ def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
         logger.info("Found no upload_or_reupload_required links to upload.")
         return
 
-    queued = []
-    try:
-        for link in itertools.chain([first_link_to_upload], to_upload):
-            upload_link_to_internet_archive.delay(link.guid)
-            queued.append(link.guid)
-    except SoftTimeLimitExceeded:
-        pass
+    queued = queue_link_updates_to_ia(first_link_to_upload, to_upload, upload_link_to_internet_archive)
 
-    logger.info(
-        f"Queued {len(queued)} upload_or_reupload_required links for upload "
-        f"({queued[0]} through {queued[-1]})."
-    )
+    logger.info(f"Queued {len(queued)} upload_or_reupload_required links for upload ({queued[0]} through {queued[-1]}).")
 
 
 @shared_task
@@ -1273,18 +1276,9 @@ def queue_internet_archive_deletions_required_from_privacy_toggle(limit=100):
         logger.info("Found no deletion_required links to delete.")
         return
 
-    queued = []
-    try:
-        for link in itertools.chain([first_link_to_delete], to_delete):
-            delete_link_from_daily_item.delay(link.guid)
-            queued.append(link.guid)
-    except SoftTimeLimitExceeded:
-        pass
+    queued = queue_link_updates_to_ia(first_link_to_delete, to_delete, delete_link_from_daily_item)
 
-    logger.info(
-        f"Queued {len(queued)} deletion_required links for deletion "
-        f"({queued[0]} through {queued[-1]})."
-    )
+    logger.info(f"Queued {len(queued)} deletion_required links for deletion ({queued[0]} through {queued[-1]}).")
 
 
 def queue_internet_archive_uploads_for_date(date_string, limit=100):
@@ -1303,13 +1297,7 @@ def queue_internet_archive_uploads_for_date(date_string, limit=100):
 
     if first_link_to_upload:
         logger.info(f"Ready to queue links for upload in {query_ended - query_started} seconds.")
-        queued = []
-        try:
-            for link in itertools.chain([first_link_to_upload], to_upload):
-                upload_link_to_internet_archive.delay(link.guid)
-                queued.append(link.guid)
-        except SoftTimeLimitExceeded:
-            pass
+        queued = queue_link_updates_to_ia(first_link_to_upload, to_upload, upload_link_to_internet_archive)
         logger.info(f"Queued { len(queued) } links for upload ({queued[0]} through {queued[-1]}).")
         return len(queued)
     else:
