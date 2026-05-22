@@ -636,14 +636,15 @@ class AuthenticatedLinkDetailView(BaseView):
                 if was_private:
                     # if link was private but has been marked public, mark it for upload.
                     link.internet_archive_upload_status = 'upload_or_reupload_required'
+                    link.save(update_fields=["internet_archive_upload_status"])
                     logger.info(f"Link {link.guid} was toggled to public. Requesting the IA upload.")
                     request_internet_archive_upload_from_privacy_toggle(link)
                 else:
                     # if link was public but has been marked private, mark it for deletion.
                     link.internet_archive_upload_status = 'deletion_required'
+                    link.save(update_fields=["internet_archive_upload_status"])
                     logger.info(f"Link {link.guid} was toggled to private. Requesting the IA deletion.")
                     request_internet_archive_deletion_from_privacy_toggle(link)
-                link.save(update_fields=["internet_archive_upload_status"])
 
             # include remaining links in response
             links_remaining = request.user.get_links_remaining()
