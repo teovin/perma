@@ -74,7 +74,7 @@ class LinkAuthorizationMixin():
     def tearDown(self):
         self.ia_upload_from_privacy_toggle_patcher.stop()
         self.ia_deletion_from_privacy_toggle_patcher.stop()
-        super(LinkAuthorizationMixin, self).tearDown()
+        super().tearDown()
 
     def get_public_link_url(self, link):
         return "{0}/{1}".format(self.public_list_url, link.pk)

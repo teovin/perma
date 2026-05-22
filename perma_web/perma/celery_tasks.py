@@ -1224,6 +1224,7 @@ def request_internet_archive_deletion_from_privacy_toggle(link):
     delete_link_from_daily_item.delay(link.guid)
     return True
 
+
 def queue_link_updates_to_ia(first_link_to_queue, to_queue, task):
     """
     Queue tasks to the Internet Archive.
@@ -1236,6 +1237,7 @@ def queue_link_updates_to_ia(first_link_to_queue, to_queue, task):
     except SoftTimeLimitExceeded:
         pass
     return queued
+
 
 @shared_task
 def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
