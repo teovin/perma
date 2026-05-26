@@ -30,6 +30,7 @@ class Registrar(CustomerModel):
     orgs_private_by_default = models.BooleanField(default=False, help_text="Whether new orgs created for this registrar default to private links.")
 
     address = models.CharField(max_length=500, blank=True, null=True)
+    notes = models.TextField(blank=True)
     manual_sort_order = models.IntegerField(default=0, db_index=True)
 
     link_count = models.IntegerField(default=0) # A cache of the number of links under this registrars's purview (sum of all associated org links)

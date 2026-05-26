@@ -66,8 +66,8 @@ class LinkAuthorizationMixin():
                            'default_to_screenshot_view': True}
 
         # mock the IA helpers that are called when the privacy toggle is used
-        self.ia_upload_from_privacy_toggle_patcher = patch('api.views.request_internet_archive_upload_from_privacy_toggle')
-        self.ia_deletion_from_privacy_toggle_patcher = patch('api.views.request_internet_archive_deletion_from_privacy_toggle')
+        self.ia_upload_from_privacy_toggle_patcher = patch('api.views.links.request_internet_archive_upload_from_privacy_toggle')
+        self.ia_deletion_from_privacy_toggle_patcher = patch('api.views.links.request_internet_archive_deletion_from_privacy_toggle')
         self.mock_request_internet_archive_upload_from_privacy_toggle = self.ia_upload_from_privacy_toggle_patcher.start()
         self.mock_request_internet_archive_deletion_from_privacy_toggle = self.ia_deletion_from_privacy_toggle_patcher.start()
 
@@ -84,6 +84,9 @@ class LinkAuthorizationMixin():
 
 
 class LinkAuthorizationTestCase(LinkAuthorizationMixin, ApiResourceTestCase):
+
+    def folder_archives_url(self, folder):
+        return "{0}/folders/{1}/archives".format(self.url_base, folder.pk)
 
     #######
     # GET #
@@ -109,6 +112,57 @@ class LinkAuthorizationTestCase(LinkAuthorizationMixin, ApiResourceTestCase):
 
     def test_should_reject_logged_out_users_getting_logged_in_detail(self):
         self.rejected_get(self.link_url)
+
+    ##########################
+    # Listing folder archives #
+    ##########################
+
+    def test_should_allow_user_to_list_archives_in_own_folder(self):
+        self.successful_get(self.folder_archives_url(self.regular_user.root_folder),
+                            user=self.regular_user)
+
+    def test_should_allow_org_user_to_list_archives_in_org_shared_folder(self):
+        self.successful_get(self.folder_archives_url(self.link.organization.shared_folder),
+                            user=self.org_user)
+
+    def test_should_allow_related_org_user_to_list_archives_in_org_shared_folder(self):
+        self.successful_get(self.folder_archives_url(self.link.organization.shared_folder),
+                            user=self.related_org_user)
+
+    def test_should_allow_registrar_user_to_list_archives_in_registrar_org_folder(self):
+        self.successful_get(self.folder_archives_url(self.link.organization.shared_folder),
+                            user=self.registrar_user)
+
+    def test_should_allow_admin_to_list_archives_in_any_folder(self):
+        self.successful_get(self.folder_archives_url(self.regular_user.root_folder),
+                            user=self.admin_user)
+
+    def test_should_reject_listing_archives_in_other_users_folder(self):
+        self.rejected_get(self.folder_archives_url(self.org_user.root_folder),
+                          user=self.regular_user,
+                          expected_status_code=403)
+
+    def test_should_reject_listing_archives_in_unrelated_org_folder(self):
+        self.rejected_get(self.folder_archives_url(self.link.organization.shared_folder),
+                          user=self.unrelated_org_user,
+                          expected_status_code=403)
+
+    def test_should_reject_logged_out_user_listing_folder_archives(self):
+        self.rejected_get(self.folder_archives_url(self.regular_user.root_folder))
+
+    def test_should_return_404_for_nonexistent_folder_archives(self):
+        url = "{0}/folders/{1}/archives".format(self.url_base, 99999)
+        self.rejected_get(url, user=self.regular_user, expected_status_code=404)
+
+    def test_folder_archives_only_contains_links_from_that_folder(self):
+        folder = self.regular_user.root_folder
+        data = self.successful_get(self.folder_archives_url(folder), user=self.regular_user)
+        returned_guids = {obj['guid'] for obj in data['objects']}
+        folder_link_guids = set(
+            folder.links.filter(user_deleted=False).values_list('guid', flat=True)
+        )
+        self.assertTrue(returned_guids.issubset(folder_link_guids),
+                        f"Returned links {returned_guids - folder_link_guids} are not in folder {folder.pk}")
 
     ###########
     # Editing #
