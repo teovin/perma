@@ -13,7 +13,7 @@ from ..utils import dispatch_multiple_requests, reverse_api_view_relative
 from .base import BaseView
 
 
-# /batches
+# /archives/batches
 class LinkBatchesListView(BaseView):
     serializer_class = LinkBatchSerializer
     queryset = (LinkBatch.objects
@@ -88,7 +88,7 @@ class LinkBatchesListView(BaseView):
         return Response(data, status=status.HTTP_201_CREATED)
 
 
-# /batches/:id
+# /archives/batches/:id
 class LinkBatchesDetailView(BaseView):
     serializer_class = DetailedLinkBatchSerializer
     queryset = LinkBatchesListView.queryset.select_related('target_folder')
@@ -100,7 +100,7 @@ class LinkBatchesDetailView(BaseView):
         return self.simple_get(request, pk)
 
 
-# /batches/:id/export
+# /archives/batches/:id/export
 class LinkBatchesDetailExportView(LinkBatchesDetailView):
     def get(self, request, pk, format=None):
         """

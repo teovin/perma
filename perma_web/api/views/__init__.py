@@ -1,5 +1,5 @@
 from .base import BaseView # noqa: F401
-from .batches import ( # noqa: F401
+from .link_batches import ( # noqa: F401
     LinkBatchesListView, 
     LinkBatchesDetailView, 
     LinkBatchesDetailExportView
