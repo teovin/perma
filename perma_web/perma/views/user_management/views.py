@@ -67,7 +67,7 @@ from perma.utils import (
     ratelimit_ip_key,
     user_passes_test_or_403,
 )
-from perma.context_processors.user_management_perms import build_user_management_perms
+from perma.views.user_management.ui_context import build_user_management_ui
 from perma.views.common import valid_member_sorts, valid_org_sorts, valid_registrar_sorts
 from perma.views.user_sign_up import email_new_user
 from perma.celery_tasks import send_user_email_from_bulk_addition
@@ -235,7 +235,7 @@ def manage_organization(request):
         'registrar_filter': registrar_filter,
         'sort': sort,
         'form': form,
-        'user_management_perms': build_user_management_perms(request, screen='manage_orgs'),
+        'user_management_perms': build_user_management_ui(request, screen='manage_orgs'),
     })
 
 
@@ -582,7 +582,7 @@ def list_users_in_group(request: HttpRequest, group_name: str, export: bool = Fa
     }
     context['pretty_group_name_plural'] = context['pretty_group_name'] + "s"
     context['bulk_org_user_creation_feature_flag'] = flag_is_active(request, 'bulk-organization-user-creation')
-    context['user_management_perms'] = build_user_management_perms(request, screen=group_name)
+    context['user_management_perms'] = build_user_management_ui(request, group_name=group_name)
 
     return render(request, 'user_management/manage_users.html', context)
 
@@ -672,7 +672,7 @@ def list_sponsored_users(
         'sponsorship_status': sponsorship_status
     }
     context['pretty_group_name_plural'] = context['pretty_group_name'] + "s"
-    context['user_management_perms'] = build_user_management_perms(request, screen=group_name)
+    context['user_management_perms'] = build_user_management_ui(request, group_name=group_name)
 
     return render(request, 'user_management/manage_users.html', context)
 
