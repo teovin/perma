@@ -51,12 +51,12 @@ from perma.models import (
     Sponsorship,
     UserOrganizationAffiliation,
 )
-from perma.permissions.user_management_access import (
+from perma.views.user_management.access import (
     allow_staff,
     allow_registrar,
     allow_organization_user,
     allow_staff_or_registrar,
-    allow_staff_registrar_or_org_user
+    allow_staff_registrar_or_org_user,
 )
 from perma.utils import (
     apply_pagination,

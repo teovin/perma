@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from django.http import HttpRequest
 
-from perma.permissions.user_management_access import (
+from perma.views.user_management.access import (
     allow_organization_user,
     allow_registrar,
     allow_staff,

@@ -1,8 +1,8 @@
 """
 Access conditions for user-management views (@user_passes_test_or_403).
 
-Keep logic centralized here so authorization matches with
-views.user_management.ui_context where the same user rules apply.
+Keep logic centralized here so authorization matches with ui_context
+where the same user rules apply.
 """
 
 from perma.models import LinkUser
