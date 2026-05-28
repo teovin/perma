@@ -15,6 +15,8 @@ from django.utils.http import urlsafe_base64_encode
 from ratelimit.decorators import ratelimit
 
 from perma.email import send_admin_email, send_user_email, send_user_email_copy_admins
+# Used by approve_pending_registrar; consider moving that view into views/user_management/.
+from perma.views.user_management.render import render_user_management
 from perma.forms import (
     ApproveRegistrarForm,
     CreateUserFormWithCourt,
@@ -259,14 +261,18 @@ def sign_up_firms(request: HttpRequest):
 
 @user_passes_test_or_403(lambda user: user.is_staff)
 def approve_pending_registrar(request: HttpRequest, registrar_id: int):
-    """A view enabling admins to approve or deny a pending registrar."""
+    """A view enabling admins to approve or deny a pending registrar.
+
+    TODO: This is user-management UI (manage-layout template) and could move to
+    views/user_management/ so render_user_management stays in one package.
+    """
     target_registrar = get_object_or_404(Registrar, id=registrar_id)
     target_registrar_user = target_registrar.pending_users.first() or target_registrar.users.first()
 
     if request.method == 'POST':
         form = ApproveRegistrarForm(request.POST, target_registrar)
         if not form.is_valid():
-            return render(
+            return render_user_management(
                 request,
                 'user_management/approve_pending_registrar.html',
                 {
@@ -340,7 +346,7 @@ def approve_pending_registrar(request: HttpRequest, registrar_id: int):
         users, _ = apply_search_query(request, users, ['email', 'first_name', 'last_name'])
         users = apply_pagination(request, users)
 
-        return render(
+        return render_user_management(
             request,
             'user_management/approve_pending_registrar.html',
             {
@@ -354,7 +360,7 @@ def approve_pending_registrar(request: HttpRequest, registrar_id: int):
             },
         )
 
-    return render(
+    return render_user_management(
         request,
         'user_management/approve_pending_registrar.html',
         {

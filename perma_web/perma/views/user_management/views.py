@@ -67,7 +67,7 @@ from perma.utils import (
     ratelimit_ip_key,
     user_passes_test_or_403,
 )
-from perma.views.user_management.ui_context import build_user_management_ui
+from perma.views.user_management.render import add_user_management_ui, render_user_management
 from perma.views.common import valid_member_sorts, valid_org_sorts, valid_registrar_sorts
 from perma.views.user_sign_up import email_new_user
 from perma.celery_tasks import send_user_email_from_bulk_addition
@@ -144,7 +144,7 @@ def manage_registrar(request):
     # handle pagination
     registrars = apply_pagination(request, registrars)
 
-    return render(request, 'user_management/manage_registrars.html', {
+    return render_user_management(request, 'user_management/manage_registrars.html', {
         'registrars': registrars,
         'orgs_count': orgs_count,
         'this_page': 'users_registrars',
@@ -173,7 +173,7 @@ def manage_single_registrar(request, registrar_id):
             else:
                 return HttpResponseRedirect(reverse('settings_affiliations'))
 
-    return render(request, 'user_management/manage_single_registrar.html', {
+    return render_user_management(request, 'user_management/manage_single_registrar.html', {
         'target_registrar': target_registrar,
         'this_page': 'users_registrars',
         'form': form
@@ -226,7 +226,7 @@ def manage_organization(request):
     # handle pagination
     orgs = apply_pagination(request, orgs)
 
-    return render(request, 'user_management/manage_orgs.html', {
+    return render_user_management(request, 'user_management/manage_orgs.html', {
         'orgs': orgs,
         'this_page': 'users_orgs',
         'search_query': search_query,
@@ -235,8 +235,7 @@ def manage_organization(request):
         'registrar_filter': registrar_filter,
         'sort': sort,
         'form': form,
-        'user_management_perms': build_user_management_ui(request, screen='manage_orgs'),
-    })
+    }, screen='manage_orgs')
 
 
 @user_passes_test_or_403(allow_staff_registrar_or_org_user)
@@ -256,7 +255,7 @@ def manage_single_organization(request, org_id):
             form.save()
             return HttpResponseRedirect(reverse('user_management_manage_organization'))
 
-    return render(request, 'user_management/manage_single_organization.html', {
+    return render_user_management(request, 'user_management/manage_single_organization.html', {
         'target_org': target_org,
         'this_page': 'users_orgs',
         'form': form,
@@ -281,7 +280,7 @@ def manage_single_organization_delete(request, org_id):
 
         return HttpResponseRedirect(reverse('user_management_manage_organization'))
 
-    return render(request, 'user_management/organization_delete_confirm.html', {
+    return render_user_management(request, 'user_management/organization_delete_confirm.html', {
         'target_org': target_org,
         'this_page': 'users_orgs',
     })
@@ -582,9 +581,8 @@ def list_users_in_group(request: HttpRequest, group_name: str, export: bool = Fa
     }
     context['pretty_group_name_plural'] = context['pretty_group_name'] + "s"
     context['bulk_org_user_creation_feature_flag'] = flag_is_active(request, 'bulk-organization-user-creation')
-    context['user_management_perms'] = build_user_management_ui(request, group_name=group_name)
 
-    return render(request, 'user_management/manage_users.html', context)
+    return render_user_management(request, 'user_management/manage_users.html', context, group_name=group_name)
 
 
 @user_passes_test_or_403(allow_staff_or_registrar)
@@ -672,9 +670,8 @@ def list_sponsored_users(
         'sponsorship_status': sponsorship_status
     }
     context['pretty_group_name_plural'] = context['pretty_group_name'] + "s"
-    context['user_management_perms'] = build_user_management_ui(request, group_name=group_name)
 
-    return render(request, 'user_management/manage_users.html', context)
+    return render_user_management(request, 'user_management/manage_users.html', context, group_name=group_name)
 
 
 def edit_user_in_group(request, user_id, group_name):
@@ -720,7 +717,7 @@ def edit_user_in_group(request, user_id, group_name):
         'affiliations': affiliations,
     }
 
-    return render(request, 'user_management/manage_single_user.html', context)
+    return render_user_management(request, 'user_management/manage_single_user.html', context)
 
 
 ### ADD USER TO GROUP ###
@@ -772,10 +769,11 @@ class BaseAddUserToGroup(UpdateView):
 
     def get_context_data(self, **kwargs):
         """ Populate template context with supplied email address. """
-        return dict(
+        context = dict(
             super(BaseAddUserToGroup, self).get_context_data(**kwargs),
             user_email=self.request.GET.get('email'),
             **self.extra_context)
+        return add_user_management_ui(context, self.request)
 
     def form_valid(self, form):
         """ If form is submitted successfully, show success message and send email to target user. """
@@ -1157,7 +1155,7 @@ def manage_single_sponsored_user_links(request, user_id, registrar_id):
     links = Link.objects.filter(folders__in=folders).select_related('capture_job').prefetch_related('captures').order_by('-creation_timestamp')
     links = apply_pagination(request, links)
 
-    return render(request, 'user_management/manage_single_user_links.html', {
+    return render_user_management(request, 'user_management/manage_single_user_links.html', {
         'this_page': 'users_sponsored_users',
         'target_user': target_user,
         'registrar': registrar,

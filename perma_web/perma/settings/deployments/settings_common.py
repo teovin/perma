@@ -116,7 +116,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
                 'settings_context_processor.context_processors.settings',  # to easily use settings in templates
-                'perma.context_processors.user_management_perms.user_management_perms',
             ],
         },
     },
