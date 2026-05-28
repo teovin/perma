@@ -1214,17 +1214,33 @@ def request_internet_archive_deletion_from_privacy_toggle(link):
     return True
 
 
-def queue_link_updates_to_ia(first_link_to_queue, to_queue, task):
+def dispatch_link_guid_tasks(task, queryset=None, first_link=None, rest_of_links=None, log_label=None):
     """
-    Queue tasks to the Internet Archive.
+    Dispatch task.delay(link.guid) for each link, returning queued guids.
     """
+    if queryset is not None:
+        items = queryset.iterator()
+        first_link = next(items, None)
+        rest_of_links = items
+
+    if first_link is None:
+        if log_label:
+            logger.info(f"Found no {log_label}.")
+        return []
+
     queued = []
     try:
-        for link in itertools.chain([first_link_to_queue], to_queue):
+        for link in itertools.chain([first_link], rest_of_links or ()):
             task.delay(link.guid)
             queued.append(link.guid)
     except SoftTimeLimitExceeded:
         pass
+
+    if log_label:
+        if queued:
+            logger.info(f"Queued {len(queued)} {log_label} ({queued[0]} through {queued[-1]}).")
+        else:
+            logger.warning(f"Soft time limit reached before any {log_label} could be queued.")
     return queued
 
 
@@ -1236,16 +1252,11 @@ def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
     Backfills links that became public after their creation-date daily item was marked
     complete, or that were not yet playable when first marked for upload.
     """
-    to_upload = Link.objects.ia_upload_required_from_privacy_toggle(limit).iterator()
-    first_link_to_upload = next(to_upload, None)
-
-    if not first_link_to_upload:
-        logger.info("Found no upload_or_reupload_required links to upload.")
-        return
-
-    queued = queue_link_updates_to_ia(first_link_to_upload, to_upload, upload_link_to_internet_archive)
-
-    logger.info(f"Queued {len(queued)} upload_or_reupload_required links for upload ({queued[0]} through {queued[-1]}).")
+    dispatch_link_guid_tasks(
+        upload_link_to_internet_archive,
+        queryset=Link.objects.ia_upload_required_from_privacy_toggle(limit),
+        log_label="upload_or_reupload_required links"
+    )
 
 
 @shared_task
@@ -1255,16 +1266,11 @@ def queue_internet_archive_deletions_required_from_privacy_toggle(limit=100):
     Internet Archive file eligible for deletion. Backfills when immediate deletion was
     not queued or did not complete.
     """
-    to_delete = Link.objects.ia_deletion_required_from_privacy_toggle(limit).iterator()
-    first_link_to_delete = next(to_delete, None)
-
-    if not first_link_to_delete:
-        logger.info("Found no deletion_required links to delete.")
-        return
-
-    queued = queue_link_updates_to_ia(first_link_to_delete, to_delete, delete_link_from_daily_item)
-
-    logger.info(f"Queued {len(queued)} deletion_required links for deletion ({queued[0]} through {queued[-1]}).")
+    dispatch_link_guid_tasks(
+        delete_link_from_daily_item,
+        queryset=Link.objects.ia_deletion_required_from_privacy_toggle(limit),
+        log_label="deletion_required links"
+    )
 
 
 def queue_internet_archive_uploads_for_date(date_string, limit=100):
@@ -1283,8 +1289,12 @@ def queue_internet_archive_uploads_for_date(date_string, limit=100):
 
     if first_link_to_upload:
         logger.info(f"Ready to queue links for upload in {query_ended - query_started} seconds.")
-        queued = queue_link_updates_to_ia(first_link_to_upload, to_upload, upload_link_to_internet_archive)
-        logger.info(f"Queued { len(queued) } links for upload ({queued[0]} through {queued[-1]}).")
+        queued = dispatch_link_guid_tasks(
+            upload_link_to_internet_archive,
+            first_link=first_link_to_upload,
+            rest_of_links=to_upload,
+            log_label="links for upload"
+        )
         return len(queued)
     else:
         logger.info(f"Found no links to upload in {query_ended - query_started} seconds.")
