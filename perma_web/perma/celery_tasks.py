@@ -1214,10 +1214,9 @@ def request_internet_archive_deletion_from_privacy_toggle(link):
     return True
 
 
-def _dispatch_link_tasks_to_ia(first_link_to_queue, to_queue, task):
+def queue_link_updates_to_ia(first_link_to_queue, to_queue, task):
     """
-    Dispatch `task.delay(link.guid)` for each link in `chain([first_link_to_queue], to_queue)`,
-    returning guids successfully handed off to the broker. Tolerates SoftTimeLimitExceeded.
+    Queue tasks to the Internet Archive.
     """
     queued = []
     try:
@@ -1229,32 +1228,6 @@ def _dispatch_link_tasks_to_ia(first_link_to_queue, to_queue, task):
     return queued
 
 
-def _log_queued_range(queued, noun):
-    if queued:
-        logger.info(f"Queued {len(queued)} {noun} ({queued[0]} through {queued[-1]}).")
-    else:
-        logger.warning(f"Soft time limit hit before any {noun} could be queued.")
-
-
-def queue_link_updates_to_ia(queryset, task, log_noun, empty_log_noun=None):
-    """
-    Iterate `queryset` and dispatch `task.delay(link.guid)` for each link, returning the
-    list of guids successfully handed off to the broker.
-
-    If the queryset is empty, logs a message using `empty_log_noun` (defaults to `log_noun`)
-    and returns `[]`.
-    """
-    iterator = queryset.iterator()
-    first = next(iterator, None)
-    if first is None:
-        logger.info(f"Found no {empty_log_noun or log_noun}.")
-        return []
-
-    queued = _dispatch_link_tasks_to_ia(first, iterator, task)
-    _log_queued_range(queued, log_noun)
-    return queued
-
-
 @shared_task
 def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
     """
@@ -1263,12 +1236,16 @@ def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
     Backfills links that became public after their creation-date daily item was marked
     complete, or that were not yet playable when first marked for upload.
     """
-    queue_link_updates_to_ia(
-        Link.objects.ia_upload_required_from_privacy_toggle(limit),
-        upload_link_to_internet_archive,
-        "upload_or_reupload_required links for upload",
-        empty_log_noun="upload_or_reupload_required links to upload",
-    )
+    to_upload = Link.objects.ia_upload_required_from_privacy_toggle(limit).iterator()
+    first_link_to_upload = next(to_upload, None)
+
+    if not first_link_to_upload:
+        logger.info("Found no upload_or_reupload_required links to upload.")
+        return
+
+    queued = queue_link_updates_to_ia(first_link_to_upload, to_upload, upload_link_to_internet_archive)
+
+    logger.info(f"Queued {len(queued)} upload_or_reupload_required links for upload ({queued[0]} through {queued[-1]}).")
 
 
 @shared_task
@@ -1278,12 +1255,16 @@ def queue_internet_archive_deletions_required_from_privacy_toggle(limit=100):
     Internet Archive file eligible for deletion. Backfills when immediate deletion was
     not queued or did not complete.
     """
-    queue_link_updates_to_ia(
-        Link.objects.ia_deletion_required_from_privacy_toggle(limit),
-        delete_link_from_daily_item,
-        "deletion_required links for deletion",
-        empty_log_noun="deletion_required links to delete",
-    )
+    to_delete = Link.objects.ia_deletion_required_from_privacy_toggle(limit).iterator()
+    first_link_to_delete = next(to_delete, None)
+
+    if not first_link_to_delete:
+        logger.info("Found no deletion_required links to delete.")
+        return
+
+    queued = queue_link_updates_to_ia(first_link_to_delete, to_delete, delete_link_from_daily_item)
+
+    logger.info(f"Queued {len(queued)} deletion_required links for deletion ({queued[0]} through {queued[-1]}).")
 
 
 def queue_internet_archive_uploads_for_date(date_string, limit=100):
@@ -1302,8 +1283,8 @@ def queue_internet_archive_uploads_for_date(date_string, limit=100):
 
     if first_link_to_upload:
         logger.info(f"Ready to queue links for upload in {query_ended - query_started} seconds.")
-        queued = _dispatch_link_tasks_to_ia(first_link_to_upload, to_upload, upload_link_to_internet_archive)
-        _log_queued_range(queued, "links for upload")
+        queued = queue_link_updates_to_ia(first_link_to_upload, to_upload, upload_link_to_internet_archive)
+        logger.info(f"Queued { len(queued) } links for upload ({queued[0]} through {queued[-1]}).")
         return len(queued)
     else:
         logger.info(f"Found no links to upload in {query_ended - query_started} seconds.")
@@ -1718,4 +1699,3 @@ def send_user_email_from_bulk_addition(user_email, context, template, host=None,
         context['activation_route'] = activation_route
 
     send_user_email(user_email, template, context)
-
