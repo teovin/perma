@@ -34,8 +34,7 @@ def build_user_management_ui(
 
     ui_flags = {
         "show_full_manage_title": allow_staff_or_registrar(user),
-        "show_org_manage_title": allow_organization_user(user)
-        and not allow_staff_or_registrar(user),
+        "show_org_manage_title": allow_organization_user(user) and not allow_staff_or_registrar(user),
         "show_manage_sidebar": allow_staff_registrar_or_org_user(user),
         "show_admin_registrar_nav": allow_staff(user),
         "show_registrar_sponsored_nav": allow_staff_or_registrar(user),
@@ -72,15 +71,12 @@ def build_user_management_ui(
                 "show_deactivated_count": allow_staff(user) and group_name == "user",
                 "show_upgrade_interest_filter": allow_staff(user) and group_name == "user",
                 "show_deactivated_filter": allow_staff(user) and ends_with_user,
-                "show_affiliation_filters": allow_staff_or_registrar(user)
-                and group_name in ("organization_user", "sponsored_user"),
-                "show_registrar_filter": allow_staff(user)
-                and group_name not in ("user", "admin_user"),
+                "show_affiliation_filters": allow_staff_or_registrar(user) and group_name in ("organization_user", "sponsored_user"),
+                "show_registrar_filter": allow_staff(user) and group_name not in ("user", "admin_user"),
                 "show_listed_user_registrar": allow_staff(user) and group_name == "registrar_user",
                 "can_link_sponsored_user_links": allow_staff(user),
                 "can_link_user_admin": allow_staff(user),
-                "can_view_sponsored_user_links": not allow_staff(user)
-                and group_name == "sponsored_user",
+                "can_view_sponsored_user_links": not allow_staff(user) and group_name == "sponsored_user",
             }
         )
 
