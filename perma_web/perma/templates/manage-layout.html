@@ -8,15 +8,15 @@
   <div id="dashboard-container" class="container cont-fixed">
     <div class="row">
       <div class="col-sm-12">
-        {% if user_management_perms.can_show_user_management_title %}
+        {% if user_management_perms.show_full_manage_title %}
           <h1 id="page-title" class="page-title">Manage users and organizations</h1>
-        {% elif user_management_perms.can_show_organization_only_management_title %}
+        {% elif user_management_perms.show_org_manage_title %}
           <h1 id="page-title" class="page-title">Manage users</h1>
         {% endif %}
       </div>
     </div> <!-- end row -->
     <div class="row admin-content">
-      {% if user_management_perms.can_show_user_management_sidebar %}
+      {% if user_management_perms.show_manage_sidebar %}
         <div class="col-sm-3">
 
           <!-- Dashboard tabs -->
@@ -24,16 +24,16 @@
             <ul class="nav nav-pills nav-stacked">
 
               <!-- Manage users -->
-              {% if user_management_perms.can_show_admin_users_and_registrars_nav %}
+              {% if user_management_perms.show_admin_registrar_nav %}
                 <li {% if this_page == "users_admin_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_admin_user' %}"><span>Admin users</span></a></li>
                 <li {% if this_page == "users_registrars" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_registrar' %}"><span>Registrars</span></a></li>
               {% endif %}
 
-              {% if user_management_perms.can_show_registrar_users_and_sponsored_users_nav %}
+              {% if user_management_perms.show_registrar_sponsored_nav %}
                 <li {% if this_page == "users_registrar_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_registrar_user' %}"><span>Registrar users</span></a></li>
               {% endif %}
 
-              {% if user_management_perms.can_show_registrar_users_and_sponsored_users_nav %}
+              {% if user_management_perms.show_registrar_sponsored_nav %}
                 <li {% if this_page == "users_sponsored_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_sponsored_user' %}"><span>Sponsored users</span></a></li>
               {% endif %}
 
@@ -43,7 +43,7 @@
               <li {% if this_page == "users_organization_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_organization_user' %}"><span>Org users</span></a></li>
 
               <!-- Regular users -->
-              {% if user_management_perms.can_show_regular_users_nav %}
+              {% if user_management_perms.show_individual_users_nav %}
                 <li {% if this_page == "users_users" %}class="active" aria-current="page"{% endif %}><a href="{% url 'user_management_manage_user' %}"><span>Users</span></a></li>
               {% endif %}
             </ul><!--/#dashboard-tabs-->

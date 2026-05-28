@@ -52,7 +52,7 @@
       {% endfor %}
     </div>
   {% endif %}
-  {% if user_management_perms.can_delete_or_deactivate_user %}
+  {% if user_management_perms.can_delete_or_deactivate %}
     <h3 class="body-bh">{% if target_user.is_confirmed %}Deactivate{% else %}Delete{% endif %}</h3>
     <a href="{% url delete_user_url target_user.id %}">
       <p class="page-dek"><strong>{{ target_user.raw_email}}</strong>'s account was created on {{ target_user.date_joined}}{% if target_user.last_login%}. Last login occurred on {{ target_user.last_login}}{% else %}. They have never logged in.{% endif %}</p>

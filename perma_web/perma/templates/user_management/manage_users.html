@@ -31,26 +31,26 @@
 
   <div class="row row-no-bleed admin-data">
     <h3 class="sr-only">Stats</h3>
-    <div class="col {% if user_management_perms.can_show_user_stats %}col-xs-3{% else %}col-xs-4{% endif %} col col-no-gutter admin-data-point">
+    <div class="col {% if user_management_perms.show_four_column_stats %}col-xs-3{% else %}col-xs-4{% endif %} col col-no-gutter admin-data-point">
       <div class="count-label">Users</div>
       <div class="count-number">
         {{ users.paginator.count|intcomma }}
       </div>
     </div>
 
-    {% if user_management_perms.can_show_deactivated_user_stat %}
+    {% if user_management_perms.show_deactivated_count %}
       <div class="col col-xs-3 col-no-gutter admin-data-point">
         <div class="count-label">Deactivated Users</div>
         <div class="count-number">{{ deactivated_users }}</div>
       </div>
     {% endif %}
 
-    <div class="col {% if user_management_perms.can_show_user_stats %}col-xs-3{% else %}col-xs-4{% endif %} col col-no-gutter admin-data-point">
+    <div class="col {% if user_management_perms.show_four_column_stats %}col-xs-3{% else %}col-xs-4{% endif %} col col-no-gutter admin-data-point">
       <div class="count-label">Unactivated Users</div>
       <div class="count-number">{{ unactivated_users }}</div>
     </div>
 
-    <div class="col {% if user_management_perms.can_show_user_stats %}col-xs-3{% else %}col-xs-4{% endif %} col col-no-gutter admin-data-point">
+    <div class="col {% if user_management_perms.show_four_column_stats %}col-xs-3{% else %}col-xs-4{% endif %} col col-no-gutter admin-data-point">
       <div class="count-label">Links</div>
       <div class="count-number">{{ total_created_links_count|default:0|intcomma }}</div>
     </div>
@@ -125,7 +125,7 @@
           </ul>
         </div>
 
-        {% if user_management_perms.can_show_upgrade_interest_filter %}
+        {% if user_management_perms.show_upgrade_interest_filter %}
           <div class="dropdown">
             <button class="btn-transparent" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">Upgrade interest <span class="caret"></span></button>
             <ul class="dropdown-menu">
@@ -151,7 +151,7 @@
             <li>
               <a {% if status == 'active' %}class="selected" aria-current="true" {% endif %}href="?{% current_query_string page='' status="active" %}"><i aria-hidden="true" class="icon-ok"></i> Active</a>
             </li>
-            {% if user_management_perms.can_show_deactivated_status_filter %}
+            {% if user_management_perms.show_deactivated_filter %}
             <li>
               <a {% if status == 'deactivated' %}class="selected" aria-current="true" {% endif %}href="?{% current_query_string page='' status="deactivated" %}"><i aria-hidden="true" class="icon-ok"></i> Deactivated</a>
             </li>
@@ -162,7 +162,7 @@
           </ul>
         </div>
 
-        {% if user_management_perms.can_show_org_and_sponsorship_filters %}
+        {% if user_management_perms.show_affiliation_filters %}
           {% if group_name == 'organization_user' %}
             <div class="dropdown">
               <button class="btn-transparent" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">Organization <span class="caret"></span></button>
@@ -199,7 +199,7 @@
           {% endif %}
         {% endif %}
 
-        {% if user_management_perms.can_show_registrar_filter_dropdown %}
+        {% if user_management_perms.show_registrar_filter %}
           <div class="dropdown">
             <button class="btn-transparent" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">Registrar <span class="caret"></span></button>
             <ul class="dropdown-menu">
@@ -253,11 +253,11 @@
             </div>
           {% endif %}
 
-          {% if user_management_perms.is_staff and listed_user.requested_account_type %}
+          {% if user_management_perms.show_upgrade_interest_note and listed_user.requested_account_type %}
             <div class="item-org">Interested in a {{listed_user.requested_account_type}} account with {{listed_user.requested_account_note}}</div>
           {% endif %}
 
-          {% if user_management_perms.can_show_registrar_affiliation_for_registrar_user %}
+          {% if user_management_perms.show_listed_user_registrar %}
             <div class="item-affil"><span class="sr-only">Member of:</span> <a href="{% url 'user_management_manage_registrar' %}?q={{listed_user.registrar.name.split|join:'+'|lower}}#registrar-{{ listed_user.registrar.id }}">{{ listed_user.registrar.name }}</a></div>
           {% endif %}
 
@@ -267,7 +267,7 @@
                 {% for sponsorship in sponsorships %}
                   <div class="item-sponsor-group">
                     <span class="item-sponsor-label">
-                      {% if user_management_perms.can_view_registrar_links_copy %}
+                      {% if user_management_perms.can_link_sponsored_user_links %}
                         <a href="{% url 'user_management_manage_single_sponsored_user_links' listed_user.id sponsorship.registrar.id %}">{{ sponsorship.registrar.name }}: view links
                         {% if sponsorship.status == 'inactive' %} (inactive sponsorship){% endif %}</a>
                       {% else %}
@@ -305,7 +305,7 @@
           <div>
             <div class="item-status">
               {% if listed_user.is_active %}
-                {% if user_management_perms.can_show_edit_remove_buttons_to_staff_users %}
+                {% if user_management_perms.can_edit_remove_as_staff %}
                   {% if group_name == 'sponsored_user' %}
                     {% include "user_management/includes/edit_sponsorship.html" %}
                   {% elif group_name == 'organization_user' %}
@@ -315,7 +315,7 @@
                   {% else %}
                     <a class="action action-delete" href="{% url 'user_management_manage_single_admin_user_remove' listed_user.id %}">remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                   {% endif %}
-                {% elif user_management_perms.can_show_edit_remove_buttons_to_registrar_users %}
+                {% elif user_management_perms.can_edit_remove_as_registrar %}
                   {% if group_name == 'organization_user' %}
                     <a class="action action-delete" href="{% url single_user_url listed_user.id %}">edit/remove <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                   {% elif group_name == 'registrar_user' %}
@@ -328,11 +328,11 @@
                 {% endif %}
               {% elif listed_user.is_confirmed %}
                 <span class="text-warning">deactivated account</span>
-                {% if user_management_perms.can_reactivate_user %}
+                {% if user_management_perms.can_reactivate %}
                   <a class="action" href="{% url reactivate_user_url listed_user.id %}">reactivate <span class="sr-only">{{ listed_user.get_full_name}}</span></a>
                 {% endif %}
               {% else %}
-                {% if user_management_perms.can_edit_sponsorship_or_delete_for_sponsored_users %}
+                {% if user_management_perms.can_manage_unconfirmed_as_staff %}
                   {% if group_name == 'sponsored_user' %}
                     {% include "user_management/includes/edit_sponsorship.html" %}
                   {% else %}
@@ -349,13 +349,13 @@
                 {% endif %}
               {% endif %}
             </div>
-            {% if user_management_perms.can_show_user_admin_console_link %}
+            {% if user_management_perms.can_link_user_admin %}
               <div class="item-status"><a class="action" href="{% url "admin:perma_linkuser_change" listed_user.id %}">edit <div class="sr-wrapper"><span class="sr-only">{{ listed_user.get_full_name }} </span></div>in admin console</span></a></div>
             {% endif %}
             {% if not listed_user.is_confirmed %}
               <div class="item-status"><a class="action" href="{% url 'user_management_resend_activation' listed_user.id %}">resend activation email <span class="sr-only"> to {{ listed_user.get_full_name}}</span></a></div>
             {% endif %}
-            {% if user_management_perms.can_show_view_links_button_for_registrar %}
+            {% if user_management_perms.can_view_sponsored_user_links %}
               <div class="item-status"><a class="action" href="{% url 'user_management_manage_single_sponsored_user_links' listed_user.id request.user.registrar.id %}">view links</a></div>
             {% endif %}
           </div>

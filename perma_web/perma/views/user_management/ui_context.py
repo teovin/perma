@@ -33,34 +33,34 @@ def build_user_management_ui(
         return {}
 
     ui_flags = {
-        "is_staff": allow_staff(user),
-        "can_show_user_management_title": allow_staff_or_registrar(user),
-        "can_show_organization_only_management_title": allow_organization_user(user)
+        "show_full_manage_title": allow_staff_or_registrar(user),
+        "show_org_manage_title": allow_organization_user(user)
         and not allow_staff_or_registrar(user),
-        "can_show_user_management_sidebar": allow_staff_registrar_or_org_user(user),
-        "can_show_admin_users_and_registrars_nav": allow_staff(user),
-        "can_show_registrar_users_and_sponsored_users_nav": allow_staff_or_registrar(user),
-        "can_show_regular_users_nav": allow_staff(user),
-        "can_show_select_button_for_registrar_user": allow_staff(user),
-        "can_show_registrar_admin_console_link": allow_staff(user),
-        "can_link_to_registrar_in_registrar_list": allow_staff(user),
-        "can_delete_or_deactivate_user": allow_staff(user),
-        "can_show_edit_remove_buttons_to_staff_users": allow_staff(user),
-        "can_show_edit_remove_buttons_to_registrar_users": allow_registrar(user),
-        "can_reactivate_user": allow_staff(user),
-        "can_edit_sponsorship_or_delete_for_sponsored_users": allow_staff(user),
-        "can_view_warning_messages_for_adding_user_to_registrar": allow_staff(user),
-        "can_use_sponsor_user_terminology": allow_registrar(user),
-        "can_see_modified_button_label_for_edit_sponsorship": allow_staff(user),
+        "show_manage_sidebar": allow_staff_registrar_or_org_user(user),
+        "show_admin_registrar_nav": allow_staff(user),
+        "show_registrar_sponsored_nav": allow_staff_or_registrar(user),
+        "show_individual_users_nav": allow_staff(user),
+        "can_select_pending_registrar": allow_staff(user),
+        "can_link_registrar_admin": allow_staff(user),
+        "can_link_registrar_in_heading": allow_staff(user),
+        "can_delete_or_deactivate": allow_staff(user),
+        "can_edit_remove_as_staff": allow_staff(user),
+        "can_edit_remove_as_registrar": allow_registrar(user),
+        "can_reactivate": allow_staff(user),
+        "can_manage_unconfirmed_as_staff": allow_staff(user),
+        "can_show_registrar_upgrade_warning": allow_staff(user),
+        "can_use_sponsor_terminology": allow_registrar(user),
+        "can_use_short_sponsorship_label": allow_staff(user),
+        "show_upgrade_interest_note": allow_staff(user),
     }
 
     if screen == "manage_orgs":
         ui_flags.update(
             {
                 "can_add_organization": allow_staff_or_registrar(user),
-                "can_show_organization_registrar_filter": allow_staff(user),
-                "can_show_organization_registrar_affiliation": allow_staff(user),
-                "can_show_organization_admin_console_link": allow_staff(user),
+                "show_registrar_org_filter": allow_staff(user),
+                "show_org_registrar_link": allow_staff(user),
+                "can_link_org_admin": allow_staff(user),
             }
         )
     elif group_name is not None:
@@ -68,19 +68,18 @@ def build_user_management_ui(
         ui_flags.update(
             {
                 "group_name": group_name,
-                "can_show_user_stats": allow_staff(user) and group_name == "user",
-                "can_show_deactivated_user_stat": allow_staff(user) and group_name == "user",
-                "can_show_upgrade_interest_filter": allow_staff(user) and group_name == "user",
-                "can_show_deactivated_status_filter": allow_staff(user) and ends_with_user,
-                "can_show_org_and_sponsorship_filters": allow_staff_or_registrar(user)
+                "show_four_column_stats": allow_staff(user) and group_name == "user",
+                "show_deactivated_count": allow_staff(user) and group_name == "user",
+                "show_upgrade_interest_filter": allow_staff(user) and group_name == "user",
+                "show_deactivated_filter": allow_staff(user) and ends_with_user,
+                "show_affiliation_filters": allow_staff_or_registrar(user)
                 and group_name in ("organization_user", "sponsored_user"),
-                "can_show_registrar_filter_dropdown": allow_staff(user)
+                "show_registrar_filter": allow_staff(user)
                 and group_name not in ("user", "admin_user"),
-                "can_show_registrar_affiliation_for_registrar_user": allow_staff(user)
-                and group_name == "registrar_user",
-                "can_view_registrar_links_copy": allow_staff(user),
-                "can_show_user_admin_console_link": allow_staff(user),
-                "can_show_view_links_button_for_registrar": not allow_staff(user)
+                "show_listed_user_registrar": allow_staff(user) and group_name == "registrar_user",
+                "can_link_sponsored_user_links": allow_staff(user),
+                "can_link_user_admin": allow_staff(user),
+                "can_view_sponsored_user_links": not allow_staff(user)
                 and group_name == "sponsored_user",
             }
         )
