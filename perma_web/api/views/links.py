@@ -16,7 +16,7 @@ from rest_framework import status
 from perma.celery_tasks import (
     run_next_capture,
     request_internet_archive_deletion_from_privacy_toggle,
-    request_internet_archive_upload_from_privacy_toggle,
+    upload_link_to_internet_archive
 )
 from perma.models import Capture, CaptureJob, Folder, Link, LinkBatch
 from perma.utils import stream_archive_if_permissible
@@ -357,7 +357,7 @@ class AuthenticatedLinkDetailView(BaseView):
                     link.internet_archive_upload_status = 'upload_or_reupload_required'
                     link.save(update_fields=["internet_archive_upload_status"])
                     logger.info(f"Link {link.guid} was toggled to public. Requesting the IA upload.")
-                    request_internet_archive_upload_from_privacy_toggle(link)
+                    upload_link_to_internet_archive.delay(link.guid)
                 else:
                     # if link was public but has been marked private, mark it for deletion.
                     link.internet_archive_upload_status = 'deletion_required'
