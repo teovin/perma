@@ -175,9 +175,9 @@ class Link(DeletableModel):
 
     archive_timestamp = models.DateTimeField(blank=True, null=True, help_text="Date after which this link is eligible to be copied by the mirror network.")
     internet_archive_upload_status = models.CharField(max_length=28,
-                                                      default='not_started',
-                                                      choices=(('not_started','not_started'),('completed','completed'),('failed','failed'),('deleted','deleted'), ('deletion_incomplete', 'deletion_incomplete'), ('deletion_required', 'deletion_required'), ('upload_or_reupload_required', 'upload_or_reupload_required')),
-                                                      db_index=True)
+                                                      choices=(('deletion_required', 'deletion_required'), ('upload_or_reupload_required', 'upload_or_reupload_required')),
+                                                      db_index=True,
+                                                      null=True)
 
     internet_archive_items = models.ManyToManyField(
         "InternetArchiveItem", through="InternetArchiveFile", related_name="links"

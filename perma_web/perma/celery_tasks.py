@@ -572,6 +572,16 @@ def queue_batched_tasks(task, query, batch_size=1000, **kwargs):
     logger.info(f"Queued {batches_queued} batches of size {batch_size}{' and a single batch of size ' + str(remainder) if remainder else ''}, pks {first}-{last}.")
 
 
+def clear_link_ia_status_after_privacy_toggle_jobs(link):
+    """
+    Clear internet_archive_upload_status field of a link.
+    Only applies to links marked upload_or_reupload_required or deletion_required after a privacy toggle.
+    """
+    if link.internet_archive_upload_status in ('upload_or_reupload_required', 'deletion_required'):
+        link.internet_archive_upload_status = None
+        link.save(update_fields=['internet_archive_upload_status'])
+
+
 @shared_task(acks_late=True)
 def upload_link_to_internet_archive(link_guid, attempts=0, timeouts=0):
     """
@@ -847,6 +857,7 @@ def confirm_file_uploaded_to_internet_archive(file_id, attempts=0, connection_er
 
     if perma_file.status == 'confirmed_present':
         logger.info(f"InternetArchiveFile {file_id} ({link.guid}) already confirmed to be uploaded to {perma_item.identifier}.")
+        clear_link_ia_status_after_privacy_toggle_jobs(link)
         return
 
     ia_session = get_ia_session()
@@ -913,6 +924,7 @@ def confirm_file_uploaded_to_internet_archive(file_id, attempts=0, connection_er
         'cached_file_count',
         'tasks_in_progress'
     ])
+    clear_link_ia_status_after_privacy_toggle_jobs(link)
 
     logger.info(f"Confirmed upload of {link.guid} to {perma_item.identifier}.")
 
@@ -1060,12 +1072,14 @@ def confirm_file_deleted_from_daily_item(file_id, attempts=0, connection_errors=
     Once the file is confirmed to be absent, it marks that IA item needs to have its
     "derive.php" task re-triggered.
     """
-    perma_file = InternetArchiveFile.objects.select_related('item').get(id=file_id)
+    perma_file = InternetArchiveFile.objects.select_related('item', 'link').get(id=file_id)
     perma_item = perma_file.item
     guid = perma_file.link_id
+    link = perma_file.link
 
     if perma_file.status == 'confirmed_absent':
         logger.info(f"InternetArchiveFile {file_id} ({guid}) already confirmed absent from {perma_item.identifier}.")
+        clear_link_ia_status_after_privacy_toggle_jobs(link)
         return
 
     ia_session = get_ia_session()
@@ -1124,6 +1138,7 @@ def confirm_file_deleted_from_daily_item(file_id, attempts=0, connection_errors=
         'cached_file_count',
         'tasks_in_progress'
     ])
+    clear_link_ia_status_after_privacy_toggle_jobs(link)
 
     logger.info(f"Confirmed deletion of {guid} from {perma_item.identifier}.")
 
