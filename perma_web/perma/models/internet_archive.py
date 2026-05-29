@@ -155,15 +155,6 @@ class InternetArchiveFile(models.Model):
 
     WARC_FILENAME = '{guid}.warc.gz'
 
-    # Statuses describing a file we should NOT (re)upload to a daily IA item from the privacy toggle
-    UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES = (
-        'confirmed_present',
-        'upload_attempted',
-        'upload_submitted',
-        'deletion_attempted',
-        'deletion_submitted'
-    )
-
     # Statuses describing a file we should request deletion for from the privacy toggle
     DELETION_FROM_PRIVACY_TOGGLE_INCLUDE_STATUSES = (
         'confirmed_present',

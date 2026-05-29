@@ -1247,10 +1247,7 @@ def dispatch_link_guid_tasks(task, queryset=None, first_link=None, rest_of_links
 @shared_task
 def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
     """
-    Queue upload tasks for permanent links marked upload_or_reupload_required that are
-    currently eligible for IA but do not already have an in-flight or completed daily file.
-    Backfills links that became public after their creation-date daily item was marked
-    complete, or that were not yet playable when first marked for upload.
+    Queue upload tasks for links still marked upload_or_reupload_required after a privacy toggle.
     """
     dispatch_link_guid_tasks(
         upload_link_to_internet_archive,
@@ -1262,9 +1259,7 @@ def queue_internet_archive_uploads_required_from_privacy_toggle(limit=100):
 @shared_task
 def queue_internet_archive_deletions_required_from_privacy_toggle(limit=100):
     """
-    Queue deletion tasks for permanent links marked deletion_required that have a daily
-    Internet Archive file eligible for deletion. Backfills when immediate deletion was
-    not queued or did not complete.
+    Queue deletion tasks for links still marked deletion_required after a privacy toggle.
     """
     dispatch_link_guid_tasks(
         delete_link_from_daily_item,

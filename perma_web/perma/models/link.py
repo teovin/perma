@@ -28,7 +28,6 @@ from perma.utils import preserve_perma_wacz
 
 from .base import DeletableManager, DeletableModel, GenericStringTaggedItem
 from .folder import Folder
-from .internet_archive import InternetArchiveFile
 from .organization import Organization
 from .user import LinkUser
 
@@ -88,34 +87,18 @@ class LinkQuerySet(QuerySet):
 
     def ia_upload_required_from_privacy_toggle(self, limit=100):
         """
-        Links marked for IA upload/re-upload that are currently eligible and do not
-        already have an in-flight or completed file on a daily Internet Archive item.
+        Links marked upload_or_reupload_required after a privacy toggle.
         """
-        blocked_link_ids = InternetArchiveFile.objects.filter(
-            item__span__isempty=False,
-            status__in=InternetArchiveFile.UPLOAD_FROM_PRIVACY_TOGGLE_EXCLUDE_STATUSES,
-        ).values('link_id')
-
-        query = self.filter(
-            internet_archive_upload_status='upload_or_reupload_required',
-        ).permanent().visible_to_ia().exclude(guid__in=blocked_link_ids)
-
+        query = self.filter(internet_archive_upload_status='upload_or_reupload_required')
         if limit is not None:
             query = query[:limit]
         return query
 
     def ia_deletion_required_from_privacy_toggle(self, limit=100):
         """
-        Links marked for IA deletion that have a daily Internet Archive file eligible
-        to be deleted (present on IA or a prior deletion attempt to retry).
+        Links marked deletion_required after a privacy toggle.
         """
-        deletable_link_ids = InternetArchiveFile.deletable_from_privacy_toggle().values('link_id')
-
-        query = self.filter(
-            internet_archive_upload_status='deletion_required',
-            guid__in=deletable_link_ids,
-        ).permanent()
-
+        query = self.filter(internet_archive_upload_status='deletion_required')
         if limit is not None:
             query = query[:limit]
         return query
