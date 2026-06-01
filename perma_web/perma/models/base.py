@@ -14,10 +14,10 @@ from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
 
 from perma.exceptions import InvalidTransmissionException, PermaPaymentsCommunicationException
 from perma.utils import (
-    first_day_of_next_month,
     pp_date_from_post,
     prep_for_perma_payments,
     process_perma_payments_transmission,
+    today_next_month,
     today_next_year,
 )
 
@@ -315,13 +315,20 @@ class CustomerModel(models.Model):
         '''
 
         # Calculate when, after today, the customer will/should next be charged.
-        # Calculate what fraction of the current subscription period remains,
-        # to use when determining how much to charge them today.
         if tier['period'] == 'monthly':
-            # monthly subscriptions are paid on the first of the next month
-            next_payment = next_month
-            days_in_month = calendar.monthrange(now.year, now.month)[1]
-            prorated_ratio = Decimal((next_payment - now).days / days_in_month)
+            # montly subscriptions are now paid on the anniversary of their creation.
+            # historically, monthly subscriptions were all paid on the first of the month.
+            if current_subscription:
+                # n.b. these values are nonsensical if the current subscription is not active.
+                # there is no good answer in that case.... so updating a non-active
+                # subscription is forbidden below. continuing to calculate the nonsensical values
+                # for these fields since.... that at least avoids type errors.
+                next_payment = current_subscription['paid_through']
+                days_in_month = calendar.monthrange(now.year, now.month)[1]
+                prorated_ratio = Decimal((next_payment - now).days / days_in_month)
+            else:
+                next_payment = next_month
+                prorated_ratio  = Decimal(1)
         elif tier['period'] == 'annually':
             # annual subscriptions are paid on the anniversary of their creation
             if current_subscription:
@@ -409,7 +416,7 @@ class CustomerModel(models.Model):
 
     def get_subscription_info(self, now):
         timestamp = now.timestamp()
-        next_month = first_day_of_next_month(now)
+        next_month = today_next_month(now)
         next_year = today_next_year(now)
         subscription = self.get_subscription()
 
