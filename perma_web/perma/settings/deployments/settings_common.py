@@ -671,3 +671,19 @@ TEMPLATE_VISIBLE_SETTINGS = (
 
 # schema viewer
 VIEW_SCHEMA = False
+
+# Custom staff-invited new-user emails for specific registrars.
+# Used by send_staff_invited_new_user_email.
+# Format:
+# CUSTOM_EMAILS_FOR_REGISTRAR = {
+#     1: {  # registrar id, as an int
+#         # template_file is optional, below is the default value
+#         'template_file': 'email/new_user_added_by_other_custom.txt',
+#         # below are the context values required for the default template;
+#         # supply your own keys/values as necessary if specifying your own template.
+#         'subject': 'Custom email subject line',
+#         'opening': 'Opening paragraph, before the activation link section',
+#         'closing': 'Closing paragraph, after the activation link section.',
+#     },
+# }
+CUSTOM_EMAILS_FOR_REGISTRAR = {}
