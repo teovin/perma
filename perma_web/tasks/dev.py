@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from invoke import task
 import json
 import os
@@ -10,9 +10,10 @@ from tqdm import tqdm
 
 from django.conf import settings
 from django.http import HttpRequest
+from django.utils import timezone
 
 from perma.email import send_user_email, send_self_email, registrar_users, registrar_users_plus_stats
-from perma.models import Link, LinkUser, Registrar
+from perma.models import Link, LinkUser, Registrar, CaptureJob
 
 import logging
 logger = logging.getLogger(__name__)
@@ -91,6 +92,58 @@ def count_links_without_cached_playback_status(ctx):
     """
     count = Link.objects.permanent().filter(cached_can_play_back__isnull=True).count()
     print(count)
+
+
+@task
+def capture_queue_health(ctx, quiet=False, window=50, max_uncompleted=25, stuck_minutes=20, max_stuck=25):
+    """
+    Report on whether captures are completing, flagging two conditions:
+
+      1. Of the most recently created {window} links, how many still have a
+         capture (other than a user upload) in the 'pending' state. This is the
+         original status.perma.cc/monitor heuristic -- a snapshot of whether
+         recent captures are succeeding right now -- and fires when more than
+         {max_uncompleted} of them are unfinished. This can happen the moment 50
+         links are submitted, even in a healthy queue.
+      2. How many CaptureJobs are old enough to have finished but are still
+         pending/in_progress: fires when
+         more than {max_stuck} jobs have been unfinished for over
+         {stuck_minutes} minutes.
+
+    Report if *either* condition is exceeded.
+    With --quiet (for cron/alerting) print nothing unless something is wrong;
+    otherwise print both numbers for a human.
+    """
+    # 1. Recent-window pending snapshot (original /monitor heuristic).
+    recent_link_ids = list(
+        Link.objects.order_by('-creation_timestamp')
+        .values_list('pk', flat=True)[:window]
+    )
+    uncompleted = Link.objects.filter(
+        pk__in=recent_link_ids,
+        captures__status='pending',
+        captures__user_upload=False,
+    ).distinct().count()
+
+    # 2. Stuck jobs: too old to still be unfinished. Age comes from
+    # Link.creation_timestamp (write-once); CaptureJob.creation_timestamp is
+    # auto_now and so tracks last save, not submission.
+    cutoff = timezone.now() - timedelta(minutes=stuck_minutes)
+    stuck = CaptureJob.objects.filter(
+        status__in=['pending', 'in_progress'],
+        link__creation_timestamp__lt=cutoff,
+    ).count()
+
+    problems = []
+    if uncompleted > max_uncompleted:
+        problems.append(f"{uncompleted} uncompleted captures in the most recent {window}")
+    if stuck > max_stuck:
+        problems.append(f"{stuck} captures unfinished for over {stuck_minutes} minutes")
+
+    if problems:
+        print("; ".join(problems))
+    elif not quiet:
+        print(f"OK: {uncompleted} uncompleted in last {window}, {stuck} unfinished over {stuck_minutes} min")
 
 
 @task
