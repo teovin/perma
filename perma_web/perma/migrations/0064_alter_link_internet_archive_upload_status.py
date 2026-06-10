@@ -3,6 +3,22 @@
 from django.db import migrations, models
 
 
+LEGACY_IA_UPLOAD_STATUSES = (
+    'not_started',
+    'completed',
+    'failed',
+    'deleted',
+    'deletion_incomplete',
+)
+
+
+def null_legacy_internet_archive_upload_statuses(apps, schema_editor):
+    Link = apps.get_model('perma', 'Link')
+    Link.objects.filter(
+        internet_archive_upload_status__in=LEGACY_IA_UPLOAD_STATUSES
+    ).update(internet_archive_upload_status=None)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -14,5 +30,9 @@ class Migration(migrations.Migration):
             model_name='link',
             name='internet_archive_upload_status',
             field=models.CharField(choices=[('deletion_required', 'deletion_required'), ('upload_or_reupload_required', 'upload_or_reupload_required')], db_index=True, max_length=28, null=True),
+        ),
+        migrations.RunPython(
+            null_legacy_internet_archive_upload_statuses,
+            migrations.RunPython.noop,
         ),
     ]
