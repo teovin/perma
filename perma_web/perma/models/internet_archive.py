@@ -144,6 +144,13 @@ def daily_item_backlog_queryset_filter(*, complete=None):
     return filters
 
 
+def _daily_item_span_overlap_range(window_start, window_end):
+    return DateTimeTZRange(
+        InternetArchiveItem.datetime(f'{window_start.isoformat()} 00:00:00'),
+        InternetArchiveItem.datetime(f'{(window_end + timedelta(days=1)).isoformat()} 00:00:00'),
+    )
+
+
 def daily_item_dates_in_window(window_start, window_end):
     """
     Return dates that have a daily InternetArchiveItem whose span overlaps
@@ -152,17 +159,49 @@ def daily_item_dates_in_window(window_start, window_end):
     if window_start > window_end:
         return frozenset()
 
-    query_range = DateTimeTZRange(
-        InternetArchiveItem.datetime(f'{window_start.isoformat()} 00:00:00'),
-        InternetArchiveItem.datetime(f'{(window_end + timedelta(days=1)).isoformat()} 00:00:00'),
-    )
     return frozenset(
         item.span.lower.date()
         for item in InternetArchiveItem.objects.filter(
             **daily_item_backlog_queryset_filter(),
-            span__overlap=query_range,
+            span__overlap=_daily_item_span_overlap_range(window_start, window_end),
         ).only('span')
     )
+
+
+def incomplete_daily_item_dates_in_window(window_start, window_end):
+    """Incomplete daily items with span lower bound in [window_start, window_end], oldest first."""
+    if window_start > window_end:
+        return []
+
+    return [
+        span.lower.date()
+        for span in incomplete_daily_backlog_queryset().filter(
+            span__overlap=_daily_item_span_overlap_range(window_start, window_end),
+        ).order_by('span').values_list('span', flat=True)
+    ]
+
+
+def incomplete_daily_backlog_queryset():
+    return InternetArchiveItem.objects.filter(
+        **daily_item_backlog_queryset_filter(complete=False),
+    )
+
+
+def incomplete_daily_backlog_stats():
+    """
+    Count and span bounds for incomplete daily items (three lightweight queries).
+    """
+    qs = incomplete_daily_backlog_queryset()
+    count = qs.count()
+    if not count:
+        return {'count': 0, 'oldest': None, 'newest': None}
+    oldest_span = qs.order_by('span').values_list('span', flat=True).first()
+    newest_span = qs.order_by('-span').values_list('span', flat=True).first()
+    return {
+        'count': count,
+        'oldest': oldest_span.lower.date(),
+        'newest': newest_span.lower.date(),
+    }
 
 
 def uneditable_daily_item_identifiers():
