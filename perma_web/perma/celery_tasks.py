@@ -36,6 +36,11 @@ from django.template.defaultfilters import pluralize, filesizeformat
 
 from perma.models import LinkUser, Link, Capture, \
     CaptureJob, InternetArchiveItem, InternetArchiveFile, Folder, Sponsorship, UserOrganizationAffiliation
+from perma.models.internet_archive import (
+    UNEDITABLE_DAILY_ITEM_DATE_STRINGS,
+    daily_item_backlog_queryset_filter,
+    uneditable_daily_item_identifiers,
+)
 from perma.exceptions import PermaPaymentsCommunicationException, ScoopAPINetworkException, ScoopAPIException
 from perma.utils import (
     remove_whitespace,
@@ -827,12 +832,7 @@ def queue_file_uploaded_confirmation_tasks(limit=None):
         file_ids = InternetArchiveFile.objects.filter(
                     status='upload_submitted'
                 ).exclude(
-                    item_id__in=[
-                        'daily_perma_cc_2022-07-25',
-                        'daily_perma_cc_2022-07-21',
-                        'daily_perma_cc_2022-07-20',
-                        'daily_perma_cc_2022-07-19'
-                    ]
+                    item_id__in=uneditable_daily_item_identifiers()
                 ).values_list(
                     'id', flat=True
                 )[:limit]
@@ -1179,12 +1179,7 @@ def queue_file_deleted_confirmation_tasks(limit=100):
         file_ids = InternetArchiveFile.objects.filter(
                     status='deletion_submitted'
                 ).exclude(
-                    item_id__in=[
-                        'daily_perma_cc_2022-07-25',
-                        'daily_perma_cc_2022-07-21',
-                        'daily_perma_cc_2022-07-20',
-                        'daily_perma_cc_2022-07-19'
-                    ]
+                    item_id__in=uneditable_daily_item_identifiers()
                 ).values_list(
                     'id', flat=True
                 )[:limit]
@@ -1345,9 +1340,7 @@ def conditionally_queue_internet_archive_uploads_for_date_range(start_date_strin
 
     if not start_date_string:
         oldest_incomplete_daily_item_in_backlog = InternetArchiveItem.objects.filter(
-              span__isempty=False,
-              span__gt=('2021-11-10', '2021-11-11'),
-              complete=False,
+              **daily_item_backlog_queryset_filter(complete=False),
         ).order_by('span').first()
         start = oldest_incomplete_daily_item_in_backlog.span.lower.date()
     else:
@@ -1374,9 +1367,8 @@ def conditionally_queue_internet_archive_uploads_for_date_range(start_date_strin
         for day in date_range(start, end, timedelta(days=1)):
             if total_queued < to_queue:
                 date_string = day.strftime('%Y-%m-%d')
-                if date_string in ['2022-07-25', '2022-07-21', '2022-07-20', '2022-07-19']:
-                    # for now, skip these days: by accident, we don't presently have edit
-                    # privileges for the IA Items with these identifiers
+                if date_string in UNEDITABLE_DAILY_ITEM_DATE_STRINGS:
+                    # We do not presently have edit privileges for these IA Items.
                     continue
                 identifier = InternetArchiveItem.DAILY_IDENTIFIER.format(
                     prefix=settings.INTERNET_ARCHIVE_DAILY_IDENTIFIER_PREFIX,

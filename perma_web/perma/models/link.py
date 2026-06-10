@@ -28,6 +28,7 @@ from perma.utils import preserve_perma_wacz
 
 from .base import DeletableManager, DeletableModel, GenericStringTaggedItem
 from .folder import Folder
+from .internet_archive import LAST_INDIVIDUAL_LINK_IA_UPLOAD_DATE
 from .organization import Organization
 from .user import LinkUser
 
@@ -107,8 +108,8 @@ class LinkQuerySet(QuerySet):
         # Get all Links we think should have been uploaded to IA,
         # and then filter out the ones that have already been uploaded
         # to a "daily" item.
-        if date_string > "2022-10-03":
-            # No links created after 2022-10-03 were uploaded to IA as individual Items:
+        if date_string > LAST_INDIVIDUAL_LINK_IA_UPLOAD_DATE:
+            # No links created after this date were uploaded to IA as individual Items:
             # use a simplified query
             logger.debug("Running simple IA eligibility query.")
             query = Link.objects.filter(
