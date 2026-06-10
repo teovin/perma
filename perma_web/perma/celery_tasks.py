@@ -931,7 +931,14 @@ def confirm_file_uploaded_to_internet_archive(file_id, attempts=0, connection_er
 
 @shared_task(acks_late=True)
 def delete_link_from_daily_item(link_guid, attempts=0):
-    perma_file = InternetArchiveFile.objects.select_related('item').get(link_id=link_guid, item__span__isempty=False)
+    perma_file = InternetArchiveFile.objects.select_related('item').filter(
+        link_id=link_guid,
+        item__span__isempty=False,
+    ).first()
+    if not perma_file:
+        logger.info(f"No daily InternetArchiveFile for {link_guid}; nothing to delete.")
+        return
+
     perma_item = perma_file.item
     identifier = perma_item.identifier
 
