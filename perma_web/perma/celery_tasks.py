@@ -1222,20 +1222,6 @@ def queue_internet_archive_deletions(limit=None):
     logger.info(f"Queued { len(queued) } links for deletion ({queued[0]} through {queued[-1]}).")
 
 
-def request_internet_archive_deletion_from_privacy_toggle(link):
-    """
-    Queue deletion of a link from its daily Internet Archive item, if a deletable file exists.
-    Triggered by the privacy toggle in the API.
-    """
-    is_deletable = InternetArchiveFile.deletable_from_privacy_toggle().filter(link_id=link.guid).exists()
-
-    if not is_deletable:
-        return False
-
-    delete_link_from_daily_item.delay(link.guid)
-    return True
-
-
 def dispatch_link_guid_tasks(task, queryset=None, first_link=None, rest_of_links=None, log_label=None):
     """
     Dispatch task.delay(link.guid) for each link, returning queued guids.
