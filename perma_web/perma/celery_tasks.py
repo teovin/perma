@@ -572,12 +572,9 @@ def queue_batched_tasks(task, query, batch_size=1000, **kwargs):
     logger.info(f"Queued {batches_queued} batches of size {batch_size}{' and a single batch of size ' + str(remainder) if remainder else ''}, pks {first}-{last}.")
 
 
-def clear_link_ia_status_after_privacy_toggle_jobs(link):
-    """
-    Clear internet_archive_upload_status field of a link.
-    Only applies to links marked upload_or_reupload_required or deletion_required after a privacy toggle.
-    """
-    if link.internet_archive_upload_status in ('upload_or_reupload_required', 'deletion_required'):
+def clear_pending_ia_status(link):
+    """Unset the privacy-toggle IA sync flag so Beat stops retrying this link."""
+    if link.internet_archive_upload_status:
         link.internet_archive_upload_status = None
         link.save(update_fields=['internet_archive_upload_status'])
 
@@ -598,7 +595,7 @@ def upload_link_to_internet_archive(link_guid, attempts=0, timeouts=0):
         # a discoverable link). Clear when ineligibility is definitive: not discoverable,
         # or playback cache has run and the capture can't play back.
         if link.cached_can_play_back is not None or not link.is_discoverable():
-            clear_link_ia_status_after_privacy_toggle_jobs(link)
+            clear_pending_ia_status(link)
         return
 
     # Get or create the appropriate InternetArchiveItem object for this link
@@ -622,7 +619,7 @@ def upload_link_to_internet_archive(link_guid, attempts=0, timeouts=0):
     if perma_file:
         if perma_file.status == 'confirmed_present':
             logger.info(f"Not uploading {link_guid} to {identifier}: our records indicate it is already present.")
-            clear_link_ia_status_after_privacy_toggle_jobs(link)
+            clear_pending_ia_status(link)
             return
         elif perma_file.status in ['deletion_attempted', 'deletion_submitted']:
             # If we find ourselves here, something has gotten very mixed up indeed. We probably need a human to have a look.
@@ -635,7 +632,7 @@ def upload_link_to_internet_archive(link_guid, attempts=0, timeouts=0):
             logger.info(f"Uploading {link_guid} (previously deleted) to {identifier}.")
         else:
             logger.warning(f"Not uploading {link_guid} to {identifier}: task not implemented for InternetArchiveFiles with status '{perma_file.status}'.")
-            clear_link_ia_status_after_privacy_toggle_jobs(link)
+            clear_pending_ia_status(link)
             return
     else:
         # A fresh one. Create the InternetArchiveFile here.
@@ -864,7 +861,7 @@ def confirm_file_uploaded_to_internet_archive(file_id, attempts=0, connection_er
 
     if perma_file.status == 'confirmed_present':
         logger.info(f"InternetArchiveFile {file_id} ({link.guid}) already confirmed to be uploaded to {perma_item.identifier}.")
-        clear_link_ia_status_after_privacy_toggle_jobs(link)
+        clear_pending_ia_status(link)
         return
 
     ia_session = get_ia_session()
@@ -931,7 +928,7 @@ def confirm_file_uploaded_to_internet_archive(file_id, attempts=0, connection_er
         'cached_file_count',
         'tasks_in_progress'
     ])
-    clear_link_ia_status_after_privacy_toggle_jobs(link)
+    clear_pending_ia_status(link)
 
     logger.info(f"Confirmed upload of {link.guid} to {perma_item.identifier}.")
 
@@ -944,7 +941,7 @@ def delete_link_from_daily_item(link_guid, attempts=0):
     ).first()
     if not perma_file:
         logger.info(f"No daily InternetArchiveFile for {link_guid}; nothing to delete.")
-        clear_link_ia_status_after_privacy_toggle_jobs(Link.objects.get(guid=link_guid))
+        clear_pending_ia_status(Link.objects.get(guid=link_guid))
         return
 
     perma_item = perma_file.item
@@ -958,7 +955,7 @@ def delete_link_from_daily_item(link_guid, attempts=0):
 
     if perma_file.status == 'confirmed_absent':
         logger.info(f"The daily InternetArchiveFile for {link_guid} is already confirmed absent from {identifier}.")
-        clear_link_ia_status_after_privacy_toggle_jobs(link)
+        clear_pending_ia_status(link)
         return
     elif perma_file.status in ['upload_attempted', 'upload_submitted']:
         # If we find ourselves here, something has gotten very mixed up indeed. We probably need a human to have a look.
@@ -971,7 +968,7 @@ def delete_link_from_daily_item(link_guid, attempts=0):
         logger.info(f"Deleting {link_guid} from {identifier}.")
     else:
         logger.warning(f"Not deleting {link_guid} from {identifier}: task not implemented for InternetArchiveFiles with status '{perma_file.status}'.")
-        clear_link_ia_status_after_privacy_toggle_jobs(link)
+        clear_pending_ia_status(link)
         return
 
     # Record that we are attempting a deletion
@@ -1097,7 +1094,7 @@ def confirm_file_deleted_from_daily_item(file_id, attempts=0, connection_errors=
 
     if perma_file.status == 'confirmed_absent':
         logger.info(f"InternetArchiveFile {file_id} ({guid}) already confirmed absent from {perma_item.identifier}.")
-        clear_link_ia_status_after_privacy_toggle_jobs(link)
+        clear_pending_ia_status(link)
         return
 
     ia_session = get_ia_session()
@@ -1156,7 +1153,7 @@ def confirm_file_deleted_from_daily_item(file_id, attempts=0, connection_errors=
         'cached_file_count',
         'tasks_in_progress'
     ])
-    clear_link_ia_status_after_privacy_toggle_jobs(link)
+    clear_pending_ia_status(link)
 
     logger.info(f"Confirmed deletion of {guid} from {perma_item.identifier}.")
 
