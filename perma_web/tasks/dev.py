@@ -97,11 +97,11 @@ def report_ia_upload_health(
       span_days=90 --span-end DATE — N days ending on that date
       span_start + span_end — explicit range (span_days ignored)
       span_days=all — full daily-item dataset (backlog floor through today by
-        default; combine with span_start and/or span_end to adjust)
+        default; combine with span_start and/or span_end to adjust). May be expensive.
 
     mode:
-      auto (default) — per-day breakdown when in-span incomplete and missing
-        day counts are both <= auto_detail_max_days; otherwise aggregate only
+      auto (default) — per-day breakdown when the count of in-span days with initial_uploads_incomplete
+        and in-span missing days are both <= auto_detail_max_days; otherwise aggregate only
       detailed — always per-day breakdown for the span
       summary — always aggregate counts for the span
 

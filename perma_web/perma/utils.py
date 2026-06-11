@@ -1121,8 +1121,8 @@ def build_ia_upload_health_report(
     from perma.models import Link
     from perma.models.internet_archive import (
         daily_item_dates_in_window,
-        incomplete_daily_backlog_stats,
-        incomplete_daily_item_dates_in_window,
+        initial_uploads_incomplete_dates_in_window,
+        initial_uploads_incomplete_stats,
         uneditable_daily_item_dates,
     )
 
@@ -1137,8 +1137,8 @@ def build_ia_upload_health_report(
         span_days, span_start=span_start, span_end=span_end,
     )
 
-    backlog = incomplete_daily_backlog_stats()
-    incomplete_dates = incomplete_daily_item_dates_in_window(span_start, span_end)
+    initial_uploads_incomplete = initial_uploads_incomplete_stats()
+    initial_uploads_incomplete_dates = initial_uploads_incomplete_dates_in_window(span_start, span_end)
 
     existing_dates = daily_item_dates_in_window(span_start, span_end)
     expected_dates = {
@@ -1151,7 +1151,7 @@ def build_ia_upload_health_report(
 
     if mode == 'auto':
         effective_mode = 'detailed' if (
-            len(incomplete_dates) <= auto_detail_max_days and len(missing_dates) <= auto_detail_max_days
+            len(initial_uploads_incomplete_dates) <= auto_detail_max_days and len(missing_dates) <= auto_detail_max_days
         ) else 'summary'
     else:
         effective_mode = mode
@@ -1166,10 +1166,10 @@ def build_ia_upload_health_report(
             **({'full': True} if span_full else {}),
         },
         'global': {
-            'incomplete_daily_items': {
-                'count': backlog['count'],
-                'oldest': backlog['oldest'].isoformat() if backlog['oldest'] else None,
-                'newest': backlog['newest'].isoformat() if backlog['newest'] else None,
+            'initial_uploads_incomplete': {
+                'count': initial_uploads_incomplete['count'],
+                'oldest': initial_uploads_incomplete['oldest'].isoformat() if initial_uploads_incomplete['oldest'] else None,
+                'newest': initial_uploads_incomplete['newest'].isoformat() if initial_uploads_incomplete['newest'] else None,
             },
             'privacy_toggle': {
                 'uploads_pending': Link.objects.filter(
@@ -1193,16 +1193,16 @@ def build_ia_upload_health_report(
     )
 
     if effective_mode == 'detailed':
-        dates_of_interest = set(incomplete_dates) | set(missing_dates)
+        dates_of_interest = set(initial_uploads_incomplete_dates) | set(missing_dates)
         pending_by_date = _ia_upload_health_pending_links_by_date(dates_of_interest)
-        report['in_span']['incomplete_daily_items'] = {
-            'count': len(incomplete_dates),
+        report['in_span']['initial_uploads_incomplete'] = {
+            'count': len(initial_uploads_incomplete_dates),
             'days': [
                 {
                     'date': day.isoformat(),
                     'links_pending': pending_by_date.get(day, 0),
                 }
-                for day in incomplete_dates
+                for day in initial_uploads_incomplete_dates
             ],
         }
         report['in_span']['missing_daily_items'] = {
@@ -1216,11 +1216,11 @@ def build_ia_upload_health_report(
             ],
         }
     else:
-        incomplete_section = {'count': len(incomplete_dates)}
-        if incomplete_dates:
-            incomplete_section['oldest'] = incomplete_dates[0].isoformat()
-            incomplete_section['newest'] = incomplete_dates[-1].isoformat()
-        report['in_span']['incomplete_daily_items'] = incomplete_section
+        initial_uploads_incomplete_section = {'count': len(initial_uploads_incomplete_dates)}
+        if initial_uploads_incomplete_dates:
+            initial_uploads_incomplete_section['oldest'] = initial_uploads_incomplete_dates[0].isoformat()
+            initial_uploads_incomplete_section['newest'] = initial_uploads_incomplete_dates[-1].isoformat()
+        report['in_span']['initial_uploads_incomplete'] = initial_uploads_incomplete_section
         report['in_span']['missing_daily_items'] = {'count': len(missing_dates)}
         report['in_span']['links_pending_total'] = Link.objects.visible_to_ia().filter(
             **pending_links_filter

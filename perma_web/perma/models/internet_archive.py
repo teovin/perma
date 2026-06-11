@@ -92,7 +92,17 @@ class InternetArchiveItem(models.Model):
     cached_description = models.TextField(null=True, blank=True, default=None)
 
     tasks_in_progress = models.IntegerField(default=0, db_index=True, help_text="We have asked Internet Archive to run appx this many tasks for this item and have not yet confirmed that those tasks are complete; derivative tasks not counted.")
-    complete = models.BooleanField(default=False, help_text="Has all the files it ought to have; has no files it ought not have.")
+    initial_uploads_complete = models.BooleanField(
+        default=False,
+        verbose_name='Initial uploads complete',
+        help_text=(
+            "True when a daily upload task has found zero eligible links for this calendar day "
+            "that lack an InternetArchiveFile. Only set after the IA Item is older than yesterday, "
+            "to avoid missing any links. The daily upload scheduler skips days marked True. "
+            "This field does not consider whether the day's IA Item lacks links due to later "
+            "eligibility changes, such as changes in links' privacy."
+        ),
+    )
     last_derived = models.DateTimeField(null=True, blank=True)
     derive_required = models.BooleanField(default=False)
 
@@ -133,14 +143,14 @@ class InternetArchiveItem(models.Model):
         return cls.objects.aggregate(Sum('tasks_in_progress'))['tasks_in_progress__sum']
 
 
-def daily_item_backlog_queryset_filter(*, complete=None):
     """Filter kwargs for daily InternetArchiveItem backlog queries."""
+def daily_item_backlog_queryset_filter(*, initial_uploads_complete=None):
     filters = {
         'span__isempty': False,
         'span__gt': DAILY_ITEM_BACKLOG_SPAN_FLOOR,
     }
-    if complete is not None:
-        filters['complete'] = complete
+    if initial_uploads_complete is not None:
+        filters['initial_uploads_complete'] = initial_uploads_complete
     return filters
 
 
@@ -168,30 +178,30 @@ def daily_item_dates_in_window(window_start, window_end):
     )
 
 
-def incomplete_daily_item_dates_in_window(window_start, window_end):
-    """Incomplete daily items with span lower bound in [window_start, window_end], oldest first."""
+def initial_uploads_incomplete_dates_in_window(window_start, window_end):
+    """Days in [window_start, window_end] where initial_uploads_complete is False, oldest first."""
     if window_start > window_end:
         return []
 
     return [
         span.lower.date()
-        for span in incomplete_daily_backlog_queryset().filter(
+        for span in initial_uploads_incomplete_queryset().filter(
             span__overlap=_daily_item_span_overlap_range(window_start, window_end),
         ).order_by('span').values_list('span', flat=True)
     ]
 
 
-def incomplete_daily_backlog_queryset():
+def initial_uploads_incomplete_queryset():
     return InternetArchiveItem.objects.filter(
-        **daily_item_backlog_queryset_filter(complete=False),
+        **daily_item_backlog_queryset_filter(initial_uploads_complete=False),
     )
 
 
-def incomplete_daily_backlog_stats():
+def initial_uploads_incomplete_stats():
     """
-    Count and span bounds for incomplete daily items (three lightweight queries).
+    Count and span bounds for days where the initial upload pass is not complete.
     """
-    qs = incomplete_daily_backlog_queryset()
+    qs = initial_uploads_incomplete_queryset()
     count = qs.count()
     if not count:
         return {'count': 0, 'oldest': None, 'newest': None}

@@ -1310,10 +1310,10 @@ def queue_internet_archive_uploads_for_date(date_string, limit=100):
         )
         try:
             item = InternetArchiveItem.objects.get(identifier=identifier)
-            # Don't mark an item complete if it's yesterday's
+            # Don't mark initial uploads complete if it's yesterday's.
             if timezone.now() - item.span.lower > timedelta(days=3):
-                item.complete = True
-                item.save(update_fields=['complete'])
+                item.initial_uploads_complete = True
+                item.save(update_fields=['initial_uploads_complete'])
                 logger.info(f"Found no pending links: marked IA Item {item.identifier} complete.")
             else:
                 logger.info(f"Found no pending links for recent IA Item {item.identifier}; not marking complete.")
@@ -1376,9 +1376,8 @@ def conditionally_queue_internet_archive_uploads_for_date_range(start_date_strin
                 )
                 try:
                     item = InternetArchiveItem.objects.get(identifier=identifier)
-                    if item.complete:
-                        # if this day is already complete, skip it, and move on to the
-                        # next day in the range
+                    if item.initial_uploads_complete:
+                        # Initial uploads for this day are complete; skip to the next day.
                         continue
                     in_flight_for_this_day = item.tasks_in_progress
                 except InternetArchiveItem.DoesNotExist:
