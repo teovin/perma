@@ -1322,8 +1322,9 @@ def queue_internet_archive_uploads_for_date(date_string, limit=100):
         return 0
 
 
-@shared_task
-def conditionally_queue_internet_archive_uploads_for_date_range(start_date_string, end_date_string, daily_limit=100, limit=None):
+def _queue_internet_archive_initial_uploads_for_date_range(
+    start_date_string, end_date_string, daily_limit=100, limit=None
+):
     """
     Queues up to settings.INTERNET_ARCHIVE_MAX_SIMULTANEOUS_UPLOADS links for upload to IA, spread over
     a number of days such that no more than `daily_limit` are ever queued for a particular day. May
@@ -1332,11 +1333,13 @@ def conditionally_queue_internet_archive_uploads_for_date_range(start_date_strin
     - there are submitted-but-as-of-yet-unfinished upload requests being processed by IA
     - there are not enough qualifying links in the date range
     - there are not enough qualifying links in the date range, while respecting daily_limit
+
+    Returns the number of upload tasks queued, or None if queuing was skipped.
     """
     tasks_in_ia_queue = redis.from_url(settings.CELERY_BROKER_URL).llen('ia')
     if tasks_in_ia_queue:
         logger.info(f"Skipped the queuing of file upload tasks: {tasks_in_ia_queue} task{pluralize(tasks_in_ia_queue)} in the ia queue.")
-        return
+        return None
 
     if not start_date_string:
         oldest_incomplete_daily_item_in_backlog = InternetArchiveItem.objects.filter(
@@ -1358,7 +1361,7 @@ def conditionally_queue_internet_archive_uploads_for_date_range(start_date_strin
 
     if to_queue < 0:
         logger.error(f"Something is amiss with the IA upload process: InternetArchiveItem.inflight_task_count ({InternetArchiveItem.inflight_task_count()}) is larger than settings.INTERNET_ARCHIVE_MAX_SIMULTANEOUS_UPLOADS.")
-        return
+        return None
 
     if to_queue:
 
@@ -1396,8 +1399,64 @@ def conditionally_queue_internet_archive_uploads_for_date_range(start_date_strin
         else:
             logger.info("Prepared to upload 0 links to internet archive: no pending links in range.")
 
+        return total_queued
+
     else:
         logger.info("Skipped the queuing of file upload tasks: max tasks already in progress.")
+        return None
+
+
+@shared_task
+def conditionally_queue_internet_archive_uploads_for_date_range(start_date_string, end_date_string, daily_limit=100, limit=None):
+    """
+    Queues up to settings.INTERNET_ARCHIVE_MAX_SIMULTANEOUS_UPLOADS links for upload to IA, spread over
+    a number of days such that no more than `daily_limit` are ever queued for a particular day. May
+    queue fewer links, if an explicit `limit` is passed in, or if:
+    - there are pending tasks in the Celery queue
+    - there are submitted-but-as-of-yet-unfinished upload requests being processed by IA
+    - there are not enough qualifying links in the date range
+    - there are not enough qualifying links in the date range, while respecting daily_limit
+    """
+    _queue_internet_archive_initial_uploads_for_date_range(
+        start_date_string, end_date_string, daily_limit=daily_limit, limit=limit
+    )
+
+
+@shared_task
+def queue_internet_archive_pending_work(
+    start_date_string, end_date_string, daily_limit=100, limit=None
+):
+    """
+    First, queues any pending initial IA uploads for a date range.
+    If there aren't any, then queues any pending privacy-toggle uploads and deletions.
+
+    If the queuing of pending initial IA uploads is skipped for any reason
+    (tasks are already in progress, rate-limiting has been triggered, a problem has been encountered, etc.),
+    then the queuing of privacy-toggle-related work is skipped too.
+    """
+    initial_queued = _queue_internet_archive_initial_uploads_for_date_range(
+        start_date_string, end_date_string, daily_limit=daily_limit, limit=limit
+    )
+    if initial_queued == 0:
+        logger.info("Queuing privacy-toggle uploads and deletions.")
+        queue_internet_archive_uploads_required_from_privacy_toggle()
+        queue_internet_archive_deletions_required_from_privacy_toggle()
+    elif initial_queued is None:
+        logger.info("Skipped the queuing of pending privacy-toggle tasks.")
+    else:
+        logger.info("Not queuing privacy-toggle tasks: routine uploads already in progress.")
+
+
+@shared_task
+def queue_internet_archive_privacy_toggled_still_pending(limit=100):
+    """
+    Queues any pending privacy-toggle uploads and deletions.
+
+    Schedule once daily, to catch any links whose processing has been
+    delayed or not otherwise handled by other scheduling.
+    """
+    queue_internet_archive_uploads_required_from_privacy_toggle(limit=limit)
+    queue_internet_archive_deletions_required_from_privacy_toggle(limit=limit)
 
 
 # WACZ CONVERSION

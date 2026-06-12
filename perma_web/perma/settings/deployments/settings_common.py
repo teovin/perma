@@ -496,6 +496,8 @@ CELERY_TASK_ROUTES = {
     'perma.celery_tasks.queue_file_deleted_confirmation_tasks': {'queue': 'ia-readonly'},
     'perma.celery_tasks.confirm_file_deleted_from_daily_item': {'queue': 'ia-readonly'},
     'perma.celery_tasks.conditionally_queue_internet_archive_uploads_for_date_range': {'queue': 'ia-readonly'},
+    'perma.celery_tasks.queue_internet_archive_pending_work': {'queue': 'ia-readonly'},
+    'perma.celery_tasks.queue_internet_archive_privacy_toggled_still_pending': {'queue': 'ia-readonly'},
     'perma.celery_tasks.queue_internet_archive_deletions': {'queue': 'ia-readonly'},
     'perma.celery_tasks.queue_internet_archive_uploads_required_from_privacy_toggle': {'queue': 'ia-readonly'},
     'perma.celery_tasks.queue_internet_archive_deletions_required_from_privacy_toggle': {'queue': 'ia-readonly'},
