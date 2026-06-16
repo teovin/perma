@@ -1,6 +1,12 @@
 name: Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - develop
+      - prod
+      - stage
+  pull_request:
 
 jobs:
   build:
@@ -12,6 +18,14 @@ jobs:
       - uses: actions/checkout@v4
 
       ### build docker images locally ###
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Rebuild docker images
         id: rebuild
@@ -63,7 +77,7 @@ jobs:
           set -x
           docker compose exec web invoke dev.init-db
           docker compose exec web pytest \
-            --cov --cov-config=setup.cfg --cov-report xml  `# write coverage data to .coverage for upload by codecov` \
+            --cov --cov-report xml  `# write coverage data to .coverage for upload by codecov` \
             -vv
 
       ### codecov ###
@@ -79,6 +93,13 @@ jobs:
           set -x
           git config user.email "lil@law.harvard.edu"
           git config user.name "Github Actions"
+
+          docker compose exec web invoke lock
+          if [[ `git status perma_web/requirements.txt --porcelain` ]] ; then
+            git add perma_web/requirements.txt
+            git commit -m "Update requirements.txt [skip ci]"
+            git push origin develop || exit 1
+          fi
           if [[ `git status docker-compose.yml docker-compose.override.yml --porcelain` ]] ; then
             git add docker-compose.yml docker-compose.override.yml
             git commit -m "Bump image version [skip ci]"

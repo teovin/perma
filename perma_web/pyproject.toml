@@ -1,0 +1,101 @@
+[project]
+name = "perma"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3~=1.35.12",
+    "celery~=5.2.6",
+    "django~=4.2.0",
+    "django-axes~=5.27.0",
+    "django-filter~=21.1",
+    "django-json-widget~=1.1.1",
+    "django-model-utils~=4.2.0",
+    "django-ratelimit~=3.0.1",
+    "django-redis~=5.2.0",
+    "django-settings-context-processor~=0.2",
+    "django-simple-history~=3.0.0",
+    "django-storages~=1.14.2",
+    "django-taggit~=5.0.1",
+    "django-tree-queries~=0.19.0",
+    "django-waffle~=4.1.0",
+    "django-webpack-loader~=1.0",
+    "djangorestframework~=3.15.2",
+    "internetarchive~=3.0.0",
+    "invoke~=2.0.0",
+    "ipdb~=0.13.13",
+    "mock~=5.1.0",
+    "netaddr~=0.8.0",
+    "psycopg2~=2.9.9",
+    "pynacl~=1.5.0",
+    "redis~=4.5.4",
+    "requests~=2.32.4",
+    "sentry-sdk~=2.12.0",
+    "surt~=0.3.1",
+    "tempdir~=0.7.1",
+    "timegate",
+    "tqdm~=4.66.4",
+    "typing-extensions>=4.12.0",
+    "ua-parser~=0.10.0",
+    "uwsgitop~=0.11",
+    "warcio~=1.7.4",
+    "warctools~=4.10.0",
+    "werkzeug~=3.0.6",
+    "whitenoise~=6.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "beautifulsoup4~=4.12.3",
+    "coverage~=7.4.3",
+    "django-admin-smoke-tests~=0.3.0",
+    "django-debug-toolbar~=4.3.0",
+    "django-extensions~=3.2.3",
+    "django-schema-viewer~=0.5.3",
+    "factory-boy~=3.3.0",
+    "fakeredis[lua]~=2.21.1",
+    "flake8~=7.0.0",
+    "flake8-pyproject~=1.2.4",
+    "hypothesis~=6.98.17",
+    "playwright>=1.42.0",
+    "pyhumps~=3.8.0",
+    "pytest~=7.4.4",
+    "pytest-cov~=4.1.0",
+    "pytest-django~=4.8.0",
+    "pytest-django-liveserver-ssl~=0.0.2",
+    "pytest-django-ordering~=1.2.0",
+    "pytest-mock~=3.14.0",
+    "pytest-playwright>=0.4.4",
+    "pytest-xdist~=3.5.0",
+    "watchdog~=4.0.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "perma.settings.deployments.settings_testing"
+norecursedirs = ["node_modules"]
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-n auto --dist loadscope --browser chromium --screenshot only-on-failure --output failed_test_files"
+filterwarnings = ["ignore:Unverified HTTPS request"]
+markers = [
+    "uses_storage: marks tests that write to S3/MinIO storage (cleanup_storage teardown is skipped for unmarked tests)",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/migrations/*",
+    "*/management/*",
+    "*/tests/*",
+    "fabfile/*",
+    "functional_tests/*",
+    "*/settings/*",
+]
+
+[tool.flake8]
+ignore = ["E126", "E127", "E128", "E2", "W2", "E3", "W3", "E4", "E501", "W504"]
+exclude = [".venv", "node_modules", "static", "settings"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+timegate = { url = "https://github.com/mementoweb/timegate/archive/6810fbc873b84f6af8e78e89fc8515f21b695cae.zip" }

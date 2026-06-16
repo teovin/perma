@@ -1,10 +1,13 @@
 import logging
+from abc import ABC, abstractmethod
+from typing import NotRequired, TypedDict
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
+from django.forms import Form
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, F, Max, Sum
 from django.db.models.functions import Coalesce, Greatest
@@ -26,7 +29,11 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import UpdateView
 from ratelimit.decorators import ratelimit
 
-from perma.email import send_user_email
+from perma.email import (
+    get_activation_email_context,
+    send_staff_invited_new_user_email,
+    send_user_email,
+)
 from perma.forms import (
     OrganizationForm,
     OrganizationWithRegistrarForm,
@@ -722,13 +729,69 @@ def edit_user_in_group(request, user_id, group_name):
 
 ### ADD USER TO GROUP ###
 
+class UserAddedEmailContext(TypedDict):
+    """Template context for new_user_added_by_other.txt (values must be JSON-serializable for bulk Celery tasks)."""
+    requester_name: str
+    on_behalf_of: NotRequired[str]
+
+
+class UserConfirmationEmailContext(TypedDict, total=False):
+    """Template context for existing-user confirmation emails (values must be JSON-serializable for bulk Celery tasks)."""
+    account_settings_page: str
+    org: str
+    registrar: str
+    sponsoring_registrar: str
+
+
 class BaseAddUserToGroup(UpdateView):
     """
         Base class for views that take an email address and either add a new user, or add the user to
         a given group if they already exist.
     """
-    is_batch = False
-    
+
+    def send_new_user_activation_email(self, form: Form) -> None:
+        """Send staff-invited activation email. Override when a registrar applies."""
+        send_staff_invited_new_user_email(
+            self.object,
+            context=self.get_user_added_email_context(form),
+            request=self.request,
+        )
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization | Registrar | None:
+        """
+        Return org/registrar to mention in the new-user email, or None if not applicable.
+
+        When not None, the value is passed as on_behalf_of in the staff-invited new-user email.
+        All values must be JSON-serializable (str()'d in get_user_added_email_context) for bulk Celery tasks.
+        """
+        return None
+
+    def get_user_added_email_context(self, form: Form) -> UserAddedEmailContext:
+        context: UserAddedEmailContext = {
+            'requester_name': self.request.user.get_full_name(),
+        }
+        on_behalf_of = self.get_user_added_email_on_behalf_of(form)
+        if on_behalf_of is not None:
+            context['on_behalf_of'] = str(on_behalf_of)
+        return context
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        """
+        Return template-specific confirmation context keys, or {} if not applicable.
+
+        Keys must match the variables used in confirmation_email_template
+        (e.g. org, registrar, sponsoring_registrar). All values must be
+        JSON-serializable strings for bulk Celery tasks.
+        """
+        return {}
+
+    def get_user_confirmation_email_context(self, form: Form) -> UserConfirmationEmailContext:
+        context: UserConfirmationEmailContext = {
+            'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
+        }
+        context.update(self.get_confirmation_email_extra_context(form))
+        return context
+
     def __init__(self, **kwargs):
         super(BaseAddUserToGroup, self).__init__(**kwargs)
         self.extra_context = {}
@@ -782,84 +845,55 @@ class BaseAddUserToGroup(UpdateView):
         def add_message(level, title, body):
             messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
 
-        def send_bulk_addition_emails(users, email_function, template):
-            extra_context = {
-                'org': form.cleaned_data['organizations'].name,
-                'requester': self.request.user.get_full_name(),
-                'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
-            }
-            host = f"{self.request.scheme}://{self.request.get_host()}"
-
-            for obj in users.values():
-                try:
-                    if email_function == 'email_new_user':
-                        send_user_email_from_bulk_addition.delay(obj.raw_email, extra_context, template, host, is_new_user=True)
-                    else:
-                        send_user_email_from_bulk_addition.delay(obj.raw_email, extra_context, template, is_new_user=False)
-                except Exception as e:
-                    logger.exception(f"Failed to send email to {obj.raw_email}: {e}")
-
-        if not self.is_batch:
-            if self.is_new:
-                email_new_user(
-                    self.request,
-                    self.object,
-                    self.user_added_email_template,
-                    {'form': form}
-                )
-                add_message(
-                    messages.SUCCESS,
-                    "Account created!",
-                    f"<strong>{self.object.email}</strong> will receive an email with instructions on how to activate the account and create a password."
-                )
-            else:
-                send_user_email(
-                    self.object.raw_email,
-                    self.confirmation_email_template,
-                    {
-                        'account_settings_page': f"https://{self.request.get_host()}{reverse('settings_profile')}",
-                        'form': form
-                    }
-                )
-                add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
-        else:
-            if form.created_users:
-                send_bulk_addition_emails(form.created_users, 'email_new_user', self.user_added_email_template)
-            if form.updated_users:
-                send_bulk_addition_emails(form.updated_users, 'send_user_email', self.confirmation_email_template)
-
-            success_message = (
-                "New users will receive an email with instructions on how to activate their accounts and create a password.<br>"
-                "Existing users will receive an email notifying them about their updated organization affiliation."
+        if self.is_new:
+            self.send_new_user_activation_email(form)
+            add_message(
+                messages.SUCCESS,
+                "Account created!",
+                f"<strong>{self.object.email}</strong> will receive an email with instructions on how to activate the account and create a password."
             )
-
-            if form.ineligible_users:
-                ineligible_user_emails = ", ".join(form.ineligible_users)
-                error_message = (
-                    f"The following users were not added to {form.cleaned_data['organizations']} because they are "
-                    f"already a registrar user or admin user and cannot be added to an individual organization: {ineligible_user_emails}"
-                )
-                if form.created_users or form.updated_users:
-                    add_message(
-                        messages.SUCCESS,
-                        "Success!",
-                        f"{success_message}<br><br>Note: {error_message}"
-                    )
-                else:
-                    add_message(messages.ERROR, "Error!", error_message)
-            else:
-                add_message(messages.SUCCESS, "Success!", success_message)
+        else:
+            send_user_email(
+                self.object.raw_email,
+                self.confirmation_email_template,
+                self.get_user_confirmation_email_context(form),
+            )
+            add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
 
         return response
 
 
-class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
+class RegistrarAffiliatedAddUserToGroup(BaseAddUserToGroup, ABC):
+    """Staff invites tied to a registrar (org, registrar user, sponsorship, bulk org)."""
+
+    @abstractmethod
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        """Registrar pk for CUSTOM_EMAILS_FOR_REGISTRAR lookup."""
+
+    def send_new_user_activation_email(self, form: Form) -> None:
+        send_staff_invited_new_user_email(
+            self.object,
+            registrar_id=self.get_invitation_registrar_id(form),
+            context=self.get_user_added_email_context(form),
+            request=self.request,
+        )
+
+
+class AddUserToOrganization(RequireOrgOrRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_organization_confirm.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
     confirmation_email_template = 'email/user_added_to_organization.txt'
-    user_added_email_template = 'email/new_user_added_to_org_by_other.txt'
     new_user_form = UserFormWithOrganization
     existing_user_form = UserAddOrganizationForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'org': str(form.cleaned_data['organizations'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['organizations'].registrar_id
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
+        return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
         """ Filter organizations to those current user can access. """
@@ -878,13 +912,103 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
         return True, ""
 
 
-class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
+class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/add_multiple_users_to_org.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
-    confirmation_email_template = 'email/user_added_to_organization_from_bulk_form.txt'
-    user_added_email_template = 'email/new_user_added_to_org_by_other_from_bulk_form.txt'
+    confirmation_email_template = 'email/user_added_to_organization.txt'
     new_user_form = MultipleUsersFormWithOrganization
-    is_batch = True
+
+    def _enqueue_bulk_emails(
+        self,
+        users: dict[str, LinkUser],
+        *,
+        template: str | None,
+        context: UserAddedEmailContext | UserConfirmationEmailContext,
+        is_new_user: bool,
+        registrar_id: int,
+    ) -> None:
+        host = f"{self.request.scheme}://{self.request.get_host()}"
+        for user in users.values():
+            try:
+                send_user_email_from_bulk_addition.delay(
+                    user.raw_email,
+                    context,
+                    template,
+                    host,
+                    is_new_user=is_new_user,
+                    registrar_id=registrar_id,
+                )
+            except Exception:
+                logger.exception(f"Failed to send email to {user.raw_email}")
+
+    def _send_bulk_new_user_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=None,
+            context=self.get_user_added_email_context(form),
+            is_new_user=True,
+            registrar_id=self.get_invitation_registrar_id(form),
+        )
+
+    def _send_bulk_confirmation_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=self.confirmation_email_template,
+            context=self.get_user_confirmation_email_context(form),
+            is_new_user=False,
+            registrar_id=self.get_invitation_registrar_id(form),
+        )
+
+    def form_valid(self, form):
+        """
+        CSV bulk-add creates or updates many users in one submit.
+
+        Skip BaseAddUserToGroup.form_valid (single-user emails and messages). Call
+        super(BaseAddUserToGroup, self) to run only UpdateView's save-and-redirect,
+        then send bulk emails and show batch-specific flash messages.
+        """
+        response = super(BaseAddUserToGroup, self).form_valid(form)
+
+        def add_message(level, title, body):
+            messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
+
+        if form.created_users:
+            self._send_bulk_new_user_emails(form, form.created_users)
+        if form.updated_users:
+            self._send_bulk_confirmation_emails(form, form.updated_users)
+
+        success_message = (
+            "New users will receive an email with instructions on how to activate their accounts and create a password.<br>"
+            "Existing users will receive an email notifying them about their updated organization affiliation."
+        )
+
+        if form.ineligible_users:
+            ineligible_user_emails = ", ".join(form.ineligible_users)
+            error_message = (
+                f"The following users were not added to {form.cleaned_data['organizations']} because they are "
+                f"already a registrar user or admin user and cannot be added to an individual organization: {ineligible_user_emails}"
+            )
+            if form.created_users or form.updated_users:
+                add_message(
+                    messages.SUCCESS,
+                    "Success!",
+                    f"{success_message}<br><br>Note: {error_message}"
+                )
+            else:
+                add_message(messages.ERROR, "Error!", error_message)
+        else:
+            add_message(messages.SUCCESS, "Success!", success_message)
+
+        return response
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'org': str(form.cleaned_data['organizations'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['organizations'].registrar_id
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
+        return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
         """ Filter organizations to those current user can access. """
@@ -897,13 +1021,21 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
         return True, ""
 
 
-class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
+class AddUserToRegistrar(RequireRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_registrar_user')
     confirmation_email_template = 'email/user_added_to_registrar.txt'
-    user_added_email_template = 'email/new_user_added_to_registrar_by_other.txt'
     new_user_form = UserFormWithRegistrar
     existing_user_form = UserAddRegistrarForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'registrar': str(form.cleaned_data['registrar'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['registrar'].pk
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
+        return form.cleaned_data['registrar']
 
     def get_form_kwargs(self):
         """ Filter registrars to those current user can access. """
@@ -930,13 +1062,21 @@ class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
         return True, ""
 
 
-class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
+class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_sponsoring_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_sponsored_user')
     confirmation_email_template = 'email/user_added_to_sponsoring_registrar.txt'
-    user_added_email_template = 'email/new_user_added_to_sponsoring_registrar_by_other.txt'
     new_user_form = UserFormWithSponsoringRegistrar
     existing_user_form = UserAddSponsoringRegistrarForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'sponsoring_registrar': str(form.cleaned_data['sponsoring_registrars'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['sponsoring_registrars'].pk
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
+        return form.cleaned_data['sponsoring_registrars']
 
     def get_form_kwargs(self):
         """ Filter registrars to those current user can access. """
@@ -959,7 +1099,6 @@ class AddUserToAdmin(RequireAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_to_admin_confirm.html'
     success_url = reverse_lazy('user_management_manage_admin_user')
     confirmation_email_template = 'email/user_added_to_admin.txt'
-    user_added_email_template = 'email/new_user_added_by_other.txt'
     new_user_form = UserFormWithAdmin
     existing_user_form = UserAddAdminForm
 
@@ -971,7 +1110,6 @@ class AddUserToAdmin(RequireAdminUser, BaseAddUserToGroup):
 class AddRegularUser(RequireAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_confirm.html'
     success_url = reverse_lazy('user_management_manage_user')
-    user_added_email_template = 'email/new_user_added_by_other.txt'
     new_user_form = UserForm
     existing_user_form = UserForm
 
@@ -1341,13 +1479,12 @@ def reset_password(request):
             target_user = None
         if target_user:
             if not target_user.is_confirmed:
-                # This is a weird area... We're doing this, for now, to help
-                # smooth things for the users who sign up while we are transitioning
-                # to new activation links. We think it will be less confusing for them
-                # to receive a "password reset" email, since we ARE asking them to fill
-                # our that form, rather than a welcome email. We can readdress later...
-                # this whole architecture needs some tidying.
-                email_new_user(request, target_user, template="email/unactivated_user_reset_email.txt")
+                # Same activation URL as sign-up; copy matches the password-reset form they used.
+                send_user_email(
+                    target_user.raw_email,
+                    'email/unactivated_user_reset_email.txt',
+                    get_activation_email_context(target_user, request=request),
+                )
             if target_user.is_confirmed and not target_user.is_active:
                 return HttpResponseRedirect(reverse('user_management_account_is_deactivated'))
 

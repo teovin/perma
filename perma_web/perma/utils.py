@@ -293,12 +293,14 @@ def get_client_ip(request):
 def tz_datetime(*args, **kwargs):
     return timezone.make_aware(datetime(*args, **kwargs))
 
-
 def first_day_of_next_month(now):
     # use first of month instead of today to avoid issues w/ variable length months
     first_of_month = now.replace(day=1)
     return first_of_month + relativedelta(months=1)
 
+def today_next_month(now):
+    # relativedelta handles leap years: 2/29 -> 2/28
+    return now + relativedelta(months=1)
 
 def today_next_year(now):
     # relativedelta handles leap years: 2/29 -> 2/28

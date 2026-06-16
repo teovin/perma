@@ -33,10 +33,12 @@
                         </span>
                         <br>
                         ${{ tier.required_fields.recurring_amount | intcomma }}/month
-                        <br>
-                        <br>
-                        ${{ tier.required_fields.amount | intcomma }}
-                        this month (prorated)
+                        {% if tier.required_fields.recurring_amount != tier.required_fields.amount %}
+                          <br>
+                          <br>
+                          ${{ tier.required_fields.amount | intcomma }}
+                          this month (prorated)
+                        {% endif %}
                       </button>
                     {% elif tier.period == 'annually' %}
                       <button>

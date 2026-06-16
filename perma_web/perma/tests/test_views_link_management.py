@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.urls import reverse
 
-from mock import patch
+from unittest.mock import patch
 
 
 from perma.views.link_management import Link

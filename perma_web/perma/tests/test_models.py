@@ -4,7 +4,7 @@ from django.conf import settings
 from django.test import override_settings
 from django.utils import timezone
 
-from mock import patch, sentinel
+from unittest.mock import patch, sentinel
 
 from perma.exceptions import PermaPaymentsCommunicationException, InvalidTransmissionException
 import perma.models
@@ -17,7 +17,7 @@ from perma.models import (
     most_active_org_in_time_period,
     subscription_is_active
 )
-from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month, today_next_year, years_ago_today
+from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month, today_next_month, today_next_year, years_ago_today
 
 from conftest import GENESIS
 import pytest
@@ -27,7 +27,7 @@ import pytest
 # Related to Perma Payments
 #
 
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_none_and_no_network_call_if_nonpaying(post, noncustomers):
     # also verify that their value of in_trial is unchanged by the call
     for noncustomer in noncustomers:
@@ -38,7 +38,7 @@ def test_get_subscription_none_and_no_network_call_if_nonpaying(post, noncustome
         assert post.call_count == 0
 
 
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_raises_on_non_200(post, customers):
     post.return_value.ok = False
     for customer in customers:
@@ -48,8 +48,8 @@ def test_get_subscription_raises_on_non_200(post, customers):
         post.reset_mock()
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_verifies_transmission_valid(post, process, customers):
     post.return_value.status_code = 200
     post.return_value.json.return_value = sentinel.json
@@ -64,8 +64,8 @@ def test_get_subscription_verifies_transmission_valid(post, process, customers):
         process.reset_mock()
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_raises_if_unexpected_customer_pk(post, process, customers, spoof_pp_response_wrong_pk):
     post.return_value.status_code = 200
     for customer in customers:
@@ -76,8 +76,8 @@ def test_get_subscription_raises_if_unexpected_customer_pk(post, process, custom
         post.reset_mock()
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_raises_if_unexpected_registrar_type(post, process, customers, spoof_pp_response_wrong_type):
     post.return_value.status_code = 200
     for customer in customers:
@@ -88,8 +88,8 @@ def test_get_subscription_raises_if_unexpected_registrar_type(post, process, cus
         post.reset_mock()
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_no_subscription(post, process, customers, spoof_pp_response_no_subscription):
     post.return_value.status_code = 200
     for customer in customers:
@@ -108,8 +108,8 @@ def test_get_subscription_no_subscription(post, process, customers, spoof_pp_res
             post.reset_mock()
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_no_subscription_purchased_bonus(post, process, customers, spoof_pp_response_no_subscription_two_purchases):
     post.return_value.status_code = 200
     for customer in customers:
@@ -123,8 +123,8 @@ def test_get_subscription_no_subscription_purchased_bonus(post, process, custome
             post.reset_mock()
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_happy_path_sets_customer_trial_period_to_false(post, process, paying_registrar, paying_user, spoof_pp_response_subscription):
     post.return_value.status_code = 200
     for customer in [paying_registrar, paying_user]:
@@ -145,8 +145,8 @@ def test_get_subscription_happy_path_sets_customer_trial_period_to_false(post, p
         assert customer.cached_subscription_started
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_happy_path_no_change_pending(post, process, paying_registrar, paying_user, spoof_pp_response_subscription):
     post.return_value.status_code = 200
     for customer in [paying_registrar, paying_user]:
@@ -170,8 +170,8 @@ def test_get_subscription_happy_path_no_change_pending(post, process, paying_reg
             post.reset_mock()
 
 
-@patch('perma.models.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_happy_path_with_pending_change(post, process, paying_user, spoof_pp_response_subscription_with_pending_change):
     post.return_value.status_code = 200
     customer = paying_user
@@ -236,7 +236,7 @@ def test_one_time_link_limit_new(user_with_links):
     assert user_with_links.links_remaining_in_period('once', 5) ==  0
 
 
-@patch('perma.models.timezone', autospec=True)
+@patch('perma.models.user.timezone', autospec=True)
 def test_one_time_link_limit_with_midmonth_subscription1(mocked_timezone, user_with_links_this_month_before_the_15th):
     fifteenth_of_month = timezone.now().replace(day=15)
     mocked_timezone.now.return_value = fifteenth_of_month
@@ -252,7 +252,7 @@ def test_one_time_link_limit_with_midmonth_subscription1(mocked_timezone, user_w
     assert mocked_timezone.now.call_count == 2
 
 
-@patch('perma.models.timezone', autospec=True)
+@patch('perma.models.user.timezone', autospec=True)
 def test_one_time_link_limit_with_midmonth_subscription2(mocked_timezone, user_with_links_this_month_before_the_15th):
     fifteenth_of_month = timezone.now().replace(day=15)
     fifth_of_month = timezone.now().replace(day=5)
@@ -275,7 +275,7 @@ def test_monthly_link_limit(user_with_links):
     assert user_with_links.links_remaining_in_period('monthly', 2) == 0
 
 
-@patch('perma.models.timezone', autospec=True)
+@patch('perma.models.user.timezone', autospec=True)
 def test_monthly_link_limit_with_midmonth_subscription1(mocked_timezone, user_with_links_this_month_before_the_15th):
     fifteenth_of_month = timezone.now().replace(day=15)
     mocked_timezone.now.return_value = fifteenth_of_month
@@ -290,7 +290,7 @@ def test_monthly_link_limit_with_midmonth_subscription1(mocked_timezone, user_wi
     assert mocked_timezone.now.call_count == 2
 
 
-@patch('perma.models.timezone', autospec=True)
+@patch('perma.models.user.timezone', autospec=True)
 def test_monthly_link_limit_with_midmonth_subscription2(mocked_timezone, user_with_links_this_month_before_the_15th):
     fifteenth_of_month = timezone.now().replace(day=15)
     fifth_of_month = timezone.now().replace(day=5)
@@ -356,7 +356,7 @@ def test_user_link_creation_denied_if_nonpaying_and_over_limit(get_subscription,
     assert get_links_remaining.call_count == 1
 
 
-@patch('perma.models.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_user_link_creation_allowed_checks_cached_if_pp_down(get_subscription, is_active, paying_user):
     get_subscription.side_effect = PermaPaymentsCommunicationException
@@ -390,8 +390,8 @@ def test_user_link_creation_denied_if_no_subscription_and_over_limit(get_subscri
 
 
 @patch('perma.models.LinkUser.links_remaining_in_period', autospec=True)
-@patch('perma.models.subscription_is_active', autospec=True)
-@patch('perma.models.subscription_has_problem', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_has_problem', autospec=True)
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_user_link_creation_disallowed_if_subscription_inactive_and_over_limit(get_subscription, has_problem, is_active, links_remaining_in_period, paying_user):
     get_subscription.return_value = sentinel.subscription
@@ -406,8 +406,8 @@ def test_user_link_creation_disallowed_if_subscription_inactive_and_over_limit(g
 
 
 @patch('perma.models.LinkUser.links_remaining_in_period', autospec=True)
-@patch('perma.models.subscription_is_active', autospec=True)
-@patch('perma.models.subscription_has_problem', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_has_problem', autospec=True)
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_user_link_creation_allowed_if_subscription_inactive_and_under_limit(get_subscription, has_problem, is_active, links_remaining_in_period, paying_user):
     get_subscription.return_value = sentinel.subscription
@@ -422,7 +422,7 @@ def test_user_link_creation_allowed_if_subscription_inactive_and_under_limit(get
 
 
 @patch('perma.models.LinkUser.links_remaining_in_period', autospec=True)
-@patch('perma.models.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_user_link_creation_allowed_if_subscription_active_and_under_limit(get_subscription, is_active, links_remaining_in_period, paying_user):
     get_subscription.return_value = sentinel.subscription
@@ -436,7 +436,7 @@ def test_user_link_creation_allowed_if_subscription_active_and_under_limit(get_s
 
 
 @patch('perma.models.LinkUser.links_remaining_in_period', autospec=True)
-@patch('perma.models.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_user_link_creation_disallowed_if_subscription_active_and_under_limit(get_subscription, is_active, links_remaining_in_period, paying_user):
     get_subscription.return_value = sentinel.subscription
@@ -459,7 +459,7 @@ def test_registrar_link_creation_always_allowed_if_nonpaying(get_subscription, n
     assert get_subscription.call_count == 0
 
 
-@patch('perma.models.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
 @patch('perma.models.Registrar.get_subscription', autospec=True)
 def test_registrar_link_creation_allowed_checks_cached_if_pp_down(get_subscription, is_active, paying_registrar):
     get_subscription.side_effect = PermaPaymentsCommunicationException
@@ -478,8 +478,8 @@ def test_registrar_link_creation_disallowed_if_no_subscription(get_subscription,
     get_subscription.assert_called_once_with(paying_registrar)
 
 
-@patch('perma.models.subscription_is_active', autospec=True)
-@patch('perma.models.subscription_has_problem', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_has_problem', autospec=True)
 @patch('perma.models.Registrar.get_subscription', autospec=True)
 def test_registrar_link_creation_disallowed_if_subscription_inactive(get_subscription, has_problem, is_active, paying_registrar):
     get_subscription.return_value = sentinel.subscription
@@ -490,7 +490,7 @@ def test_registrar_link_creation_disallowed_if_subscription_inactive(get_subscri
     is_active.assert_called_once_with(sentinel.subscription)
 
 
-@patch('perma.models.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
 @patch('perma.models.Registrar.get_subscription', autospec=True)
 def test_registrar_link_creation_allowed_if_subscription_active(get_subscription, is_active, paying_registrar):
     get_subscription.return_value = sentinel.subscription
@@ -527,7 +527,7 @@ def test_annotate_tier_monthly_no_subscription_first_of_month(customers):
 
 def test_annotate_tier_monthly_no_subscription_mid_month(customers):
     now = GENESIS.replace(day=16)
-    next_month = first_day_of_next_month(now)
+    next_month = today_next_month(now)
     next_year = today_next_year(now)
     subscription = None
     for customer in customers:
@@ -539,17 +539,17 @@ def test_annotate_tier_monthly_no_subscription_mid_month(customers):
         customer.annotate_tier(tier, subscription, now, next_month, next_year)
         assert tier['type'] == 'upgrade'
         assert tier['link_limit_effective_timestamp'] == now.timestamp()
-        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio'] / 31 * 16).quantize(Decimal('.01'))
-        assert tier['recurring_amount'] != tier['todays_charge']
+        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio']).quantize(Decimal('.01'))
+        assert tier['recurring_amount'] == tier['todays_charge']
         assert tier['next_payment'] == next_month
 
 
-@patch('perma.models.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
 def test_annotate_tier_monthly_no_subscription_last_of_month(is_active, customers):
     is_active.return_value = True
 
     now = GENESIS.replace(day=31)
-    next_month = first_day_of_next_month(now)
+    next_month = today_next_month(now)
     next_year = today_next_year(now)
     subscription = None
     for customer in customers:
@@ -561,8 +561,8 @@ def test_annotate_tier_monthly_no_subscription_last_of_month(is_active, customer
         customer.annotate_tier(tier, subscription, now, next_month, next_year)
         assert tier['type'] == 'upgrade'
         assert tier['link_limit_effective_timestamp'] == now.timestamp()
-        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio'] / 31).quantize(Decimal('.01'))
-        assert tier['recurring_amount'] != tier['todays_charge']
+        assert Decimal(tier['todays_charge']) == (customer.base_rate * tier['rate_ratio']).quantize(Decimal('.01'))
+        assert tier['recurring_amount'] == tier['todays_charge']
         assert tier['next_payment'] == next_month
 
 
@@ -603,7 +603,7 @@ def test_annotate_tier_change_disallowed_with_inactive_annual_subscription(custo
             assert tier['type'] == 'unavailable'
 
 
-@patch('perma.models.subscription_is_active', autospec=True)
+@patch('perma.models.base.subscription_is_active', autospec=True)
 def test_annotate_tier_change_disallowed_with_pending_downgrade(is_active, customers):
     is_active.return_value = True
 
@@ -639,7 +639,8 @@ def test_annotate_tier_monthly_active_subscription_upgrade_first_of_month(custom
         'status': 'Current',
         'rate': '0.10',
         'frequency': 'monthly',
-        'link_limit': 0
+        'link_limit': 0,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -663,7 +664,8 @@ def test_annotate_tier_monthly_active_subscription_upgrade_mid_month(customers):
         'status': 'Current',
         'rate': '0.10',
         'frequency': 'monthly',
-        'link_limit': 0
+        'link_limit': 0,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -687,7 +689,8 @@ def test_annotate_tier_monthly_active_subscription_upgrade_last_of_month(custome
         'status': 'Current',
         'rate': '0.10',
         'frequency': 'monthly',
-        'link_limit': 0
+        'link_limit': 0,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -717,7 +720,8 @@ def test_annotate_tier_monthly_active_subscription_downgrade_first_of_month(cust
         'status': 'Current',
         'rate': '9999.10',
         'frequency': 'monthly',
-        'link_limit': 9999
+        'link_limit': 9999,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -741,7 +745,8 @@ def test_annotate_tier_monthly_active_subscription_downgrade_mid_month(customers
         'status': 'Current',
         'rate': '9999.10',
         'frequency': 'monthly',
-        'link_limit': 9999
+        'link_limit': 9999,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -765,7 +770,8 @@ def test_annotate_tier_monthly_active_subscription_downgrade_last_of_month(custo
         'status': 'Current',
         'rate': '9999.10',
         'frequency': 'monthly',
-        'link_limit': 9999
+        'link_limit': 9999,
+        'paid_through': next_month
     }
     for customer in customers:
         tier = {
@@ -1086,7 +1092,7 @@ def test_subscription_is_active_with_expired_canceled(expired_cancelled_subscrip
 # crediting users for one-time purchases
 #
 
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_credit_for_purchased_links_increments_for_all(post, paying_user, spoof_pp_response_no_subscription_two_purchases):
     post.return_value.ok = True
 
@@ -1097,7 +1103,7 @@ def test_credit_for_purchased_links_increments_for_all(post, paying_user, spoof_
     assert credited == 60
 
 
-@patch('perma.models.requests.post', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
 def test_credit_for_purchased_links_reverses_if_acknowledgment_fails(post, paying_user, spoof_pp_response_no_subscription_two_purchases):
     post.return_value.ok = False
 
@@ -1113,10 +1119,10 @@ def test_credit_for_purchased_links_reverses_if_acknowledgment_fails(post, payin
 # Bonus packages info
 #
 
-@patch.object(perma.models, 'datetime')
-@patch('perma.models.prep_for_perma_payments', autospec=True)
+@patch.object(perma.models.base, 'datetime')
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_get_bonus_packages(prep, mock_datetime, paying_user):
-    perma.models.datetime.utcnow.return_value = GENESIS
+    perma.models.base.datetime.utcnow.return_value = GENESIS
     prep.return_value.decode.return_value = sentinel.string
 
     packages = paying_user.get_bonus_packages()

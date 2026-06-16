@@ -1,20 +1,20 @@
 import logging
-import re
 import uuid
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.tokens import default_token_generator
 from django.db import transaction
-from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
 from ratelimit.decorators import ratelimit
 
-from perma.email import send_admin_email, send_user_email, send_user_email_copy_admins
+from perma.email import (
+    send_admin_email,
+    send_signup_new_user_email,
+    send_user_email,
+    send_user_email_copy_admins,
+)
 # Used by approve_pending_registrar; consider moving that view into views/user_management/.
 from perma.views.user_management.render import render_user_management
 from perma.forms import (
@@ -400,59 +400,16 @@ def firm_request_response(request):
     return render(request, 'registration/firm_request.html')
 
 
-def suggest_registrars(user: LinkUser, limit: int = 5) -> QuerySet[Registrar]:
-    """Suggest potential registrars for a user based on email domain.
-
-    This queries the database for registrars whose website matches the
-    base domain from the user's email address. For example, if the
-    user's email is `username@law.harvard.edu`, this will suggest
-    registrars whose domains end with `harvard.edu`.
-    """
-    _, email_domain = user.email.split('@')
-    base_domain = '.'.join(email_domain.rsplit('.', 2)[-2:])
-    pattern = f'^https?://([a-zA-Z0-9\\-\\.]+\\.)?{re.escape(base_domain)}(/.*)?$'
-    registrars = (
-        Registrar.objects.filter(status='approved')
-        .filter(website__iregex=pattern)
-        .order_by('-link_count', 'name')[:limit]
-    )
-    return registrars
-
-
 def email_new_user(request, user, template='email/new_user.txt', context=None):
-    """
-    Send email to newly created accounts
-    """
-    # This uses the forgot-password flow; logic is borrowed from auth_forms.PasswordResetForm.save()
-    activation_route = request.build_absolute_uri(
-        reverse(
-            'password_reset_confirm',
-            args=[
-                urlsafe_base64_encode(force_bytes(user.pk)),
-                default_token_generator.make_token(user),
-            ],
-        )
-    )
-
-    # Include context variables
-    template_is_default = template == 'email/new_user.txt'
-    context = context if context is not None else {}
-    context.update(
-        {
-            'activation_expires': settings.PASSWORD_RESET_TIMEOUT,
-            'activation_route': activation_route,
-            'request': request,
-            # Only query DB if we're using the default template; otherwise there's no need
-            'suggested_registrars': suggest_registrars(user) if template_is_default else [],
-        }
-    )
-
-    send_user_email(user.raw_email, template, context)
+    """Send signup activation email (self-signup, resend activation, etc.)."""
+    send_signup_new_user_email(request, user, template=template, context=context)
 
 
 def email_pending_registrar_user(request: HttpRequest, user: LinkUser):
     """Send email to a newly created user whose registrar is pending."""
-    email_new_user(request, user, template='email/pending_registrar.txt')
+    send_signup_new_user_email(
+        request, user, template='email/new_user_from_pending_registrar_form.txt',
+    )
 
 
 def email_library_registrar_request(request: HttpRequest, pending_registrar: Registrar):

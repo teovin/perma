@@ -6,12 +6,13 @@ services:
       dockerfile: perma_web/Dockerfile
       x-bake:
         tags:
-          - registry.lil.tools/harvardlil/perma-web:139-5668bb9f42d4b308b90c9b9109da04e4
+          - registry.lil.tools/harvardlil/perma-web:143-689236a8e78ea0dbfc6b496b51bcb4ea
         platforms:
           - linux/amd64
           - linux/arm64
       x-hash-paths:
-        - perma_web/requirements.txt
+        - perma_web/pyproject.toml
+        - perma_web/uv.lock
         - perma_web/npm-shrinkwrap.json
         - perma_web/package.json
         - perma_web/lil-archive-keyring.gpg

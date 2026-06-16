@@ -225,6 +225,11 @@ def api_key_create(request):
     Generate or regenerate an API key for the user
     """
 
+    # API key authentication is disabled for admin users (see api.authentication),
+    # so don't let them create keys that wouldn't work.
+    if request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.method == "POST":
         try:
             # Clear key so a new one is generated on save()
