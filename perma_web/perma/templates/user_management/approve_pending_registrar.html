@@ -102,7 +102,7 @@
                   </h6>
                   <div class="item-subtitle">{{ listed_user.raw_email }}</div>
 
-                  {% if user_management_perms.is_staff and listed_user.requested_account_type %}
+                  {% if user_management_perms.show_upgrade_interest_note and listed_user.requested_account_type %}
                     <div class="item-org">Interested in a {{listed_user.requested_account_type}} account with {{listed_user.requested_account_note}}</div>
                   {% endif %}
                 </div>
@@ -117,7 +117,7 @@
                       {% endif %}
                     </div>
                   </div>
-                  {% if user_management_perms.can_show_select_button_for_registrar_user %}
+                  {% if user_management_perms.can_select_pending_registrar %}
                     <div>
                       <button type="submit" name="registrar_user" value="{{ listed_user.email }}" class="btn btn-small pull-right" form="form">Select<span class="sr-only"> {{ listed_user.get_full_name }}</button>
                     </div>

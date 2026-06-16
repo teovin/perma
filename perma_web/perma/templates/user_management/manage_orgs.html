@@ -102,7 +102,7 @@
             </li>
           </ul>
         </div>
-        {% if user_management_perms.can_show_organization_registrar_filter %}
+        {% if user_management_perms.show_registrar_org_filter %}
           <div class="dropdown">
             <button class="btn-transparent" aria-haspopup="true" aria-expanded="false" data-toggle="dropdown">Registrar <span class="caret"></span></button>
             <ul class="dropdown-menu">
@@ -138,7 +138,7 @@
             {{ org.name }}
             </a>
           </h4>
-          {% if user_management_perms.can_show_organization_registrar_affiliation %}
+          {% if user_management_perms.show_org_registrar_link %}
             <div class="item-affil">
               <span class="sr-only">Associated with: </span>
               <a href="{% url 'user_management_manage_registrar' %}?q={{org.registrar.name.split|join:'+'|lower}}#registrar-{{ org.registrar.id }}">{{ org.registrar }}</a>
@@ -180,7 +180,7 @@
                 <a class="action" href="{% url 'user_management_manage_single_organization_delete' org.id %}">delete <span class="sr-only">{{ org.name }}</span></a>
               {% endif %}
               <a class="action" href="{% url 'user_management_manage_single_organization' org.id %}">edit <span class="sr-only">{{ org.name }}</span></a>
-              {% if user_management_perms.can_show_organization_admin_console_link %}
+              {% if user_management_perms.can_link_org_admin %}
                 <a class="action" href="{% url 'admin:perma_organization_change' org.id %}">edit <div class="sr-wrapper"><span class="sr-only">{{ org.name }}</span></div> in admin console</a>
               {% endif %}
             </div>

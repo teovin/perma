@@ -1,23 +1,23 @@
 {% extends "admin-layout.html" %}
 
-{% block title %} | {% if user_management_perms.can_use_sponsor_user_terminology %}Sponsor user{% else %}Add sponsorship to user {% endif %}{% endblock %}
+{% block title %} | {% if user_management_perms.can_use_sponsor_terminology %}Sponsor user{% else %}Add sponsorship to user {% endif %}{% endblock %}
 
 {% block adminContent %}
 
-  <h3 class="body-bh">{% if user_management_perms.can_use_sponsor_user_terminology %}Sponsor {{ user_email }}{% else %}Add sponsorship to {{ user_email }}{% endif %}</h3>
+  <h3 class="body-bh">{% if user_management_perms.can_use_sponsor_terminology %}Sponsor {{ user_email }}{% else %}Add sponsorship to {{ user_email }}{% endif %}</h3>
 
   {% if not form %}
     <p>{{ error_message }}</p>
   {% else %}
 
     {% if object.id %}
-      <p>{{ user_email }} already has an account.  Would you like to {% if user_management_perms.can_use_sponsor_user_terminology %}sponsor them{% else %}add a sponsorship{% endif %}?</p>
+      <p>{{ user_email }} already has an account.  Would you like to {% if user_management_perms.can_use_sponsor_terminology %}sponsor them{% else %}add a sponsorship{% endif %}?</p>
     {% endif %}
 
     <form class="add-user" method="post">
       {% csrf_token %}
       {% include "includes/fieldset.html" %}
-      <button type="submit" class="btn">{% if user_management_perms.can_use_sponsor_user_terminology %}Sponsor{% else %}Add sponsorship{% endif %}</button>
+      <button type="submit" class="btn">{% if user_management_perms.can_use_sponsor_terminology %}Sponsor{% else %}Add sponsorship{% endif %}</button>
       <a href="{% url 'user_management_manage_sponsored_user' %}" class="btn cancel">Cancel</a>
     </form>
     <script>
