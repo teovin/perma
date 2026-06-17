@@ -13,7 +13,7 @@
     {% if object.id %}
       <p>{{ user_email }} already has an account.  Would you like to add them to a registrar?</p>
 
-      {% if request.user.is_staff %}
+      {% if user_management_perms.can_show_registrar_upgrade_warning %}
         {% if object.is_organization_user %}
           <p><b>WARNING:</b> This user is currently a member of the following organizations. Upgrading them to a registrar will REPLACE these affiliations:</p>
           <ul>
