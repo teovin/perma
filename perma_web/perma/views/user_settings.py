@@ -16,7 +16,7 @@ from perma.email import send_admin_email
 from perma.exceptions import PermaPaymentsCommunicationException
 from perma.forms import UserUpdateProfileForm
 from perma.models import ApiKey, Organization, UserOrganizationAffiliation
-from perma.utils import get_form_data, prep_for_perma_payments, user_passes_test_or_403
+from perma.utils import get_form_data, get_payments_app_url, prep_for_perma_payments, user_passes_test_or_403
 
 
 @login_required
@@ -152,8 +152,8 @@ def settings_usage_plan(request):
 
     context = {
         'this_page': 'settings_usage_plan',
-        'purchase_url': settings.PURCHASE_URL,
-        'subscribe_url': settings.SUBSCRIBE_URL,
+        'purchase_url': get_payments_app_url('purchase_history'),
+        'subscribe_url': get_payments_app_url('subscribe'),
         'cancel_confirm_url': reverse('settings_subscription_cancel'),
         'update_url': reverse('settings_subscription_update'),
         'accounts': accounts,
@@ -178,7 +178,7 @@ def settings_subscription_cancel(request):
         return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
-        'cancel_url': settings.CANCEL_URL,
+        'cancel_url': get_payments_app_url('cancel'),
         'customer': customer,
         'customer_type': account_type,
         'account': account,
@@ -205,8 +205,8 @@ def settings_subscription_update(request):
         return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
-        'update_url': settings.UPDATE_URL,
-        'change_url': settings.CHANGE_URL,
+        'update_url': get_payments_app_url('update'),
+        'change_url': get_payments_app_url('change'),
         'customer': customer,
         'customer_type': account_type,
         'account': account,
