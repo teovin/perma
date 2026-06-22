@@ -151,7 +151,7 @@ def settings_usage_plan(request):
 
     context = {
         'this_page': 'settings_usage_plan',
-        'purchase_url': get_payments_app_url('purchase_history'),
+        'purchase_url': get_payments_app_url('purchase'),
         'subscribe_url': get_payments_app_url('subscribe'),
         'cancel_confirm_url': reverse('settings_subscription_cancel'),
         'update_url': reverse('settings_subscription_update'),
