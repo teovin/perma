@@ -14,6 +14,7 @@ from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
 
 from perma.exceptions import InvalidTransmissionException, PermaPaymentsCommunicationException
 from perma.utils import (
+    get_payments_app_url,
     pp_date_from_post,
     prep_for_perma_payments,
     process_perma_payments_transmission,
@@ -182,7 +183,7 @@ class CustomerModel(models.Model):
 
         try:
             r = requests.post(
-                settings.PURCHASE_HISTORY_URL,
+                get_payments_app_url('purchase_history'),
                 timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                 data={
                     'encrypted_data': prep_for_perma_payments({
@@ -227,7 +228,7 @@ class CustomerModel(models.Model):
 
         try:
             r = requests.post(
-                settings.SUBSCRIPTION_STATUS_URL,
+                get_payments_app_url('subscription_status'),
                 timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                 data={
                     'encrypted_data': prep_for_perma_payments({
@@ -486,7 +487,7 @@ class CustomerModel(models.Model):
                     self.save(update_fields=['bonus_links'])
                     try:
                         r = requests.post(
-                            settings.ACKNOWLEDGE_PURCHASE_URL,
+                            get_payments_app_url('acknowledge_purchase'),
                             timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                             data={
                                 'encrypted_data': prep_for_perma_payments({

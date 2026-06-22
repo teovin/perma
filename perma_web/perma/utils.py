@@ -399,6 +399,34 @@ def remove_whitespace(s):
 
 # communication
 
+def get_payments_app_url(route):
+    urls = {
+        'purchase': settings.PURCHASE_URL,
+        'purchase_history': settings.PURCHASE_HISTORY_URL,
+        'acknowledge_purchase': settings.ACKNOWLEDGE_PURCHASE_URL,
+        'subscribe': settings.SUBSCRIBE_URL,
+        'cancel': settings.CANCEL_URL,
+        'subscription_status': settings.SUBSCRIPTION_STATUS_URL,
+        'update': settings.UPDATE_URL,
+        'change': settings.CHANGE_URL,
+    }
+
+    if waffle.switch_is_active('use_stripe_payments_app'):
+        if settings.STRIPE_PAYMENTS_APP_INTERNAL_URL and settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL:
+            urls['purchase'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/purchase/"
+            urls['purchase_history'] = f"{settings.STRIPE_PAYMENTS_APP_INTERNAL_URL}/purchase-history/"
+            urls['acknowledge_purchase'] = f"{settings.STRIPE_PAYMENTS_APP_INTERNAL_URL}/acknowledge-purchase/"
+            urls['subscribe'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/subscribe/"
+            urls['cancel'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/cancel-request/"
+            urls['subscription_status'] = f"{settings.STRIPE_PAYMENTS_APP_INTERNAL_URL}/subscription/"
+            urls['update'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/update/"
+            urls['change'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/change/"
+        else:
+            logger.warning("The 'use_stripe_payments_app' is on, but configuration is absent. Using Cybersource payments app.")
+
+    return urls[route]
+
+
 @sensitive_variables()
 def prep_for_perma_payments(dictionary):
     return encrypt_for_perma_payments(stringify_data(dictionary))
