@@ -44,7 +44,9 @@ urlpatterns = [
     #Docs
     re_path(r'^docs/?$', DirectTemplateView.as_view(template_name='docs/index.html'), name='docs'),
     re_path(r'^docs/perma-link-creation/?$', DirectTemplateView.as_view(template_name='docs/perma-link-creation.html'), name='docs_perma_link_creation'),
-    re_path(r'^docs/libraries/?$', DirectTemplateView.as_view(template_name='docs/libraries.html'), name='docs_libraries'),
+    re_path(r'^docs/registrars/?$', DirectTemplateView.as_view(template_name='docs/registrars.html'), name='docs_registrars'),
+    # the legacy docs/libraries path is now a redirect to docs/registrars path
+    re_path(r'^docs/libraries/?$', RedirectView.as_view(url=reverse_lazy('docs_registrars'), permanent=True), name='libraries_to_registrars_redirect'),
     re_path(r'^docs/faq/?$', DirectTemplateView.as_view(template_name='docs/faq.html'), name='docs_faq'),
     re_path(r'^docs/accounts/?$', DirectTemplateView.as_view(template_name='docs/accounts.html'), name='docs_accounts'),
 
@@ -67,7 +69,9 @@ urlpatterns = [
     # Sign-up/registration
     re_path(r'^sign-up/?$', user_sign_up.sign_up, name='sign_up'),
     re_path(r'^sign-up/courts/?$', user_sign_up.sign_up_courts, name='sign_up_courts'),
-    re_path(r'^sign-up/firms/?$', user_sign_up.sign_up_firms, name='sign_up_firms'),
+    re_path(r'^sign-up/orgs/?$', user_sign_up.sign_up_orgs, name='sign_up_orgs'),
+    # the legacy sign-up/firms path is now a redirect to the sign-up/orgs path
+    re_path(r'^sign-up/firms/?$', RedirectView.as_view(url=reverse_lazy('sign_up_orgs'), permanent=True), name='firms_to_orgs_redirect'),
     re_path(r'^sign-up/libraries/?$', user_sign_up.sign_up_libraries, name='sign_up_libraries'),
     # Redirect from /libraries to /sign-up/libraries with an HTTP 301 for consistency
     re_path(

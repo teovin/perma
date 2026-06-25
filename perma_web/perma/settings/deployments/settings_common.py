@@ -633,13 +633,13 @@ USE_ANALYTICS_VIEWS = [
     'contingency_plan',
     'docs',
     'docs_perma_link_creation',
-    'docs_libraries',
+    'docs_registrars',
     'docs_faq',
     'docs_accounts',
     'dev_docs',
     'sign_up',
     'sign_up_courts',
-    'sign_up_firms',
+    'sign_up_orgs',
     'sign_up_libraries'
 ]
 

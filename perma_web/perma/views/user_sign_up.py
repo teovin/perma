@@ -179,7 +179,7 @@ def sign_up_courts(request):
 
 
 @ratelimit(rate=settings.REGISTER_MINUTE_LIMIT, block=True, key=ratelimit_ip_key)
-def sign_up_firms(request: HttpRequest):
+def sign_up_orgs(request: HttpRequest):
     """Display the sign-up page for submitting a firm/other org request."""
     if request.method == 'POST':
         something_took_the_bait = check_honeypot(
@@ -250,7 +250,7 @@ def sign_up_firms(request: HttpRequest):
 
     return render(
         request,
-        'registration/sign-up-firms.html',
+        'registration/sign-up-orgs.html',
         {
             'user_form': user_form,
             'registrar_form': registrar_form,
