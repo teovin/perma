@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models, transaction
 from django.db.models.query import QuerySet
 from django.utils import timezone
@@ -22,11 +23,32 @@ class Registrar(CustomerModel):
     """
     This is a library, a court, a firm, or similar.
     """
+    REGISTRAR_TYPE_CHOICES = (
+        ('law-library', 'Law library'),
+        ('academic-library', 'Academic library'),
+        ('other-library', 'Other library'),
+        ('law-firm', 'Law firm'),
+        ('court', 'Court'),
+        ('public-defender', 'Public defender'),
+        ('attorney-general', 'Attorney general'),
+        ('government', 'Government'),
+        ('nonprofit', 'Nonprofit'),
+        ('factcheck', 'Factcheck'),
+        ('news/journalism', 'News/journalism'),
+        ('other-org', 'Other org'),
+    )
+
     name = models.CharField(max_length=400, db_index=True)
     email = models.EmailField(max_length=254)
     website = models.URLField(max_length=500)
     date_created = models.DateTimeField(auto_now_add=True, null=True)
     status = models.CharField(max_length=20, default='pending', choices=(('pending','pending'),('approved','approved'),('denied','denied')))
+    type = ArrayField(
+        models.CharField(max_length=20, choices=REGISTRAR_TYPE_CHOICES),
+        default=list,
+        blank=True,
+    )
+    international = models.BooleanField(default=False)
     orgs_private_by_default = models.BooleanField(default=False, help_text="Whether new orgs created for this registrar default to private links.")
 
     address = models.CharField(max_length=500, blank=True, null=True)
