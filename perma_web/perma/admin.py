@@ -8,6 +8,7 @@ from django.db import connection
 from django.db.models.functions import Upper
 from django.db.models import Count, Max, Q
 from django.db.models.sql.where import WhereNode
+from django import forms
 from django.forms import ModelForm
 from django.template.defaultfilters import filesizeformat
 from django.utils.functional import cached_property
@@ -451,6 +452,11 @@ class FasterAdminPaginator(Paginator):
 ### admin models ###
 
 class RegistrarChangeForm(ModelForm):
+    type = forms.MultipleChoiceField(
+        choices=Registrar.REGISTRAR_TYPE_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
     def __init__(self, *args, **kwargs):
         super(RegistrarChangeForm, self).__init__(*args, **kwargs)
@@ -467,11 +473,11 @@ class RegistrarAdmin(SimpleHistoryAdmin):
     form = RegistrarChangeForm
 
     search_fields = ['name', 'email', 'website']
-    list_display = ['name', 'status', 'email', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate']
+    list_display = ['name', 'status', 'email', 'type', 'international', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate']
     list_editable = ['status']
     list_filter = ('status', 'unlimited', 'nonpaying', 'cached_subscription_status', 'orgs_private_by_default')
     fieldsets = (
-        (None, {'fields': ('name', 'email', 'website', 'address', 'status', 'tags', 'orgs_private_by_default', 'notes')}),
+        (None, {'fields': ('name', 'email', 'website', 'address', 'status', 'type', 'international', 'tags', 'orgs_private_by_default', 'notes')}),
         ("Tier", {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
     )
     inlines = [
