@@ -19,10 +19,30 @@
         {% if request.user.is_supported_by_registrar %}
           <p class="page-dek">This form is the easiest way to reach out for Perma.cc support from your organization and our team at the Harvard Law Library.</p>
         {% else %}
-          <p class="page-dek">This form is the easiest way to start a dialog with Perma.cc.</p>
+          <p class="page-dek">The easiest way to start a conversation with Perma.cc is by using this contact form.</p>
         {% endif %}
-        <p class="page-dek">Save yourself some time. Is your question one of our <a href="{% url 'docs_faq' %}">Frequently Asked Questions?</a> Do you have questions about <a href="{% url 'sign_up' %}">setting up a Perma.cc account?</a> Have you looked at our <a href="{% url 'docs' %}">Perma.cc Guide</a>? The answer may be right at your fingertips!</p>
-        <p class="page-dek">If you are reporting an issue with capture or playback, please include the following information: the URLs you are attempting to capture, the browser you are using, and the error message you are receiving.</p>
+        <p class="page-dek">You may be able to find an immediate answer in our <a href="{% url 'docs_faq' %}">Frequently Asked Questions</a>, <a href="{% url 'docs' %}">User Guide</a>, or <a href="{% url 'sign_up' %}">Sign Up</a> pages.</p>
+        <h3 class="page-section-title">How to Reach Us</h3>
+        <p></p>
+        <ul class="page-dek-list">
+          <li>Contact form: Submit the form on this page</li>
+          <li>Email: You can also write to us at <a href="mailto:{{ DEFAULT_FROM_EMAIL }}" target="_blank">{{ DEFAULT_FROM_EMAIL }}</a></li>
+        </ul>
+        <p class="page-dek">We do not maintain a dedicated phone line, but if you contact us via the form below or email, a member of our team will follow up to schedule a call.</p>
+        <h3 class="page-section-title">Hours & Holidays</h3>
+        <p class="page-dek">Perma.cc is part of the Library Innovation Lab within the Harvard Law School Library.</p>
+        <ul class="page-dek-list">
+          <li>Typical hours: Monday-Friday, 9:00am-5:00pm Eastern Time</li>
+          <li>We observe the Harvard Law School holiday schedule</li>
+        </ul>
+        <h3 class="page-section-title">Reporting a Capture or Playback Issue</h3>
+        <p class="page-dek">If you're experiencing problems with capture or playback, please include the following details in your message:</p>
+        <ul class="page-dek-list">
+          <li>The URLs you are trying to capture and/or the Perma Links</li>
+          <li>The browser you are using</li>
+          <li>Any error messages you are receiving (copied or screenshot, if you can)</li>
+        </ul>
+        <p class="page-dek">This information helps us diagnose and resolve your issue more quickly.</p>
       {% endif %}
     </div>
   </div> <!-- row -->
