@@ -7790,6 +7790,32 @@ p .dropdown .selector-menu a.perma {
   }
 }
 
+ul.page-dek-list {
+  list-style-type: disc;
+  padding-left: 1.25em;
+  margin-bottom: 1em;
+  font-family: "Roboto", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-weight: 300;
+  font-size: 16px;
+}
+@media only screen and (min-width: 768px) {
+  ul.page-dek-list {
+    font-size: 22px;
+  }
+}
+ul.page-dek-list a, ul.page-dek-list p a.perma, p ul.page-dek-list a.perma {
+  font-weight: 700;
+}
+ul.page-dek-list a:hover {
+  color: #2D76EE;
+  text-decoration: underline;
+}
+
+h3.page-section-title {
+  font-weight: 400;
+  margin-top: 16px;
+}
+
 .body-text, .reading-body li, .reading-body p {
   font-size: 15px;
   font-weight: 300;
