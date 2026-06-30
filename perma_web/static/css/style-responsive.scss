@@ -1564,6 +1564,30 @@ button {
   }
 }
 
+ul.page-dek-list {
+  list-style-type: disc;
+  padding-left: 1.25em;
+  margin-bottom: 1em;
+  font-family: $font-hed-alt;
+  font-weight: 300;
+  font-size: 16px;
+  @include respond-tablet {
+    font-size: 22px;
+  }
+  a {
+    font-weight: 700;
+    &:hover {
+      color: $color-blue;
+      text-decoration: underline;
+    }
+  }
+}
+
+h3.page-section-title {
+  font-weight: 400;
+  margin-top: $double;
+}
+
 .body-text {
   font-size: 15px;
   font-weight: 300;
