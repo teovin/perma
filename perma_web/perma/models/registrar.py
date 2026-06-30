@@ -47,8 +47,9 @@ class Registrar(CustomerModel):
         models.CharField(max_length=20, choices=REGISTRAR_TYPE_CHOICES),
         default=list,
         blank=True,
+        db_index=True
     )
-    international = models.BooleanField(default=False)
+    international = models.BooleanField(default=False, db_index=True)
     orgs_private_by_default = models.BooleanField(default=False, help_text="Whether new orgs created for this registrar default to private links.")
 
     address = models.CharField(max_length=500, blank=True, null=True)
