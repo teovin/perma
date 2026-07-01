@@ -1,18 +1,21 @@
 {% block content %}
-This is a message from the Perma.cc contact form, http://perma.cc/contact
+This is a message from the Perma.cc contact form: {{ request.scheme|add:"://"|add:request.get_host }}{% url 'contact' %}
 
 
 
 Message from user
---------
+-----------------
 {{ message }}
 {% endblock%}{% block footer %}
-----
-Troubleshooting Info:
-User email: {{ from_address }}
-Logged in: {{ request.user.is_authenticated | yesno:"true,false" }}
-Affiliations: {{ affiliation_string | default:"(none)" }}
-Referring Page: {{ referer }}
-User agent: {{ request.META.HTTP_USER_AGENT | default:"(unknown)"}}
+
+Troubleshooting info
+--------------------
+{% if request.user.is_authenticated %}User name: {{ request.user.first_name }} {{ request.user.last_name }}
+User admin: {{ request.scheme|add:"://"|add:request.get_host }}{% url 'admin:perma_linkuser_change' request.user.id %}
+{% endif %}User email: {{ from_address }}
+Logged in: {{ request.user.is_authenticated | yesno:"Yes,No" }}
+Affiliations: {{ affiliation_string | default:"None" }}
+Referring page: {{ referer | default:"Unknown" }}
+User agent: {{ request.META.HTTP_USER_AGENT | default:"Unknown" }}
 {% endblock footer %}
 
