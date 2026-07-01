@@ -237,9 +237,9 @@ def test_contact_standard_submit_required(client, email_details):
     assert len(mail.outbox) == 1
     message = mail.outbox[0]
     assert email_details["message_text"] in message.body
-    assert "Referring Page: " + email_details["referring_page"] in message.body
-    assert "Affiliations: (none)" in message.body
-    assert "Logged in: false" in message.body
+    assert "Referring page: " + email_details["referring_page"] in message.body
+    assert "Affiliations: None" in message.body
+    assert "Logged in: No" in message.body
     assert message.subject.startswith(email_details["subject_prefix"] + email_details["custom_subject"])
     assert message.from_email == email_details["our_address"]
     assert message.recipients() == [email_details["our_address"]]
@@ -279,9 +279,9 @@ def test_contact_standard_submit_no_optional(client, email_details):
     len(mail.outbox) == 1
     message = mail.outbox[0]
     assert email_details["message_text"] in message.body
-    assert "Referring Page: " in message.body
-    assert "Affiliations: (none)" in message.body
-    assert "Logged in: false" in message.body
+    assert "Referring page: " in message.body
+    assert "Affiliations: None" in message.body
+    assert "Logged in: No" in message.body
     assert message.subject.startswith(email_details["subject_prefix"] + 'New message from Perma contact form')
     assert message.from_email, email_details["our_address"]
     assert message.recipients() == [email_details["our_address"]]
@@ -328,7 +328,8 @@ def test_contact_org_user_submit(client, multi_registrar_org_user, email_details
     assert len(mail.outbox) == 1
     message = mail.outbox[0]
     assert email_details["message_text"] in message.body
-    assert "Logged in: true" in message.body
+    assert f"https://testserver{reverse('admin:perma_linkuser_change', args=(multi_registrar_org_user.id,))}" in message.body
+    assert "Logged in: Yes" in message.body
     assert message.from_email == email_details["our_address"]
     assert message.to == [user.email for user in registrar_users]
     assert message.cc == [email_details["our_address"], email_details["from_email"]]
@@ -352,7 +353,7 @@ def test_contact_org_user_affiliation_string(client, multi_registrar_org_user, e
     message = mail.outbox[0]
     for org in multi_registrar_org_user.organizations.all():
         assert f"{org.name} ({org.registrar.name})" in message.body
-    assert "Logged in: true" in message.body
+    assert "Logged in: Yes" in message.body
 
 
 @override_settings(REQUIRE_JS_FORM_SUBMISSIONS=False)
@@ -370,7 +371,7 @@ def test_contact_reg_user_affiliation_string(client, registrar_user, email_detai
     assert len(mail.outbox) == 1
     message = mail.outbox[0]
     assert f"Affiliations: {registrar_user.registrar.name} (Registrar)" in message.body
-    assert "Logged in: true" in message.body
+    assert "Logged in: Yes" in message.body
 
 
 @override_settings(REQUIRE_JS_FORM_SUBMISSIONS=False)
@@ -390,7 +391,7 @@ def test_contact_sponsored_user_affiliation_string(client, sponsored_user, email
     assert len(mail.outbox) == 1
     message = mail.outbox[0]
     assert f"Affiliations: {registrar.name}" in message.body
-    assert "Logged in: true" in message.body
+    assert "Logged in: Yes" in message.body
 
 
 #
@@ -473,7 +474,7 @@ def test_report_post_with_basic_fields(client):
     assert 'Somewhere online' in message.body
     assert 'me@me.com' in message.body
     assert 'some-string-that-could-be-a-guid' in message.body
-    assert "Logged in: false" in message.body
+    assert "Logged in: No" in message.body
 
 
 @override_settings(REQUIRE_JS_FORM_SUBMISSIONS=False)

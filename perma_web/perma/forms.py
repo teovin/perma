@@ -724,7 +724,7 @@ class ReportForm(forms.Form):
             'Copyright Infringement',
             'Other'
         ]],
-        label = 'Reason for Reporting'
+        label = 'Reason for reporting'
     )
     source = forms.CharField(
         label="How did you discover this Perma Link?",
