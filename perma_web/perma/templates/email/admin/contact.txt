@@ -9,6 +9,7 @@ Message from user
 {% endblock%}{% block footer %}
 ----
 Troubleshooting Info:
+
 {% if request.user.is_authenticated %}User name: {{ request.user.first_name }} {{ request.user.last_name }}
 {% endif %}User email: {{ from_address }}
 Logged in: {{ request.user.is_authenticated | yesno:"true,false" }}
