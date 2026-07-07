@@ -409,6 +409,19 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
         """
         return not self.nonpaying or (self.is_registrar_user() and not self.registrar.nonpaying)
 
+    ### banner visibility ###
+    
+    def should_see_payment_system_upgrade_banner(self):
+        """
+            Should the user see the temporary "Payment System Upgrade Period" banner?
+            Shown to paid registrar users and paid individual users whose subscription status is 'Current' or 'Hold'.
+        """
+        subscription_statuses = ['Current', 'Hold']
+        if self.is_registrar_user() and not self.registrar.nonpaying:
+            return self.registrar.cached_subscription_status in subscription_statuses
+        if self.is_individual() and not self.nonpaying:
+            return self.cached_subscription_status in subscription_statuses
+        return False
 
     ### merging accounts ###
 

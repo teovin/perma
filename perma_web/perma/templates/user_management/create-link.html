@@ -9,9 +9,15 @@
   {% render_bundle 'dashboard' 'css' %}
 {% endblock %}
 
+{% block top_banner %}
+  {% if request.user.is_authenticated and request.user.should_see_payment_system_upgrade_banner %}
+    {% include "includes/top_banner.html" %}
+  {% endif %}
+{% endblock top_banner %}
+
 {% block mainContent %}
 
- <!-- vue app -->
+<!-- vue app -->
 <div id="vue-app"></div>
 
 {% endblock %}
