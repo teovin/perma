@@ -12753,6 +12753,21 @@ Example: calc(4rem / 16) is equal to 4px or 0.25rem */
     transform: scale(1);
   }
 }
+/* Banner styles */
+.top-banner {
+  background-color: #bcd3f9;
+  padding: 12px;
+  text-align: center;
+  font-family: "Roboto", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+.top-banner p {
+  max-width: inherit;
+  font-size: 14px;
+}
+.top-banner .top-banner-title {
+  font-weight: 700;
+  font-size: 17px;
+}
 /*!
  *  Font Awesome 3.0.2
  *  the iconic font designed for use with Twitter Bootstrap
