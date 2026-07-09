@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from django.conf import settings
 from django.test import override_settings
@@ -281,7 +282,7 @@ def test_monthly_link_limit_with_midmonth_subscription1(mocked_timezone, user_wi
     mocked_timezone.now.return_value = fifteenth_of_month
 
     u = user_with_links_this_month_before_the_15th
-    u.cached_subscription_started = fifteenth_of_month
+    u.cached_paid_through = fifteenth_of_month + relativedelta(months=1)
     u.save()
 
     assert not u.unlimited
@@ -297,7 +298,7 @@ def test_monthly_link_limit_with_midmonth_subscription2(mocked_timezone, user_wi
     mocked_timezone.now.return_value = fifteenth_of_month
 
     u = user_with_links_this_month_before_the_15th
-    u.cached_subscription_started = fifth_of_month
+    u.cached_paid_through = fifth_of_month + relativedelta(months=1)
     u.save()
 
     assert not u.unlimited

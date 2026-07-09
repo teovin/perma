@@ -581,7 +581,7 @@ class LinkUserAdmin(UserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'raw_email', 'notes')}),
         (None, {'fields': ('password',)}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_confirmed', 'registrar', 'groups')}),
-        ('Tier', {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'in_trial', 'bonus_links')}),
+        ('Tier', {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'cached_paid_through', 'unlimited', 'link_limit', 'link_limit_period', 'in_trial', 'bonus_links')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     add_fieldsets = (
@@ -591,7 +591,7 @@ class LinkUserAdmin(UserAdmin):
         }),
     )
     raw_id_fields = ['registrar']
-    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'is_confirmed', 'in_trial', 'unlimited', 'nonpaying','cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate', 'bonus_links', 'date_joined', 'last_login', 'link_count', 'registrar')
+    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'is_confirmed', 'in_trial', 'unlimited', 'nonpaying','cached_subscription_status', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_rate', 'base_rate', 'bonus_links', 'date_joined', 'last_login', 'link_count', 'registrar')
     search_fields = ('first_name', 'last_name', 'email')
     list_filter = ('is_staff', 'is_active', 'in_trial', 'unlimited', 'nonpaying', 'cached_subscription_status', RegistrarUserFilter, OrgUserFilter, OrgUserForRegistrarFilter)
     ordering = ('-id',)
