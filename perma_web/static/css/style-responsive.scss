@@ -6138,3 +6138,21 @@ Example: calc(4rem / 16) is equal to 4px or 0.25rem */
   50% { transform: scale(1.2); }
   100% { transform: scale(1); }
 }
+
+/* Banner styles */
+.top-banner {
+  background-color: $color-banner-background;
+  padding: 12px;
+  text-align: center;
+  font-family: $font-hed;
+
+  p {
+    max-width: inherit;
+    font-size: $size-medium;
+  }
+
+  .top-banner-title {
+    font-weight: 700;
+    font-size: $size-body;
+  }
+}
