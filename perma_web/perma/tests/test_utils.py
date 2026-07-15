@@ -4,7 +4,7 @@ from unittest.mock import patch, sentinel
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.test.client import RequestFactory
 
 
@@ -15,7 +15,9 @@ from perma.utils import (
     InvalidTransmissionException,
     decrypt_from_perma_payments,
     encrypt_for_perma_payments,
-    get_client_ip, prep_for_perma_payments,
+    get_client_ip,
+    get_payments_app_url,
+    prep_for_perma_payments,
     is_valid_timestamp,
     process_perma_payments_transmission,
     retrieve_fields,
@@ -23,6 +25,8 @@ from perma.utils import (
     unstringify_data
 )
 import pytest
+from django.test import override_settings
+from waffle.testutils import override_switch
 
 from .utils import SentinelException
 
@@ -30,6 +34,46 @@ from .utils import SentinelException
 def test_get_client_ip():
     request = RequestFactory().get('/some/route', REMOTE_ADDR="1.2.3.4")
     assert get_client_ip(request) == "1.2.3.4"
+
+
+#
+# get_payments_app_url: which payments backend each route points at.
+# This is where the Cybersource -> Stripe cutover actually happens, so it is
+# the first line of defense for "no new Cybersource transactions once we flip".
+#
+
+@pytest.mark.django_db
+@override_switch('use_stripe_payments_app', active=False)
+def test_payments_url_uses_cybersource_when_stripe_switch_off():
+    assert get_payments_app_url('update') == settings.UPDATE_URL
+    assert get_payments_app_url('cancel') == settings.CANCEL_URL
+    assert get_payments_app_url('subscribe') == settings.SUBSCRIBE_URL
+
+
+@pytest.mark.django_db
+@override_switch('use_stripe_payments_app', active=True)
+@override_settings(
+    STRIPE_PAYMENTS_APP_INTERNAL_URL='https://stripe-app.test',
+    STRIPE_PAYMENTS_APP_EXTERNAL_URL='https://stripe-app.test',
+)
+def test_payments_url_uses_stripe_when_switch_on_and_configured():
+    # User-facing (external) routes and the server-to-server (internal) route
+    # both move to the Stripe app; none of them resolve to Cybersource.
+    assert get_payments_app_url('update') == 'https://stripe-app.test/update/'
+    assert get_payments_app_url('cancel') == 'https://stripe-app.test/cancel-request/'
+    assert get_payments_app_url('subscription_status') == 'https://stripe-app.test/subscription/'
+
+
+@pytest.mark.django_db
+@override_switch('use_stripe_payments_app', active=True)
+@override_settings(STRIPE_PAYMENTS_APP_INTERNAL_URL=None, STRIPE_PAYMENTS_APP_EXTERNAL_URL=None)
+def test_payments_url_raises_when_stripe_switch_on_but_unconfigured():
+    # ROLLOUT GUARD: if the Stripe switch is flipped on before the Stripe app
+    # URLs are configured, we must fail loud rather than silently fall back to
+    # Cybersource (which would post a "Stripe" transaction to Cybersource). Ops
+    # must set STRIPE_PAYMENTS_APP_*_URL *before* enabling use_stripe_payments_app.
+    with pytest.raises(ImproperlyConfigured):
+        get_payments_app_url('update')
 
 #
 # our custom password validator

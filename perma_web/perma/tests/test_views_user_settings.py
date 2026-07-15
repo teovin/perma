@@ -1,12 +1,55 @@
+from contextlib import contextmanager
+
 from bs4 import BeautifulSoup
+import pytest
 
 from django.urls import reverse
 from django.conf import settings
+from django.test import override_settings
 
 from perma.exceptions import PermaPaymentsCommunicationException
 
 from conftest import submit_form
 from unittest.mock import patch, sentinel
+from waffle.testutils import override_switch
+
+
+#
+# Cybersource -> Stripe rollout phases.
+#
+# Each phase is a combination of the three payment waffle switches. These
+# helpers let us assert per-phase behavior in one place, and in particular
+# confirm that once Cybersource transactions are switched off, no Perma route
+# can drive a transaction to Cybersource -- even if a URL is visited directly.
+#
+# (name, use_stripe_payments_app, allow_cybersource_transactions, display_cybersource_freeze_message)
+CYBERSOURCE_PHASE = ('cybersource', False, True, False)
+FREEZE_PHASE = ('freeze', False, False, True)
+STRIPE_PHASE = ('stripe', True, False, False)
+ALL_PHASES = [CYBERSOURCE_PHASE, FREEZE_PHASE, STRIPE_PHASE]
+
+# Bare Cybersource payment endpoints (from settings_testing.py). If any of these
+# is the action of a rendered form, that form posts a transaction to Cybersource.
+CYBERSOURCE_FORM_ACTIONS = {
+    settings.UPDATE_URL, settings.CHANGE_URL, settings.CANCEL_URL,
+    settings.PURCHASE_URL, settings.SUBSCRIBE_URL,
+}
+
+# Distinct Stripe app host used with override_settings so we can tell the two
+# backends apart in rendered form actions.
+STRIPE_APP_URL = 'https://stripe-app.test'
+
+
+@contextmanager
+def rollout_phase(use_stripe, allow_cybersource, freeze_message):
+    with override_switch('use_stripe_payments_app', active=use_stripe), \
+         override_switch('allow_cybersource_transactions', active=allow_cybersource), \
+         override_switch('display_cybersource_freeze_message', active=freeze_message):
+        yield
+
+
+def form_actions(content):
+    return {form.get('action') for form in BeautifulSoup(content, 'html.parser').find_all('form') if form.get('action')}
 
 
 #
@@ -183,6 +226,47 @@ def test_regular_user_can_see_usage_plan_page(client, link_user):
     assert response.status_code == 200
 
 
+@override_switch('use_stripe_payments_app', active=True)
+def test_payment_success_message_shown_after_redirect(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?subscription=success', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-success' in response.content
+    assert b'Your subscription has been created.' in response.content
+
+
+@override_switch('use_stripe_payments_app', active=True)
+def test_payment_canceled_message_shown_as_info_after_redirect(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?purchase=canceled', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-info' in response.content
+    assert b'Link purchase checkout was canceled. You were not charged.' in response.content
+
+
+@override_switch('use_stripe_payments_app', active=True)
+def test_no_payment_message_for_unrecognized_params(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?subscription=bogus&foo=success', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-block' not in response.content
+
+
+@override_switch('use_stripe_payments_app', active=False)
+def test_no_payment_message_when_stripe_app_disabled(client, user_without_subscription_or_purchase_history):
+    # On Cybersource, the payments app never redirects with these params, and a
+    # manually-appended param must not surface a misleading status message.
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?subscription=success', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-block' not in response.content
+    assert b'Your subscription has been created.' not in response.content
+
+
 def test_no_purchase_history_section_if_no_one_time_purchases(client, user_without_subscription_or_purchase_history):
     user = user_without_subscription_or_purchase_history
 
@@ -238,6 +322,178 @@ def test_update_button_cancel_button_and_subscription_info_present_if_standing_s
     assert b'Cancel Subscription' in response.content
     assert b'Your subscription is <span class="blue-text">current</span>' in response.content
     assert response.content.count(b'<input type="hidden" name="account_type"') == 2
+
+
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@override_switch('use_stripe_payments_app', active=True)
+def test_stripe_mode_shows_subscribe_and_purchase_forms(prepped, client, user_without_subscription_or_purchase_history):
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    individual_tier_count = len(settings.TIERS['Individual'])
+    bonus_package_count = len(settings.BONUS_PACKAGES)
+    assert b'Purchase a personal subscription' in response.content
+    assert b'Get More Personal Links' in response.content
+    assert response.content.count(b'<form class="purchase-form') == bonus_package_count
+    assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
+
+
+@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@override_switch('use_stripe_payments_app', active=True)
+def test_stripe_mode_update_page_shows_portal_language(model_prepped, view_prepped, client, user_with_monthly_subscription):
+    model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
+    view_prepped.return_value = bytes(str(sentinel.view_prepped), 'utf-8')
+    client.force_login(user_with_monthly_subscription)
+    response = client.post(
+        reverse('settings_subscription_update'),
+        secure=True,
+        data={'account_type': 'Individual'}
+    )
+
+    assert response.status_code == 200
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
+    assert b'Update Credit Card Information' not in response.content
+
+
+@override_switch('use_stripe_payments_app', active=True)
+def test_stripe_mode_registrar_update_page_shows_contact_note(client, registrar_user_from_registrar_with_monthly_subscription):
+    client.force_login(registrar_user_from_registrar_with_monthly_subscription)
+    response = client.post(
+        reverse('settings_subscription_update'),
+        secure=True,
+        data={'account_type': 'Registrar'}
+    )
+
+    assert response.status_code == 200
+    assert b'Please contact' in response.content
+    assert b'info@perma.cc' in response.content
+
+
+#
+# Harmonized rollout-phase behavior
+#
+
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message', ALL_PHASES)
+def test_usage_plan_controls_by_rollout_phase(name, use_stripe, allow_cybersource, freeze_message, client, user_with_monthly_subscription):
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(user_with_monthly_subscription)
+        response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    content = response.content
+    stripe_button = b'Manage Subscription and Billing'
+    cybersource_buttons = (b'Modify Subscription', b'Cancel Subscription')
+    freeze_banner = b'Usage Plan Page Temporarily Limited'
+
+    if name == 'cybersource':
+        assert all(button in content for button in cybersource_buttons)
+        assert stripe_button not in content
+        assert freeze_banner not in content
+    elif name == 'freeze':
+        assert freeze_banner in content
+        assert not any(button in content for button in cybersource_buttons)
+        assert stripe_button not in content
+    elif name == 'stripe':
+        assert stripe_button in content
+        assert not any(button in content for button in cybersource_buttons)
+        assert freeze_banner not in content
+
+
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message,expected_status', [
+    ('cybersource', False, True, False, 200),
+    ('freeze', False, False, True, 403),
+    # Not linked in Stripe mode (cancellation happens in the portal); a direct
+    # POST must still be refused rather than reach Cybersource's cancel route.
+    ('stripe', True, False, False, 403),
+])
+@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
+def test_cancel_route_direct_post_by_phase(prepped, name, use_stripe, allow_cybersource, freeze_message, expected_status, client, user_with_monthly_subscription):
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(user_with_monthly_subscription)
+        response = client.post(
+            reverse('settings_subscription_cancel'),
+            secure=True,
+            data={'account_type': 'Individual'}
+        )
+    assert response.status_code == expected_status
+
+
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message,expected_status', [
+    ('cybersource', False, True, False, 200),
+    ('freeze', False, False, True, 403),
+    # Available in Stripe mode, but points at the Stripe portal, not Cybersource
+    # (asserted by test_update_page_targets_only_active_backend).
+    ('stripe', True, False, False, 200),
+])
+@override_settings(STRIPE_PAYMENTS_APP_INTERNAL_URL=STRIPE_APP_URL, STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
+@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_update_route_direct_post_by_phase(model_prepped, view_prepped, name, use_stripe, allow_cybersource, freeze_message, expected_status, client, user_with_monthly_subscription):
+    model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
+    view_prepped.return_value = bytes(str(sentinel.view_prepped), 'utf-8')
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(user_with_monthly_subscription)
+        response = client.post(
+            reverse('settings_subscription_update'),
+            secure=True,
+            data={'account_type': 'Individual'}
+        )
+    assert response.status_code == expected_status
+
+
+@pytest.mark.parametrize('route', ['settings_subscription_cancel', 'settings_subscription_update'])
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message', ALL_PHASES)
+def test_transaction_routes_reject_get_in_all_phases(name, use_stripe, allow_cybersource, freeze_message, route, client, link_user):
+    # These routes are POST-only, so they can't be "visited" in a browser; the
+    # method guard returns 405 before any subscription logic runs.
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(link_user)
+        response = client.get(reverse(route), secure=True)
+    assert response.status_code == 405
+
+
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message,expect_cybersource', [
+    ('cybersource', False, True, False, True),
+    ('stripe', True, False, False, False),
+])
+@override_settings(STRIPE_PAYMENTS_APP_INTERNAL_URL=STRIPE_APP_URL, STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
+@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_update_page_targets_only_active_backend(model_prepped, view_prepped, name, use_stripe, allow_cybersource, freeze_message, expect_cybersource, client, user_with_monthly_subscription):
+    # Even when the update page renders (200), its forms must post only to the
+    # active backend. In Stripe mode nothing may target a Cybersource endpoint.
+    model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
+    view_prepped.return_value = bytes(str(sentinel.view_prepped), 'utf-8')
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(user_with_monthly_subscription)
+        response = client.post(
+            reverse('settings_subscription_update'),
+            secure=True,
+            data={'account_type': 'Individual'}
+        )
+    actions = form_actions(response.content)
+    if expect_cybersource:
+        assert actions & CYBERSOURCE_FORM_ACTIONS
+        assert not any(action.startswith(STRIPE_APP_URL) for action in actions)
+    else:
+        assert any(action.startswith(STRIPE_APP_URL) for action in actions)
+        assert not (actions & CYBERSOURCE_FORM_ACTIONS)
+
+
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message', [FREEZE_PHASE, STRIPE_PHASE])
+@override_settings(STRIPE_PAYMENTS_APP_INTERNAL_URL=STRIPE_APP_URL, STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_usage_plan_serves_no_cybersource_form_when_transactions_off(prepped, name, use_stripe, allow_cybersource, freeze_message, client, user_without_subscription_or_purchase_history):
+    # Once Cybersource transactions are switched off, the usage plan page must
+    # not render any subscribe/purchase form pointed at a Cybersource endpoint.
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(user_without_subscription_or_purchase_history)
+        response = client.get(reverse('settings_usage_plan'), secure=True)
+    assert not (form_actions(response.content) & CYBERSOURCE_FORM_ACTIONS)
 
 
 def test_help_present_if_subscription_on_hold(client, user_with_on_hold_subscription):

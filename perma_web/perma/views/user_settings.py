@@ -1,5 +1,6 @@
 import itertools
 import uuid
+import waffle
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -137,6 +138,28 @@ def settings_tools(request):
 def settings_usage_plan(request):
     accounts = []
     purchase_history = {}
+    # Status messages for redirects back from the payments app after checkout,
+    # e.g. settings/usage-plan/?subscription=success. Only the Stripe payments
+    # app issues these redirects, so we only surface the messages when it is in
+    # use; on Cybersource these params never appear and are ignored.
+    payment_status_level = payment_status_message = None
+    if waffle.switch_is_active('use_stripe_payments_app'):
+        payment_redirect_messages = {
+            ('subscription', 'success'): ('success', 'Your subscription has been created.'),
+            ('subscription', 'canceled'): ('info', 'Subscription checkout was canceled. You were not charged.'),
+            ('purchase', 'success'): ('success', 'Your link purchase succeeded.'),
+            ('purchase', 'canceled'): ('info', 'Link purchase checkout was canceled. You were not charged.'),
+            ('change', 'success'): ('success', (
+                'Your subscription change was submitted. Upgrades may be billed immediately; '
+                'downgrades take effect at the end of the current billing period.'
+            )),
+            ('update', 'success'): ('success', 'Your payment information was updated.'),
+        }
+        for param in ('subscription', 'purchase', 'change', 'update'):
+            match = payment_redirect_messages.get((param, request.GET.get(param)))
+            if match:
+                payment_status_level, payment_status_message = match
+                break
     try:
         if request.user.is_registrar_user() and not request.user.registrar.nonpaying:
             accounts.append(request.user.registrar.get_subscription_info(timezone.now()))
@@ -157,8 +180,12 @@ def settings_usage_plan(request):
         'update_url': reverse('settings_subscription_update'),
         'accounts': accounts,
         'purchase_history': purchase_history,
-        'bonus_packages': request.user.get_bonus_packages()
-
+        'bonus_packages': request.user.get_bonus_packages(),
+        'display_cybersource_freeze_message': waffle.switch_is_active('display_cybersource_freeze_message'),
+        'allow_cybersource_transactions': waffle.switch_is_active('allow_cybersource_transactions'),
+        'use_stripe_payments_app': waffle.switch_is_active('use_stripe_payments_app'),
+        'payment_status_level': payment_status_level,
+        'payment_status_message': payment_status_message,
     }
     return render(request, 'settings/settings-usage-plan.html', context)
 
@@ -173,7 +200,7 @@ def settings_subscription_cancel(request):
     elif account_type == 'Individual':
         customer = request.user
     account = customer.get_subscription_info(timezone.now())
-    if not account['subscription']:
+    if not waffle.switch_is_active('allow_cybersource_transactions') or not account['subscription']:
         return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
@@ -200,7 +227,12 @@ def settings_subscription_update(request):
     elif account_type == 'Individual':
         customer = request.user
     account = customer.get_subscription_info(timezone.now())
-    if not account['subscription']:
+    # The update route funnels to the active payments app: the Stripe customer
+    # portal when use_stripe_payments_app is on, or the Cybersource card-update
+    # page when Cybersource transactions are allowed. Forbidden only when
+    # neither backend is accepting transactions (e.g. the migration freeze).
+    use_stripe = waffle.switch_is_active('use_stripe_payments_app')
+    if not (use_stripe or waffle.switch_is_active('allow_cybersource_transactions')) or not account['subscription']:
         return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
@@ -209,6 +241,7 @@ def settings_subscription_update(request):
         'customer': customer,
         'customer_type': account_type,
         'account': account,
+        'use_stripe_payments_app': use_stripe,
         'update_encrypted_data': prep_for_perma_payments({
             'customer_pk': customer.id,
             'customer_type': account_type,
