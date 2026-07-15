@@ -8,6 +8,10 @@
 {% block title %} | Settings{% endblock %}
 {% block dashboardContent %}
 
+  {% if payment_status_message %}
+    <div class="alert alert-{{ payment_status_level }} alert-block">{{ payment_status_message }}</div>
+  {% endif %}
+
   {% if display_cybersource_freeze_message %}
 
     <h2 class="body-ah">Usage Plan Page Temporarily Limited</h2>
