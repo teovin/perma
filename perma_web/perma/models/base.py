@@ -5,6 +5,7 @@ import logging
 
 import requests
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models, transaction
 from django.db.models import Count
 from django.utils import timezone
@@ -194,7 +195,7 @@ class CustomerModel(models.Model):
                 }
             )
             assert r.ok, r.status_code
-        except (requests.RequestException, AssertionError) as e:
+        except (requests.RequestException, AssertionError, ImproperlyConfigured) as e:
             msg = f"Communication with Perma-Payments failed: {e}"
             if settings.PERMA_PAYMENTS_IN_MAINTENANCE:
                 logger.info(msg)
@@ -239,7 +240,7 @@ class CustomerModel(models.Model):
                 }
             )
             assert r.ok, r.status_code
-        except (requests.RequestException, AssertionError) as e:
+        except (requests.RequestException, AssertionError, ImproperlyConfigured) as e:
             msg = f"Communication with Perma-Payments failed: {e}"
             if settings.PERMA_PAYMENTS_IN_MAINTENANCE:
                 logger.info(msg)
@@ -497,7 +498,7 @@ class CustomerModel(models.Model):
                             }
                         )
                         assert r.ok, r.status_code
-                    except (requests.RequestException, AssertionError) as e:
+                    except (requests.RequestException, AssertionError, ImproperlyConfigured) as e:
                         msg = f"Communication with Perma-Payments failed: {str(e)}"
                         if settings.PERMA_PAYMENTS_IN_MAINTENANCE:
                             logger.info(msg)
