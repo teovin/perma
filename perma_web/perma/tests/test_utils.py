@@ -4,7 +4,7 @@ from unittest.mock import patch, sentinel
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.test.client import RequestFactory
 
 
@@ -67,12 +67,13 @@ def test_payments_url_uses_stripe_when_switch_on_and_configured():
 @pytest.mark.django_db
 @override_switch('use_stripe_payments_app', active=True)
 @override_settings(STRIPE_PAYMENTS_APP_INTERNAL_URL=None, STRIPE_PAYMENTS_APP_EXTERNAL_URL=None)
-def test_payments_url_falls_back_to_cybersource_when_stripe_misconfigured():
+def test_payments_url_raises_when_stripe_switch_on_but_unconfigured():
     # ROLLOUT GUARD: if the Stripe switch is flipped on before the Stripe app
-    # URLs are configured, get_payments_app_url silently falls back to
-    # Cybersource -- so the "Stripe" UI would post to Cybersource. Ops must set
-    # STRIPE_PAYMENTS_APP_*_URL *before* enabling use_stripe_payments_app.
-    assert get_payments_app_url('update') == settings.UPDATE_URL
+    # URLs are configured, we must fail loud rather than silently fall back to
+    # Cybersource (which would post a "Stripe" transaction to Cybersource). Ops
+    # must set STRIPE_PAYMENTS_APP_*_URL *before* enabling use_stripe_payments_app.
+    with pytest.raises(ImproperlyConfigured):
+        get_payments_app_url('update')
 
 #
 # our custom password validator

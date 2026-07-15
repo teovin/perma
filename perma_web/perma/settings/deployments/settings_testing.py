@@ -97,6 +97,12 @@ SUBSCRIPTION_STATUS_URL = '/subscription/'
 UPDATE_URL = '/update/'
 CHANGE_URL = '/change/'
 
+# Configured so tests can exercise the use_stripe_payments_app switch; without
+# these, get_payments_app_url raises when the switch is on (see
+# test_payments_url_raises_when_stripe_switch_on_but_unconfigured).
+STRIPE_PAYMENTS_APP_INTERNAL_URL = 'https://perma-payments.test'
+STRIPE_PAYMENTS_APP_EXTERNAL_URL = 'https://perma-payments.test'
+
 
 # lots of subscription packages, to be thorough
 TIERS = {
