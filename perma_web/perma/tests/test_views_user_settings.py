@@ -282,6 +282,81 @@ def test_update_button_cancel_button_and_subscription_info_present_if_standing_s
     assert response.content.count(b'<input type="hidden" name="account_type"') == 2
 
 
+@override_switch('use_stripe_payments_app', active=True)
+def test_stripe_mode_shows_manage_button_and_hides_cancel(client, user_with_monthly_subscription):
+    # Stripe funnels management (including cancellation) into the customer
+    # portal, so we show a single "Manage" button and no self-serve Cancel.
+    client.force_login(user_with_monthly_subscription)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    assert b'Manage Subscription and Billing' in response.content
+    assert b'Modify Subscription' not in response.content
+    assert b'Cancel Subscription' not in response.content
+    assert response.content.count(b'<input type="hidden" name="account_type"') == 1
+
+
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@override_switch('use_stripe_payments_app', active=True)
+def test_stripe_mode_shows_subscribe_and_purchase_forms(prepped, client, user_without_subscription_or_purchase_history):
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    individual_tier_count = len(settings.TIERS['Individual'])
+    bonus_package_count = len(settings.BONUS_PACKAGES)
+    assert b'Purchase a personal subscription' in response.content
+    assert b'Get More Personal Links' in response.content
+    assert response.content.count(b'<form class="purchase-form') == bonus_package_count
+    assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
+
+
+@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@override_switch('use_stripe_payments_app', active=True)
+def test_stripe_mode_update_page_shows_portal_language(model_prepped, view_prepped, client, user_with_monthly_subscription):
+    model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
+    view_prepped.return_value = bytes(str(sentinel.view_prepped), 'utf-8')
+    client.force_login(user_with_monthly_subscription)
+    response = client.post(
+        reverse('settings_subscription_update'),
+        secure=True,
+        data={'account_type': 'Individual'}
+    )
+
+    assert response.status_code == 200
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
+    assert b'Update Credit Card Information' not in response.content
+
+
+@override_switch('use_stripe_payments_app', active=True)
+def test_stripe_mode_registrar_update_page_shows_contact_note(client, registrar_user_from_registrar_with_monthly_subscription):
+    client.force_login(registrar_user_from_registrar_with_monthly_subscription)
+    response = client.post(
+        reverse('settings_subscription_update'),
+        secure=True,
+        data={'account_type': 'Registrar'}
+    )
+
+    assert response.status_code == 200
+    assert b'Please contact' in response.content
+    assert b'info@perma.cc' in response.content
+
+
+@override_switch('use_stripe_payments_app', active=False)
+@override_switch('allow_cybersource_transactions', active=False)
+def test_update_route_forbidden_when_no_backend_accepts_transactions(client, user_with_monthly_subscription):
+    # During the migration freeze neither backend is live, so the update route
+    # must refuse rather than post to a frozen payments app.
+    client.force_login(user_with_monthly_subscription)
+    response = client.post(
+        reverse('settings_subscription_update'),
+        secure=True,
+        data={'account_type': 'Individual'}
+    )
+    assert response.status_code == 403
+
+
 def test_help_present_if_subscription_on_hold(client, user_with_on_hold_subscription):
     user = user_with_on_hold_subscription
 

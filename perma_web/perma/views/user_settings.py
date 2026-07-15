@@ -183,6 +183,7 @@ def settings_usage_plan(request):
         'bonus_packages': request.user.get_bonus_packages(),
         'display_cybersource_freeze_message': waffle.switch_is_active('display_cybersource_freeze_message'),
         'allow_cybersource_transactions': waffle.switch_is_active('allow_cybersource_transactions'),
+        'use_stripe_payments_app': waffle.switch_is_active('use_stripe_payments_app'),
         'payment_status_level': payment_status_level,
         'payment_status_message': payment_status_message,
     }
@@ -226,7 +227,12 @@ def settings_subscription_update(request):
     elif account_type == 'Individual':
         customer = request.user
     account = customer.get_subscription_info(timezone.now())
-    if not waffle.switch_is_active('allow_cybersource_transactions') or not account['subscription']:
+    # The update route funnels to the active payments app: the Stripe customer
+    # portal when use_stripe_payments_app is on, or the Cybersource card-update
+    # page when Cybersource transactions are allowed. Forbidden only when
+    # neither backend is accepting transactions (e.g. the migration freeze).
+    use_stripe = waffle.switch_is_active('use_stripe_payments_app')
+    if not (use_stripe or waffle.switch_is_active('allow_cybersource_transactions')) or not account['subscription']:
         return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
@@ -235,6 +241,7 @@ def settings_subscription_update(request):
         'customer': customer,
         'customer_type': account_type,
         'account': account,
+        'use_stripe_payments_app': use_stripe,
         'update_encrypted_data': prep_for_perma_payments({
             'customer_pk': customer.id,
             'customer_type': account_type,

@@ -41,7 +41,7 @@
             <p class="page-dek">Subscription Reference: {{ subscription.reference_number }}</p>
           {% endif %}
           {% if not subscription %}
-            {% if allow_cybersource_transactions %}
+            {% if use_stripe_payments_app or allow_cybersource_transactions %}
               {% if customer_type == 'Registrar' %}
                 <p class="page-dek">Purchase a subscription for {{ customer.name }}</p>
               {% else %}
@@ -118,7 +118,7 @@
                   Your subscription is <span class="blue-text">on hold</span> due to a problem with your credit card.
                 </p>
                 <p class="page-dek">
-                  {% if allow_cybersource_transactions %}You can update payment information by clicking the "Modify Subscription" button below. {% endif %}If you need
+                  {% if use_stripe_payments_app %}You can update payment information by clicking the "Manage Subscription and Billing" button below. {% elif allow_cybersource_transactions %}You can update payment information by clicking the "Modify Subscription" button below. {% endif %}If you need
                   assistance or believe this message is in error, please <a href="{% url 'contact' %}?subject=Subscription%20On%20Hold">contact us</a>.
                 </p>
               {% else %}
@@ -239,7 +239,15 @@
                   </div>
                 {% endif %}
                   <div class="row subscription-buttons">
-                    {% if allow_cybersource_transactions %}
+                    {% if use_stripe_payments_app %}
+                    <div class="col-xs-12 col-md-6">
+                      <form method="post" action="{{ update_url }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="account_type" value={{ customer_type }}>
+                        <button class="btn btn-primary" type="submit">Manage Subscription and Billing</button>
+                      </form>
+                    </div>
+                    {% elif allow_cybersource_transactions %}
                     <div class="col-xs-12 col-md-6">
                       <form method="post" action="{{ update_url }}">
                         {% csrf_token %}
@@ -262,7 +270,7 @@
         {% endwith %}
       {% endfor %}
       <h2 class="body-ah">Get More Personal Links</h2>
-      {% if allow_cybersource_transactions %}
+      {% if use_stripe_payments_app or allow_cybersource_transactions %}
         <p class="page-dek">A one-time purchase, for people with or without subscriptions.</p>
         <p class="fine-print">
           Have a subscription? These extra links carry over. You can make them whenever you want, and you
