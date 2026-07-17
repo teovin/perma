@@ -302,7 +302,7 @@
         <dl class="dl-horizontal">
           {% for purchase in purchase_history.purchases %}
             <dt>
-              {{ purchase.date | date:"F n, Y" }}:
+              {{ purchase.date | date:"F j, Y" }}:
             </dt>
             <dd>
               {{ purchase.reference_number }}
