@@ -201,6 +201,22 @@ def test_get_subscription_happy_path_with_pending_change(post, process, paying_u
         assert credited.call_count == 0
 
 
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
+def test_get_subscription_null_effective_timestamp_treated_as_applied(post, process, paying_user, spoof_pp_response_subscription):
+    # A null link_limit_effective_timestamp (e.g. a legacy Perma Payments row)
+    # must not crash the usage-plan read on the None <= now comparison; it is
+    # treated as already applied, with no pending change.
+    post.return_value.status_code = 200
+    customer = paying_user
+    response = spoof_pp_response_subscription(customer)
+    response['subscription']['link_limit_effective_timestamp'] = None
+    process.return_value = response
+    subscription = customer.get_subscription()
+    assert subscription['pending_change'] is None
+    assert subscription['status'] == response['subscription']['status']
+
+
 #
 # Link limits and bonus links
 #

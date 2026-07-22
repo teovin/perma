@@ -129,7 +129,7 @@
               <div class="row">
                 {% if subscription.pending_change %}
                   <div class="col-xs-12">
-                    <h3 class="body-ch">Through {{ subscription.paid_through | date:"F jS, Y" }}</h3>
+                    <h3 class="body-ch">Current plan (through {{ subscription.paid_through | date:"F jS, Y" }})</h3>
                     <dl class="dl-horizontal">
                       {% if subscription.frequency == 'monthly' %}
                         <dt>
@@ -162,7 +162,7 @@
                         </dd>
                       {% endif %}
                     </dl>
-                    <h3 class="body-ch">Beginning {{ subscription.pending_change.effective | date:"F jS, Y" }}</h3>
+                    <h3 class="body-ch">Scheduled change (effective {{ subscription.pending_change.effective | date:"F jS, Y" }})</h3>
                     <dl class="dl-horizontal">
                       {% if subscription.frequency == 'monthly' %}
                         <dt>

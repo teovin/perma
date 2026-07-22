@@ -284,7 +284,12 @@ class CustomerModel(models.Model):
         self.cached_paid_through = pp_date_from_post(post_data['subscription']['paid_through'])
 
         pending_change = None
-        if subscription_change_effective <= timezone.now():
+        # Perma Payments should always supply an effective timestamp, but the
+        # field is nullable there, so a missing value would raise on the
+        # comparison below (None <= datetime). Treat a missing timestamp as
+        # already applied: show the returned tier as current with no pending
+        # change, rather than 500 the usage-plan page.
+        if subscription_change_effective is None or subscription_change_effective <= timezone.now():
             self.link_limit_period = post_data['subscription']['frequency']
             self.cached_subscription_rate = Decimal(post_data['subscription']['rate'])
             if post_data['subscription']['link_limit'] == 'unlimited':
