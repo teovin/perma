@@ -146,6 +146,13 @@ class CustomerModel(models.Model):
         default=Decimal(settings.DEFAULT_BASE_RATE),
         help_text="Base rate for calculating subscription cost."
     )
+    # Local subscription descriptions are a temporary measure for improving user experience.
+    # See LIL-5430.
+    local_subscription_description = models.TextField(
+        default="",
+        blank=True,
+        help_text="Special text that appears on the usage plan page, describing this customer's subscription."
+    )
     cached_subscription_started = models.DateTimeField(
         null=True,
         blank=True,
