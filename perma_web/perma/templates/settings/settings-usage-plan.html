@@ -133,6 +133,17 @@
                 {% endif %}
                 until {{ subscription.paid_through | date:"F jS, Y" }}.
               </p>
+              {% if use_stripe_payments_app %}
+                <div class="row subscription-buttons">
+                  <div class="col-xs-12 col-md-6">
+                    <form method="post" action="{{ update_url }}">
+                      {% csrf_token %}
+                      <input type="hidden" name="account_type" value={{ customer_type }}>
+                      <button class="btn btn-primary" type="submit">Manage Subscription and Billing</button>
+                    </form>
+                  </div>
+                </div>
+              {% endif %}
             {% else %}
               {% if subscription.status == 'Hold' %}
                 <p class="page-dek">
