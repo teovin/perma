@@ -473,12 +473,12 @@ class RegistrarAdmin(SimpleHistoryAdmin):
     form = RegistrarChangeForm
 
     search_fields = ['name', 'email', 'website']
-    list_display = ['name', 'status', 'email', 'type', 'international', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate']
+    list_display = ['name', 'status', 'email', 'type', 'international', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate', 'local_subscription_description']
     list_editable = ['status']
     list_filter = ('status', 'unlimited', 'nonpaying', 'cached_subscription_status', 'orgs_private_by_default')
     fieldsets = (
         (None, {'fields': ('name', 'email', 'website', 'address', 'status', 'type', 'international', 'tags', 'orgs_private_by_default', 'notes')}),
-        ("Tier", {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
+        ("Tier", {'fields': ('nonpaying', 'base_rate', 'local_subscription_description', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
     )
     inlines = [
         new_class("OrganizationInline", admin.TabularInline, model=Organization,
