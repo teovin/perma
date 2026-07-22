@@ -44,6 +44,9 @@
             {% if use_stripe_payments_app or allow_cybersource_transactions %}
               {% if customer_type == 'Registrar' %}
                 <p class="page-dek">Purchase a subscription for {{ customer.name }}</p>
+                {% if customer.local_subscription_description %}
+                  <p class="fine-print">Usage plan: {{ customer.local_subscription_description}}</p>
+                {% endif %}
               {% else %}
                 <p class="page-dek">Purchase a personal subscription</p>
               {% endif %}
@@ -54,6 +57,14 @@
                           method="post"
                           action="{{ subscribe_url }}">
                       {% if tier.period == 'monthly' %}
+                        {% if customer_type == 'Registrar' %}
+                        <button>
+                          <span>Monthly plan
+                          </span>
+                          <br>
+                          ${{ tier.required_fields.recurring_amount | intcomma }}/month
+                        </button>
+                        {% else %}
                         <button>
                           <span>{{ tier.limit }} Links
                             {% if tier.limit != "unlimited" %}per month{% endif %}
@@ -67,7 +78,16 @@
                             this month (prorated)
                           {% endif %}
                         </button>
+                        {% endif %}
                       {% elif tier.period == 'annually' %}
+                        {% if customer_type == 'Registrar' %}
+                        <button>
+                          <span>Annual plan
+                          </span>
+                          <br>
+                          ${{ tier.required_fields.recurring_amount | intcomma }}/month
+                        </button>
+                        {% else %}
                         <button>
                           <span>{{ tier.limit }} Links
                             {% if tier.limit != "unlimited" %}per year{% endif %}
@@ -75,6 +95,7 @@
                           <br>
                           ${{ tier.required_fields.amount | intcomma }}/year
                         </button>
+                        {% endif %}
                       {% endif %}
                       <input type="hidden" name="encrypted_data" value={{ tier.encrypted_data }}>
                     </form>
@@ -146,7 +167,12 @@
                           ${{ subscription.rate | intcomma }}/year (paid)
                         </dd>
                       {% endif %}
-                      {% if customer.unlimited %}
+                      {% if customer_type == 'Registrar'%}
+                        {% if customer.local_subscription_description %}
+                          <dt>Usage plan:</dt>
+                          <dd>{{ customer.local_subscription_description }}</dd>
+                        {% endif %}
+                      {% elif customer.unlimited %}
                         <dt>
                           Links:
                         </dt>
@@ -220,7 +246,12 @@
                       <dd>
                         {{ subscription.paid_through | date:"F jS, Y" }}
                       </dd>
-                      {% if customer.unlimited %}
+                      {% if customer_type == 'Registrar'%}
+                        {% if customer.local_subscription_description %}
+                          <dt>Usage plan:</dt>
+                          <dd>{{ customer.local_subscription_description }}</dd>
+                        {% endif %}
+                      {% elif customer.unlimited %}
                         <dt>
                           Links:
                         </dt>
