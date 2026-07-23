@@ -150,8 +150,8 @@ def settings_usage_plan(request):
             ('purchase', 'success'): ('success', 'Your link purchase succeeded.'),
             ('purchase', 'canceled'): ('info', 'Link purchase checkout was canceled. You were not charged.'),
             ('change', 'success'): ('success', (
-                'Your subscription change was submitted. Upgrades may be billed immediately; '
-                'downgrades take effect at the end of the current billing period.'
+                'Your subscription change was submitted. Upgrades are billed immediately; '
+                'downgrades take effect at the end of your current billing period.'
             )),
             ('update', 'success'): ('success', 'Your payment information was updated.'),
         }
