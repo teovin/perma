@@ -6,14 +6,16 @@
 {% block dashboardContent %}
     <h2 class="body-ah">
       {% if customer_type == 'Registrar' %}
-        Modify {{ customer.name }}'s Subscription
+        Manage {{ customer.name }}'s Subscription
       {% else %}
-        Modify Your {% if customer.registrar %}Personal {% endif %}Subscription
+        Manage Your {% if customer.registrar %}Personal {% endif %}Subscription
       {% endif %}
     </h2>
 
     {% if use_stripe_payments_app and customer_type == 'Registrar' %}
-      <p class="page-dek">Please contact <a href="mailto:info@perma.cc">info@perma.cc</a> to make changes to your current subscription.</p>
+      <h3 class="body-bh">Upgrade or Downgrade Your Subscription</h3>
+
+      <p class="page-dek">Please contact <a href="mailto:info@perma.cc?subject={{ customer.name }}'s%20Usage%20Needs">info@perma.cc</a> to discuss your usage needs.</p>
     {% endif %}
 
     {% if account.can_change_tiers %}
