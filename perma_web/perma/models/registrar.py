@@ -99,6 +99,10 @@ class Registrar(CustomerModel):
         # No logic yet for handling paid Registrar customers with limits:
         # all paid-up Registrar customers get unlimited links.
         assert self.unlimited
+        # A freeze (dispute/refund enforcement) overrides every other allowance,
+        # including nonpaying and the special-unlimited list.
+        if self.frozen:
+            return False
         if self.nonpaying:
             return True
         if self.id in settings.SPECIAL_UNLIMITED_LINKS_FOR_REGISTRAR:

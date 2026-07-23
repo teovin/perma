@@ -179,6 +179,11 @@ class CustomerModel(models.Model):
     link_limit = models.IntegerField(default=settings.DEFAULT_CREATE_LIMIT)
     link_limit_period = models.CharField(max_length=8, default=settings.DEFAULT_CREATE_LIMIT_PERIOD, choices=(('once','once'),('monthly','monthly'),('annually','annually')))
     bonus_links = models.PositiveIntegerField(blank=True, null=True)
+    frozen = models.BooleanField(
+        default=False,
+        help_text="If frozen, this account cannot create links regardless of subscription or "
+                  "bonus links. Set when enforcing a dispute or refund; clear to restore access."
+    )
 
     @cached_property
     def customer_type(self):

@@ -373,6 +373,17 @@ def test_user_link_creation_denied_if_nonpaying_and_over_limit(get_subscription,
     assert get_links_remaining.call_count == 1
 
 
+@patch('perma.models.LinkUser.get_links_remaining', autospec=True)
+def test_user_link_creation_denied_when_frozen(get_links_remaining, nonpaying_user):
+    # A freeze (dispute/refund enforcement) blocks link creation even for an
+    # otherwise-allowed account, short-circuiting before the allowance checks.
+    get_links_remaining.return_value = (1, 'some period', 0)
+    nonpaying_user.frozen = True
+
+    assert not nonpaying_user.link_creation_allowed()
+    assert get_links_remaining.call_count == 0
+
+
 @patch('perma.models.base.subscription_is_active', autospec=True)
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_user_link_creation_allowed_checks_cached_if_pp_down(get_subscription, is_active, paying_user):
@@ -473,6 +484,16 @@ def test_user_link_creation_disallowed_if_subscription_active_and_under_limit(ge
 @patch('perma.models.Registrar.get_subscription', autospec=True)
 def test_registrar_link_creation_always_allowed_if_nonpaying(get_subscription, nonpaying_registrar):
     assert nonpaying_registrar.link_creation_allowed()
+    assert get_subscription.call_count == 0
+
+
+@patch('perma.models.Registrar.get_subscription', autospec=True)
+def test_registrar_link_creation_denied_when_frozen(get_subscription, nonpaying_registrar):
+    # A freeze overrides every other allowance, including nonpaying, and
+    # short-circuits before any subscription check.
+    nonpaying_registrar.frozen = True
+
+    assert not nonpaying_registrar.link_creation_allowed()
     assert get_subscription.call_count == 0
 
 
