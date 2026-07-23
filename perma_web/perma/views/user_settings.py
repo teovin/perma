@@ -153,7 +153,11 @@ def settings_usage_plan(request):
                 'Your subscription change was submitted. Upgrades may be billed immediately; '
                 'downgrades take effect at the end of the current billing period.'
             )),
-            ('update', 'success'): ('success', 'Your payment information was updated.'),
+            # Neutral wording: the Stripe portal returns here for any action it
+            # allows (payment-method update, invoice view, or cancellation), and
+            # the return does not tell us which. "Updated" is honest for all of
+            # them; the accurate canceled state, if any, shows below this banner.
+            ('update', 'success'): ('success', 'Your subscription settings have been updated.'),
         }
         for param in ('subscription', 'purchase', 'change', 'update'):
             match = payment_redirect_messages.get((param, request.GET.get(param)))
