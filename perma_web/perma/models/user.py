@@ -399,6 +399,8 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
         return (self.links_remaining_in_period(self.link_limit_period, self.link_limit), self.link_limit_period, self.bonus_links or 0)
 
     def link_creation_allowed(self):
+        if self.frozen:
+            return False
         links_remaining, _, bonus_links = self.get_links_remaining()
         return links_remaining > 0 or bonus_links > 0
 
