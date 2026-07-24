@@ -184,6 +184,7 @@ class CustomerModel(models.Model):
         help_text="If frozen, this account cannot create links regardless of subscription or "
                   "bonus links. Set when enforcing a dispute or refund; clear to restore access."
     )
+    grandfathered = models.BooleanField(default=False)
 
     @cached_property
     def customer_type(self):

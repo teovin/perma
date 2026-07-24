@@ -473,12 +473,12 @@ class RegistrarAdmin(SimpleHistoryAdmin):
     form = RegistrarChangeForm
 
     search_fields = ['name', 'email', 'website']
-    list_display = ['name', 'status', 'email', 'type', 'international', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate', 'local_subscription_description', 'frozen']
+    list_display = ['name', 'status', 'email', 'type', 'international', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'grandfathered', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate', 'local_subscription_description', 'frozen']
     list_editable = ['status']
     list_filter = ('status', 'unlimited', 'nonpaying', 'cached_subscription_status', 'orgs_private_by_default', 'frozen')
     fieldsets = (
         (None, {'fields': ('name', 'email', 'website', 'address', 'status', 'type', 'international', 'tags', 'orgs_private_by_default', 'notes')}),
-        ("Tier", {'fields': ('nonpaying', 'base_rate', 'local_subscription_description', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
+        ("Tier", {'fields': ('nonpaying', 'base_rate', 'grandfathered', 'local_subscription_description', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
         ("Enforcement (disputes/refunds)", {'fields': ('frozen',)}),
     )
     inlines = [
@@ -582,7 +582,7 @@ class LinkUserAdmin(UserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'raw_email', 'notes')}),
         (None, {'fields': ('password',)}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_confirmed', 'registrar', 'groups')}),
-        ('Tier', {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'cached_paid_through', 'unlimited', 'link_limit', 'link_limit_period', 'in_trial', 'bonus_links')}),
+        ('Tier', {'fields': ('nonpaying', 'base_rate', 'grandfathered', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'cached_paid_through', 'unlimited', 'link_limit', 'link_limit_period', 'in_trial', 'bonus_links')}),
         ('Enforcement (disputes/refunds)', {'fields': ('frozen',)}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
@@ -593,7 +593,7 @@ class LinkUserAdmin(UserAdmin):
         }),
     )
     raw_id_fields = ['registrar']
-    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'is_confirmed', 'in_trial', 'unlimited', 'nonpaying','cached_subscription_status', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_rate', 'base_rate', 'bonus_links', 'frozen', 'date_joined', 'last_login', 'link_count', 'registrar')
+    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'is_confirmed', 'in_trial', 'unlimited', 'nonpaying','grandfathered', 'cached_subscription_status', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_rate', 'base_rate', 'bonus_links', 'frozen', 'date_joined', 'last_login', 'link_count', 'registrar')
     search_fields = ('first_name', 'last_name', 'email')
     list_filter = ('is_staff', 'is_active', 'in_trial', 'unlimited', 'nonpaying', 'cached_subscription_status', 'frozen', RegistrarUserFilter, OrgUserFilter, OrgUserForRegistrarFilter)
     ordering = ('-id',)
