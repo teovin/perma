@@ -445,6 +445,24 @@ class PayingUserFactory(LinkUserFactory):
 
 
 @register_factory
+class GrandfatheredPayingUserFactory(PayingUserFactory):
+    grandfathered = True
+    cached_subscription_status = 'Current'
+    cached_paid_through = factory.LazyFunction(lambda: timezone.now() + relativedelta(months=1))
+    cached_subscription_rate = Decimal('10.00')
+    link_limit_period = 'monthly'
+
+
+@register_factory
+class ExpiredGrandfatheredPayingUserFactory(PayingUserFactory):
+    grandfathered = True
+    cached_subscription_status = 'Canceled'
+    cached_paid_through = GENESIS
+    cached_subscription_rate = Decimal('10.00')
+    link_limit_period = 'monthly'
+
+
+@register_factory
 class CaptureJobFactory(DjangoModelFactory):
     class Meta:
         model = CaptureJob
@@ -805,6 +823,27 @@ def user_with_monthly_subscription(mocker, link_user, current_monthly_subscripti
     yield link_user
 
     get_subscription.assert_called_once_with(link_user)
+
+
+@pytest.fixture
+def grandfathered_user_for_usage_plan(mocker, grandfathered_paying_user, no_purchase_history):
+    # Lets you avoid calling out to Perma Payments during tests of the usage plan page,
+    # to just test routing for grandfathered users with different waffle switches set.
+    user = grandfathered_paying_user
+    subscription = {
+        'status': user.cached_subscription_status,
+        'rate': str(user.cached_subscription_rate),
+        'frequency': user.link_limit_period,
+        'paid_through': user.cached_paid_through,
+        'link_limit': user.link_limit,
+    }
+
+    get_subscription = mocker.patch('perma.models.LinkUser.get_subscription', autospec=True)
+    get_purchase_history = mocker.patch('perma.models.LinkUser.get_purchase_history', autospec=True)
+    get_subscription.return_value = subscription
+    get_purchase_history.return_value = no_purchase_history
+
+    return user
 
 
 @pytest.fixture

@@ -496,6 +496,67 @@ def test_usage_plan_serves_no_cybersource_form_when_transactions_off(prepped, na
     assert not (form_actions(response.content) & CYBERSOURCE_FORM_ACTIONS)
 
 
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message', ALL_PHASES)
+def test_grandfathered_usage_plan_by_rollout_phase(
+    name, use_stripe, allow_cybersource, freeze_message, client, grandfathered_user_for_usage_plan,
+):
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(grandfathered_user_for_usage_plan)
+        response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    assert response.status_code == 200
+    content = response.content
+    billing_paused = b'(billing paused)'
+    transition_message = b'Please enjoy uninterrupted service during the transition'
+    stripe_button = b'Manage Subscription and Billing'
+    cybersource_buttons = (b'Modify Subscription', b'Cancel Subscription')
+
+    if name == 'cybersource':
+        # Grandfathered treatment only applies once Cybersource transactions are off.
+        assert billing_paused not in content
+        assert transition_message not in content
+        assert all(button in content for button in cybersource_buttons)
+        assert stripe_button not in content
+    elif name == 'freeze':
+        assert billing_paused in content
+        assert transition_message in content
+        assert not any(button in content for button in cybersource_buttons)
+        assert stripe_button not in content
+    elif name == 'stripe':
+        assert billing_paused in content
+        assert transition_message in content
+        assert stripe_button not in content
+        assert not any(button in content for button in cybersource_buttons)
+
+
+@pytest.mark.parametrize('name,use_stripe,allow_cybersource,freeze_message,expected_status', [
+    ('cybersource', False, True, False, 200),
+    ('freeze', False, False, True, 403),
+    ('stripe', True, False, False, 403),
+])
+@override_settings(STRIPE_PAYMENTS_APP_INTERNAL_URL=STRIPE_APP_URL, STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
+@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@patch('perma.models.LinkUser.get_subscription', autospec=True)
+def test_grandfathered_update_route_by_rollout_phase(
+    get_subscription, model_prepped, view_prepped, name, use_stripe, allow_cybersource,
+    freeze_message, expected_status, client, grandfathered_paying_user, current_monthly_subscription,
+):
+    get_subscription.return_value = current_monthly_subscription
+    model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
+    view_prepped.return_value = bytes(str(sentinel.view_prepped), 'utf-8')
+
+    with rollout_phase(use_stripe, allow_cybersource, freeze_message):
+        client.force_login(grandfathered_paying_user)
+        response = client.post(
+            reverse('settings_subscription_update'),
+            secure=True,
+            data={'account_type': 'Individual'},
+        )
+
+    assert response.status_code == expected_status
+
+
 def test_help_present_if_subscription_on_hold(client, user_with_on_hold_subscription):
     user = user_with_on_hold_subscription
 

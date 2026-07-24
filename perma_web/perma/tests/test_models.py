@@ -22,6 +22,7 @@ from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month,
 
 from conftest import GENESIS
 import pytest
+from waffle.testutils import override_switch
 
 
 #
@@ -169,6 +170,51 @@ def test_get_subscription_happy_path_no_change_pending(post, process, paying_reg
             assert post.call_count == 1
             assert credited.call_count == 0
             post.reset_mock()
+
+
+@override_switch('allow_cybersource_transactions', active=False)
+@patch('perma.models.base.requests.post', autospec=True)
+def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_paying_user):
+    subscription = grandfathered_paying_user.get_subscription()
+
+    assert post.call_count == 0
+    assert subscription == {
+        'status': grandfathered_paying_user.cached_subscription_status,
+        'frequency': grandfathered_paying_user.link_limit_period,
+        'paid_through': grandfathered_paying_user.cached_paid_through,
+        'rate': str(grandfathered_paying_user.cached_subscription_rate),
+        'link_limit': str(grandfathered_paying_user.link_limit),
+        'pending_change': None,
+        'reference_number': None,
+    }
+
+
+@override_switch('allow_cybersource_transactions', active=False)
+@patch('perma.models.base.process_perma_payments_transmission', autospec=True)
+@patch('perma.models.base.requests.post', autospec=True)
+def test_get_subscription_expired_grandfathered_unsets_flag_and_calls_perma_payments(
+    post, process, expired_grandfathered_paying_user, spoof_pp_response_subscription,
+):
+    assert expired_grandfathered_paying_user.grandfathered
+
+    post.return_value.status_code = 200
+    response = spoof_pp_response_subscription(expired_grandfathered_paying_user)
+    process.return_value = response
+
+    subscription = expired_grandfathered_paying_user.get_subscription()
+    expired_grandfathered_paying_user.refresh_from_db()
+
+    assert not expired_grandfathered_paying_user.grandfathered
+    assert post.call_count == 1
+    assert subscription == {
+        'status': response['subscription']['status'],
+        'link_limit': response['subscription']['link_limit'],
+        'rate': response['subscription']['rate'],
+        'frequency': response['subscription']['frequency'],
+        'paid_through': pp_date_from_post('1970-01-21T00:00:00.000000Z'),
+        'pending_change': None,
+        'reference_number': response['subscription']['reference_number'],
+    }
 
 
 @patch('perma.models.base.process_perma_payments_transmission', autospec=True)
