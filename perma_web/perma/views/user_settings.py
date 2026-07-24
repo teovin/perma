@@ -194,8 +194,9 @@ def settings_usage_plan(request):
 
     grandfathered = not waffle.switch_is_active('allow_cybersource_transactions') and (
         request.user.grandfathered or (
-        request.user.is_registrar_user() and request.user.registrar.grandfathered
-    ))
+            request.user.is_registrar_user() and request.user.registrar.grandfathered
+        )
+    )
     if grandfathered:
         return render(request, 'settings/settings-usage-plan-grandfathered.html', context)
 
