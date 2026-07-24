@@ -170,13 +170,13 @@ class ApproveRegistrarForm(ModelForm):
 
 
 class FirmUsageForm(Form):
-    estimated_number_of_accounts = forms.ChoiceField(
+    estimated_number_of_seats = forms.ChoiceField(
         choices=[(option, option) for option in ['1 - 10', '10 - 50', '50 - 100', '100+']],
-        label='Number of individual accounts',
+        label='Number of seats',
     )
     estimated_perma_links_per_month = forms.ChoiceField(
-        choices=[(option, option) for option in ['< 10', '10 - 50', '50 - 100', '100+']],
-        label='Number of Perma Links created each month (per user)',
+        choices=[(option, option) for option in ['< 100', '101 - 500', '500+']],
+        label='Number of new Perma Links created each month (across all users)',
     )
 
 ### ORGANIZATION FORMS ###
