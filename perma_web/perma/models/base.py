@@ -4,6 +4,7 @@ from decimal import Decimal
 import logging
 
 import requests
+import waffle
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models, transaction
@@ -188,6 +189,23 @@ class CustomerModel(models.Model):
     @cached_property
     def customer_type(self):
         return CUSTOMER_TYPE_MAP[type(self).__name__]
+
+    def payments_customer_name(self):
+        """
+        The name to send to the payments service, so Stripe invoices and
+        receipts show it under "Bill to" instead of an internal customer
+        description (LIL-5399).
+
+        Registrars only: an organization name is not personal data, while an
+        individual's name is, and the payments service deliberately holds no
+        individual PII. Individuals supply a name themselves at Stripe Checkout.
+        Sent only on the Stripe path; the Cybersource payload is unchanged.
+        """
+        if not waffle.switch_is_active('use_stripe_payments_app'):
+            return None
+        if self.customer_type != 'Registrar':
+            return None
+        return (getattr(self, 'name', '') or '').strip() or None
 
     @sensitive_variables()
     def get_purchase_history(self):
@@ -438,6 +456,7 @@ class CustomerModel(models.Model):
         next_month = today_next_month(now)
         next_year = today_next_year(now)
         subscription = self.get_subscription()
+        customer_name = self.payments_customer_name()
 
         tiers = []
         if subscription and subscription.get('pending_change'):
@@ -478,6 +497,8 @@ class CustomerModel(models.Model):
                     'link_limit': tier['link_limit'],
                     'link_limit_effective_timestamp': tier['link_limit_effective_timestamp']
                 }
+                if customer_name:
+                    required_fields['customer_name'] = customer_name
                 tiers.append({
                     'type': tier['type'],
                     'period': tier['period'],
@@ -533,6 +554,7 @@ class CustomerModel(models.Model):
 
     def get_bonus_packages(self):
         bonus_packages = []
+        customer_name = self.payments_customer_name()
         for package in settings.BONUS_PACKAGES:
             required_fields = {
                 'timestamp': datetime.utcnow().timestamp(),
@@ -541,6 +563,8 @@ class CustomerModel(models.Model):
                 'amount': package['price'],
                 'link_quantity': package['link_quantity']
             }
+            if customer_name:
+                required_fields['customer_name'] = customer_name
             bonus_packages.append({
                 'amount': required_fields['amount'],
                 'link_quantity': required_fields['link_quantity'],

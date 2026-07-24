@@ -22,6 +22,7 @@ from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month,
 
 from conftest import GENESIS
 import pytest
+from waffle.testutils import override_switch
 
 
 #
@@ -479,6 +480,31 @@ def test_user_link_creation_disallowed_if_subscription_active_and_under_limit(ge
 
 #
 # Link limit / subscription related tests for registrars
+#
+
+#
+# The name sent to Perma Payments for Stripe's "Bill to" (LIL-5399)
+#
+
+@override_switch('use_stripe_payments_app', active=True)
+def test_payments_customer_name_is_the_registrar_org_name(paying_registrar):
+    assert paying_registrar.payments_customer_name() == paying_registrar.name
+
+
+@override_switch('use_stripe_payments_app', active=True)
+def test_payments_customer_name_is_none_for_individuals(paying_user):
+    # An individual's name is personal data; they supply one themselves at
+    # Stripe Checkout instead, so perma never sends it.
+    assert paying_user.payments_customer_name() is None
+
+
+@override_switch('use_stripe_payments_app', active=False)
+def test_payments_customer_name_is_none_on_the_cybersource_path(paying_registrar):
+    assert paying_registrar.payments_customer_name() is None
+
+
+#
+# Link limit / subscription related tests for registrars (continued)
 #
 
 @patch('perma.models.Registrar.get_subscription', autospec=True)
