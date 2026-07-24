@@ -246,6 +246,9 @@ def settings_subscription_update(request):
     use_stripe = waffle.switch_is_active('use_stripe_payments_app')
     if not (use_stripe or waffle.switch_is_active('allow_cybersource_transactions')) or not account['subscription']:
         return HttpResponseForbidden()
+    # Special handling for grandfathered customers.
+    if customer.grandfathered and not waffle.switch_is_active('allow_cybersource_transactions'):
+        return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
         'update_url': get_payments_app_url('update'),
