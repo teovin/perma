@@ -1,0 +1,115 @@
+{% extends "settings-layout.html" %}
+{% block top_banner %}
+  {% if request.user.is_authenticated and request.user.should_see_payment_system_upgrade_banner %}
+    {% include "includes/top_banner.html" %}
+  {% endif %}
+{% endblock top_banner %}
+{% load humanize %}
+{% block title %} | Settings{% endblock %}
+{% block dashboardContent %}
+
+  {% if payment_status_message %}
+    <div class="alert alert-{{ payment_status_level }} alert-block">{{ payment_status_message }}</div>
+  {% endif %}
+
+  <h2 class="body-ah">Usage Plan Page Temporarily Limited</h2>
+
+  <p class="page-dek">To improve your future billing and payment experience, we are conducting a scheduled payment system upgrade and subscription migration.</p>
+
+  <p class="page-dek">During this time, payment, billing, and cancellation services accessed through Perma’s Usage Plan page will be limited. All other parts of the Perma platform will remain fully operational.</p>
+
+  <p class="page-dek"> If you need help during this period, please <a href="{% url 'contact' %}?subject=Help%20With%20Subscription">contact us</a> so we can assist you manually.</p>
+
+  {% for account in accounts %}
+    {% with subscription=account.subscription %}
+      {% with customer=account.customer %}
+        {% with customer_type=customer.customer_type %}
+          {% if customer_type == 'Registrar' %}
+            <h2 class="body-bh">Registrar Subscription &mdash; {{ customer.name }}</h2>
+          {% else %}
+            <h2 class="body-bh">Personal Subscription</h2>
+          {% endif %}
+
+          {% if subscription  %}
+
+            {% if subscription.status == 'Canceled' %}
+              <p class="page-dek">
+                Your paid subscription has been <span class="blue-text">cancelled</span>. You will not be charged
+                again.
+              </p>
+              <p class="page-dek">
+                You will continue to be able to create Perma Links
+                {% if customer_type == 'Registrar' %}
+                  for {{ customer.name }}
+                {% endif %}
+                until {{ subscription.paid_through | date:"F jS, Y" }}.
+              </p>
+            {% else %}
+                <p class="page-dek">
+                  Your subscription is <span class="blue-text">{{ subscription.status | lower }}</span>.
+                </p>
+
+                <div class="col-xs-12">
+                  <dl class="dl-horizontal">
+                    {% if subscription.frequency == 'monthly' %}
+                      <dt>
+                        Rate:
+                      </dt>
+                      <dd>
+                        ${{ subscription.rate | intcomma }}/month
+                      </dd>
+                    {% elif subscription.frequency == 'annually' %}
+                      <dt>
+                        Rate:
+                      </dt>
+                      <dd>
+                        ${{ subscription.rate | intcomma }}/year
+                      </dd>
+                    {% endif %}
+                    <dt>
+                      Paid Through:
+                    </dt>
+                    <dd>
+                      {{ subscription.paid_through | date:"F jS, Y" }} (billing paused)
+                    </dd>
+                    {% if customer_type == 'Registrar'%}
+                      {% if customer.local_subscription_description %}
+                        <dt>Usage plan:</dt>
+                        <dd>{{ customer.local_subscription_description }}</dd>
+                      {% endif %}
+                    {% elif customer.unlimited %}
+                      <dt>
+                        Links:
+                      </dt>
+                      <dd>
+                        unlimited
+                      </dd>
+                    {% else %}
+                      <dt>
+                        Included Links:
+                      </dt>
+                      <dd>
+                        {{ customer.link_limit }}
+                      </dd>
+                    {% endif %}
+                  </dl>
+                </div>
+
+                <p class="page-dek">Please enjoy uninterrupted service during the transition. Billing will resume and outstanding balances will be reconciled when the migration is complete.</p>
+
+                <p class="page-dek">To cancel your subscription or adjust your level of service during the migration, please <a href="{% url 'contact' %}?subject=Cancel%20Subscription%20During%20Migration">contact us</a>.</p></p>
+            {% endif %}
+
+          {% else %}
+            <p class="page-dek">New subscriptions are temporarily unavailable. If you are working on a time-sensitive project and need to start a new subscription, please <a href="{% url 'contact' %}?subject=Time%20Sensitive%20New%20Project%20Inquiry">contact us</a> so we can assist you directly.</p>
+          {% endif %}
+
+
+            {% endwith %}
+          {% endwith %}
+        {% endwith %}
+      {% endfor %}
+      <h2 class="body-ah">Get More Personal Links</h2>
+      <p class="page-dek">New purchases are temporarily unavailable. If you are working on a time-sensitive project and need to make a one-time purchase of additional links, please <a href="{% url 'contact' %}?subject=Time%20Sensitive%20New%20Project%20Inquiry">contact us</a> so we can assist you directly.</p>
+
+    {% endblock %}
