@@ -1800,8 +1800,8 @@ class UserManagementViewsTestCase(PermaTestCase):
 
     def create_firm_usage_form(self):
         return {
-            'estimated_number_of_accounts': '10 - 50',
-            'estimated_perma_links_per_month': '100+',
+            'estimated_number_of_seats': '10 - 50',
+            'estimated_perma_links_per_month': '101 - 500',
         }
 
     def create_firm_user_form(self):
@@ -1938,7 +1938,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         error_keys = [
             'email',
             'website',
-            'estimated_number_of_accounts',
+            'estimated_number_of_seats',
             'estimated_perma_links_per_month',
             'name',
             'registrar_user_candidate',
