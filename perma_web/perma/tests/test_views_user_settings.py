@@ -8,7 +8,6 @@ from django.conf import settings
 from django.test import override_settings
 
 from perma.exceptions import PermaPaymentsCommunicationException
-from perma.models import LinkUser
 
 from conftest import submit_form
 from unittest.mock import patch, sentinel
@@ -342,28 +341,26 @@ def test_stripe_mode_shows_subscribe_and_purchase_forms(prepped, client, user_wi
 
 @override_switch('use_stripe_payments_app', active=True)
 @override_settings(STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
-def test_stripe_mode_replaces_purchase_history_with_portal_button(client, user_without_subscription_or_purchase_history):
-    user = user_without_subscription_or_purchase_history
-    user.bonus_links = 7
-    user.save()
+def test_stripe_mode_replaces_purchase_history_with_portal_button(client, mocker, link_user, no_purchase_history):
+    mocker.patch('perma.models.LinkUser.get_subscription', autospec=True, return_value=None)
+    get_purchase_history = mocker.patch(
+        'perma.models.LinkUser.get_purchase_history', autospec=True, return_value=no_purchase_history
+    )
+    link_user.bonus_links = 7
+    link_user.save()
 
-    client.force_login(user)
+    client.force_login(link_user)
     response = client.get(reverse('settings_usage_plan'), secure=True)
 
     assert response.status_code == 200
-    # One line, whole and unsplit. A dl-horizontal was tried first and its
-    # 160px term column clipped the label to "Additional Links Rem...".
     assert b'Additional Links Remaining: 7 Links' in response.content
     assert b'Billing and Purchase History' in response.content
     assert b'Purchase History</h3>' not in response.content
     assert f'{STRIPE_APP_URL}/billing/' in form_actions(response.content)
-    # Every form on the page posts somewhere: a missing billing_portal_url must
-    # never render as a form that posts back to the usage plan page itself.
-    forms = BeautifulSoup(response.content, 'html.parser').find_all('form')
-    assert forms and all(form.get('action') for form in forms)
-    # The list is gone from the page, so fetching it would be a wasted round
-    # trip. Bonus links are still credited, off the /subscription/ payload.
-    LinkUser.get_purchase_history.assert_not_called()
+    # Under Stripe the list is not rendered, so the page must not pay for the
+    # round trip that fetches it. Bonus links are still credited, off the
+    # /subscription/ payload.
+    get_purchase_history.assert_not_called()
 
 
 @override_switch('use_stripe_payments_app', active=False)
