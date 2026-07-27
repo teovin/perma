@@ -191,6 +191,15 @@ def settings_usage_plan(request):
         'payment_status_level': payment_status_level,
         'payment_status_message': payment_status_message,
     }
+
+    grandfathered = not waffle.switch_is_active('allow_cybersource_transactions') and (
+        request.user.grandfathered or (
+            request.user.is_registrar_user() and request.user.registrar.grandfathered
+        )
+    )
+    if grandfathered:
+        return render(request, 'settings/settings-usage-plan-grandfathered.html', context)
+
     return render(request, 'settings/settings-usage-plan.html', context)
 
 
@@ -237,6 +246,9 @@ def settings_subscription_update(request):
     # neither backend is accepting transactions (e.g. the migration freeze).
     use_stripe = waffle.switch_is_active('use_stripe_payments_app')
     if not (use_stripe or waffle.switch_is_active('allow_cybersource_transactions')) or not account['subscription']:
+        return HttpResponseForbidden()
+    # Special handling for grandfathered customers.
+    if customer.grandfathered and not waffle.switch_is_active('allow_cybersource_transactions'):
         return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
