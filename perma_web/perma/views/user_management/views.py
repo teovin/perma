@@ -1475,7 +1475,8 @@ def reset_password(request):
     if request.method == "POST":
         try:
             target_user = LinkUser.objects.get(email=request.POST.get('email', '').lower())
-        except LinkUser.DoesNotExist:
+        except (LinkUser.DoesNotExist, ValueError):
+            # ValueError: Prevent Postgres errors happening due to bots sending NUL bytes in the email field
             target_user = None
         if target_user:
             if not target_user.is_confirmed:
