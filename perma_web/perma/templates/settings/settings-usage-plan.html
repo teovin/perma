@@ -338,7 +338,30 @@
       {% else %}
         <p class="page-dek">New purchases are temporarily unavailable. If you are working on a time-sensitive project and need to make a one-time purchase of additional links, please <a href="{% url 'contact' %}?subject=Time%20Sensitive%20New%20Project%20Inquiry">contact us</a> so we can assist you directly.</p>
       {% endif %}
-      {% if purchase_history.purchases %}
+      {% if use_stripe_payments_app %}
+        <hr>
+        <h3 class="body-ch">Additional Links</h3>
+        <dl class="dl-horizontal">
+          <dt>
+            Additional Links Remaining
+          </dt>
+          <dd>
+            {{ request.user.bonus_links|default:0 }} Links
+          </dd>
+        </dl>
+        {% if billing_portal_url %}
+          {# Posts straight to the payments app, like the purchase buttons above, #}
+          {# so receipts are one click away rather than two. #}
+          <div class="row subscription-buttons">
+            <div class="col-xs-12 col-md-6">
+              <form method="post" action="{{ billing_portal_url }}">
+                <input type="hidden" name="encrypted_data" value="{{ billing_encrypted_data }}">
+                <button class="btn btn-primary" type="submit">Billing and Purchase History</button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+      {% elif purchase_history.purchases %}
         <hr>
         <h3 class="body-ch">Purchase History</h3>
         <dl class="dl-horizontal">

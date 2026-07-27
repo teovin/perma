@@ -143,7 +143,8 @@ def settings_usage_plan(request):
     # app issues these redirects, so we only surface the messages when it is in
     # use; on Cybersource these params never appear and are ignored.
     payment_status_level = payment_status_message = None
-    if waffle.switch_is_active('use_stripe_payments_app'):
+    use_stripe = waffle.switch_is_active('use_stripe_payments_app')
+    if use_stripe:
         payment_redirect_messages = {
             ('subscription', 'success'): ('success', 'Your subscription has been created.'),
             ('subscription', 'canceled'): ('info', 'Subscription checkout was canceled. You were not charged.'),
@@ -169,7 +170,13 @@ def settings_usage_plan(request):
             accounts.append(request.user.registrar.get_subscription_info(timezone.now()))
         if not request.user.nonpaying:
             accounts.append(request.user.get_subscription_info(timezone.now()))
-            purchase_history = request.user.get_purchase_history()
+            if not use_stripe:
+                # Under Stripe the purchase list is not rendered (history lives
+                # in the customer portal), so fetching it would be a round trip
+                # per page load for data we throw away. Bonus-link crediting is
+                # unaffected: that happens in get_subscription_info() above, off
+                # the /subscription/ payload, not this one.
+                purchase_history = request.user.get_purchase_history()
     except PermaPaymentsCommunicationException:
         context = {
             'this_page': 'settings_usage_plan',
@@ -187,10 +194,22 @@ def settings_usage_plan(request):
         'bonus_packages': request.user.get_bonus_packages(),
         'display_cybersource_freeze_message': waffle.switch_is_active('display_cybersource_freeze_message'),
         'allow_cybersource_transactions': waffle.switch_is_active('allow_cybersource_transactions'),
-        'use_stripe_payments_app': waffle.switch_is_active('use_stripe_payments_app'),
+        'use_stripe_payments_app': use_stripe,
         'payment_status_level': payment_status_level,
         'payment_status_message': payment_status_message,
     }
+
+    # The "Billing and Purchase History" button posts straight to the payments
+    # app, like the bonus package buttons do. Stripe only: Cybersource has no
+    # customer portal to send anyone to. This section is about personal links,
+    # so the customer is always the LinkUser, never their registrar.
+    if use_stripe and not request.user.nonpaying:
+        context['billing_portal_url'] = get_payments_app_url('billing')
+        context['billing_encrypted_data'] = prep_for_perma_payments({
+            'customer_pk': request.user.pk,
+            'customer_type': 'Individual',
+            'timestamp': timezone.now().timestamp(),
+        }).decode('utf-8')
 
     grandfathered = not waffle.switch_is_active('allow_cybersource_transactions') and (
         request.user.grandfathered or (

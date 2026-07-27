@@ -8,6 +8,7 @@ from django.conf import settings
 from django.test import override_settings
 
 from perma.exceptions import PermaPaymentsCommunicationException
+from perma.models import LinkUser
 
 from conftest import submit_form
 from unittest.mock import patch, sentinel
@@ -337,6 +338,43 @@ def test_stripe_mode_shows_subscribe_and_purchase_forms(prepped, client, user_wi
     assert b'Get More Personal Links' in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
+
+
+@override_switch('use_stripe_payments_app', active=True)
+@override_settings(STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
+def test_stripe_mode_replaces_purchase_history_with_portal_button(client, user_without_subscription_or_purchase_history):
+    user = user_without_subscription_or_purchase_history
+    user.bonus_links = 7
+    user.save()
+
+    client.force_login(user)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    assert response.status_code == 200
+    assert b'Additional Links Remaining' in response.content
+    assert b'7 Links' in response.content
+    assert b'Billing and Purchase History' in response.content
+    assert b'Purchase History</h3>' not in response.content
+    assert f'{STRIPE_APP_URL}/billing/' in form_actions(response.content)
+    # Every form on the page posts somewhere: a missing billing_portal_url must
+    # never render as a form that posts back to the usage plan page itself.
+    forms = BeautifulSoup(response.content, 'html.parser').find_all('form')
+    assert forms and all(form.get('action') for form in forms)
+    # The list is gone from the page, so fetching it would be a wasted round
+    # trip. Bonus links are still credited, off the /subscription/ payload.
+    LinkUser.get_purchase_history.assert_not_called()
+
+
+@override_switch('use_stripe_payments_app', active=False)
+def test_cybersource_mode_keeps_purchase_history_list(client, user_without_subscription_with_purchase_history):
+    client.force_login(user_without_subscription_with_purchase_history)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    assert b'Purchase History' in response.content
+    assert b'13 Links' in response.content
+    assert b'January 1, 1970' in response.content
+    assert b'Additional Links Remaining' not in response.content
+    assert b'Billing and Purchase History' not in response.content
 
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
