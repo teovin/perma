@@ -515,37 +515,42 @@ class MultipleUsersFormWithOrganization(ModelForm):
             raw_contents = file.read().decode('utf-8')
         except UnicodeDecodeError:
             raise forms.ValidationError("CSV file must be encoded with UTF-8.")
-        
-        csv_file = StringIO(raw_contents)
-        reader = csv.DictReader(csv_file)
 
-        # validate the headers
-        headers = reader.fieldnames
-        if not all(item in headers for item in ['first_name', 'last_name', 'email']):
-            raise forms.ValidationError("CSV file must contain a header row with first_name, last_name and email columns.")
+        try:
+            csv_file = StringIO(raw_contents)
+            reader = csv.DictReader(csv_file)
 
-        # validate the rows
-        for row in reader:
-            email = row.get('email')
-            email = email.strip() if email else None
+            # validate the headers
+            headers = reader.fieldnames
+            if not all(item in headers for item in ['first_name', 'last_name', 'email']):
+                raise forms.ValidationError("CSV file must contain a header row with first_name, last_name and email columns.")
 
-            if not email:
-                raise forms.ValidationError("Each row in the CSV file must contain email.")
+            # validate the rows
+            for row in reader:
+                email = row.get('email')
+                email = email.strip() if email else None
 
-            email_validator = EmailValidator()
-            try:
-                email_validator(email)
-            except ValidationError:
-                raise forms.ValidationError(f"CSV file contains invalid email address: {email}")
+                if not email:
+                    raise forms.ValidationError("Each row in the CSV file must contain email.")
 
-            if email.lower() in self.user_data:
-                raise forms.ValidationError(f"CSV file cannot contain duplicate users: {email}")
-            else:
-                self.user_data[email.lower()] = {
-                    'raw_email': email,
-                    'first_name': row.get('first_name', '').strip(),
-                    'last_name': row.get('last_name', '').strip()
-                }
+                email_validator = EmailValidator()
+                try:
+                    email_validator(email)
+                except ValidationError:
+                    raise forms.ValidationError(f"CSV file contains invalid email address: {email}")
+
+                if email.lower() in self.user_data:
+                    raise forms.ValidationError(f"CSV file cannot contain duplicate users: {email}")
+                else:
+                    self.user_data[email.lower()] = {
+                        'raw_email': email,
+                        'first_name': row.get('first_name', '').strip(),
+                        'last_name': row.get('last_name', '').strip()
+                    }
+        except csv.Error:
+            raise forms.ValidationError(
+                "The CSV file could not be parsed. Please check that the file is formatted correctly and try again."
+            )
 
         if not self.user_data:
             raise forms.ValidationError("CSV file must contain at least one user.")
