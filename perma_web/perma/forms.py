@@ -549,7 +549,7 @@ class MultipleUsersFormWithOrganization(ModelForm):
                     }
         except csv.Error:
             raise forms.ValidationError(
-                "The CSV file could not be parsed. Please check that the file is formatted correctly and try again."
+                "CSV file could not be parsed. Please check that the file is formatted correctly and try again."
             )
 
         if not self.user_data:
