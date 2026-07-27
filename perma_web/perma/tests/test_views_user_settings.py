@@ -351,8 +351,9 @@ def test_stripe_mode_replaces_purchase_history_with_portal_button(client, user_w
     response = client.get(reverse('settings_usage_plan'), secure=True)
 
     assert response.status_code == 200
-    assert b'Additional Links Remaining' in response.content
-    assert b'7 Links' in response.content
+    # One line, whole and unsplit. A dl-horizontal was tried first and its
+    # 160px term column clipped the label to "Additional Links Rem...".
+    assert b'Additional Links Remaining: 7 Links' in response.content
     assert b'Billing and Purchase History' in response.content
     assert b'Purchase History</h3>' not in response.content
     assert f'{STRIPE_APP_URL}/billing/' in form_actions(response.content)
