@@ -53,6 +53,7 @@
               <div class="row">
                 {% for tier in account.tiers %}
                   {% if tier.type == 'upgrade' or tier.type == 'downgrade' %}
+                    {% if tier.period == 'monthly' and customer.offer_monthly or tier.period == 'annually' and customer.offer_annual %}
                     <form class="upgrade-form col-xs-12 col-md-3"
                           method="post"
                           action="{{ subscribe_url }}">
@@ -85,7 +86,7 @@
                           <span>Annual plan
                           </span>
                           <br>
-                          ${{ tier.required_fields.recurring_amount | intcomma }}/month
+                          ${{ tier.required_fields.recurring_amount | intcomma }}/year
                         </button>
                         {% else %}
                         <button>
@@ -99,6 +100,7 @@
                       {% endif %}
                       <input type="hidden" name="encrypted_data" value={{ tier.encrypted_data }}>
                     </form>
+                    {% endif %}
                   {% endif %}
                 {% endfor %}
               </div>
