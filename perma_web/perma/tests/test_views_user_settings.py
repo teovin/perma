@@ -837,6 +837,42 @@ def test_paying_registrar_user_sees_subscriptions_independently(prepped, client,
     assert b'Cancel Subscription' in response.content
 
 
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_paying_registrar_user_sees_only_allowed_monthly_tier(prepped, client, registrar_user_from_paying_registrar_without_subscription):
+    user = registrar_user_from_paying_registrar_without_subscription
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    user.registrar.offer_monthly = True
+    user.registrar.offer_annual = False
+    user.registrar.save()
+
+    client.force_login(user)
+    response = client.get(
+        reverse('settings_usage_plan'),
+        secure=True
+    )
+
+    assert b'<span>Monthly plan' in response.content
+    assert b'<span>Annual plan' not in response.content
+
+
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_paying_registrar_user_sees_only_allowed_annual_tier(prepped, client, registrar_user_from_paying_registrar_without_subscription):
+    user = registrar_user_from_paying_registrar_without_subscription
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    user.registrar.offer_monthly = False
+    user.registrar.offer_annual = True
+    user.registrar.save()
+
+    client.force_login(user)
+    response = client.get(
+        reverse('settings_usage_plan'),
+        secure=True
+    )
+
+    assert b'<span>Monthly plan' not in response.content
+    assert b'<span>Annual plan' in response.content
+
+
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
 def test_paying_registrar_user_personal_cancellation_confirm_form(prepped, client, registrar_user_from_paying_registrar_with_personal_subscription):
     user = registrar_user_from_paying_registrar_with_personal_subscription
