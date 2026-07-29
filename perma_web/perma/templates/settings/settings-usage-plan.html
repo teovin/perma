@@ -341,12 +341,8 @@
       {% if use_stripe_payments_app %}
         <hr>
         <h3 class="body-ch">Additional Links</h3>
-        {# Not a dl-horizontal: its term column is a fixed 160px and clips #}
-        {# "Additional Links Remaining" to an ellipsis. #}
         <p class="page-dek">Additional Links Remaining: {{ request.user.bonus_links|default:0 }} Links</p>
         {% if billing_portal_url %}
-          {# Posts straight to the payments app, like the purchase buttons above, #}
-          {# so receipts are one click away rather than two. #}
           <div class="row subscription-buttons">
             <div class="col-xs-12 col-md-6">
               <form method="post" action="{{ billing_portal_url }}">
