@@ -190,6 +190,7 @@ def settings_usage_plan(request):
         'cancel_confirm_url': reverse('settings_subscription_cancel'),
         'update_url': reverse('settings_subscription_update'),
         'accounts': accounts,
+        'links_remaining': request.user.get_links_remaining(),
         'purchase_history': purchase_history,
         'bonus_packages': request.user.get_bonus_packages(),
         'display_cybersource_freeze_message': waffle.switch_is_active('display_cybersource_freeze_message'),
