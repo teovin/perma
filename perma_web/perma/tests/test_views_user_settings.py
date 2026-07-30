@@ -237,6 +237,16 @@ def test_payment_success_message_shown_after_redirect(client, user_without_subsc
 
 
 @override_switch('use_stripe_payments_app', active=True)
+def test_downgrade_canceled_message_shown_after_redirect(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?change=canceled', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-success' in response.content
+    assert b'Your scheduled downgrade has been canceled.' in response.content
+
+
+@override_switch('use_stripe_payments_app', active=True)
 def test_payment_canceled_message_shown_as_info_after_redirect(client, user_without_subscription_or_purchase_history):
     client.force_login(user_without_subscription_or_purchase_history)
     response = client.get(reverse('settings_usage_plan') + '?purchase=canceled', secure=True)
