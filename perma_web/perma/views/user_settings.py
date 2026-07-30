@@ -155,7 +155,7 @@ def settings_usage_plan(request):
                 'downgrades take effect at the end of your current billing period.'
             )),
             ('change', 'canceled'): ('success', (
-                'Your scheduled downgrade has been canceled. Your current plan continues unchanged.'
+                'Your scheduled downgrade has been canceled. Your current plan will continue unchanged.'
             )),
             # Neutral wording: the Stripe portal returns here for any action it
             # allows (payment-method update, invoice view, or cancellation), and
