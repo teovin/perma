@@ -3,6 +3,7 @@ import hmac
 import json
 import re
 import uuid
+import waffle
 
 import django.contrib.auth.models
 from dateutil.relativedelta import relativedelta
@@ -419,6 +420,9 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
             Should the user see the temporary "Payment System Upgrade Period" banner?
             Shown to paid registrar users and paid individual users whose subscription status is 'Current' or 'Hold'.
         """
+        if not waffle.switch_is_active('show_generic_payment_banner'):
+            return False
+
         subscription_statuses = ['Current', 'Hold']
         if self.is_registrar_user() and not self.registrar.nonpaying:
             return self.registrar.cached_subscription_status in subscription_statuses
