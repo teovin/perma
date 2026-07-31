@@ -422,7 +422,7 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
         if not waffle.switch_is_active('show_generic_payment_banner'):
             return False
 
-        subscription_statuses = ['Current', 'Hold', 'Canceled']
+        subscription_statuses = ['Current', 'Hold', 'Canceled', 'Cancellation Requested']
 
         display = False
         # Individual Subscriptions
