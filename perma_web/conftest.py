@@ -347,6 +347,7 @@ class NonpayingRegistrarFactory(RegistrarFactory):
 class PayingRegistrarFactory(RegistrarFactory):
     nonpaying = False
     cached_subscription_status = "Sentinel Status"
+    cached_subscription_started = GENESIS - relativedelta(years=1)
     cached_paid_through = GENESIS
     base_rate = Decimal(100.00)
     in_trial = False
@@ -438,6 +439,7 @@ class NonpayingUserFactory(LinkUserFactory):
 class PayingUserFactory(LinkUserFactory):
     nonpaying = False
     cached_subscription_status = "Sentinel Status"
+    cached_subscription_started = GENESIS - relativedelta(years=1)
     cached_paid_through = GENESIS
     cached_subscription_rate = Decimal(0.01)
     base_rate = Decimal(100.00)
@@ -448,6 +450,7 @@ class PayingUserFactory(LinkUserFactory):
 class GrandfatheredPayingUserFactory(PayingUserFactory):
     grandfathered = True
     cached_subscription_status = 'Current'
+    cached_subscription_started = factory.LazyFunction(lambda: timezone.now() - relativedelta(months=1))
     cached_paid_through = factory.LazyFunction(lambda: timezone.now() + relativedelta(months=1))
     cached_subscription_rate = Decimal('10.00')
     link_limit_period = 'monthly'
@@ -457,6 +460,7 @@ class GrandfatheredPayingUserFactory(PayingUserFactory):
 class ExpiredGrandfatheredPayingUserFactory(PayingUserFactory):
     grandfathered = True
     cached_subscription_status = 'Canceled'
+    cached_subscription_started = GENESIS - relativedelta(years=1)
     cached_paid_through = GENESIS
     cached_subscription_rate = Decimal('10.00')
     link_limit_period = 'monthly'
