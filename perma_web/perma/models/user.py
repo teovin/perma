@@ -418,17 +418,31 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
     def should_see_payment_system_upgrade_banner(self):
         """
             Should the user see the temporary "Payment System Upgrade Period" banner?
-            Shown to paid registrar users and paid individual users whose subscription status is 'Current' or 'Hold'.
         """
         if not waffle.switch_is_active('show_generic_payment_banner'):
             return False
 
-        subscription_statuses = ['Current', 'Hold']
-        if self.is_registrar_user() and not self.registrar.nonpaying:
-            return self.registrar.cached_subscription_status in subscription_statuses
-        if self.is_individual() and not self.nonpaying:
-            return self.cached_subscription_status in subscription_statuses
-        return False
+        subscription_statuses = ['Current', 'Hold', 'Canceled']
+
+        display = False
+        # Individual Subscriptions
+        if (
+                self.cached_subscription_started and
+                self.cached_subscription_status in subscription_statuses
+            ):
+                display = True
+
+        # Registrar Subscriptions
+        if self.is_registrar_user():
+            registrar = self.registrar
+            if (
+                registrar.cached_subscription_started and
+                registrar.cached_subscription_status in subscription_statuses
+            ):
+                display = True
+
+        return display
+
 
     ### merging accounts ###
 
