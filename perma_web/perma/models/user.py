@@ -443,6 +443,20 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
 
         return display
 
+    def should_see_grandfathered_banner(self):
+        """
+            Should the user see the "Payment System Upgrade" banner for grandfathered-in users?
+        """
+        display = False
+        # Individual Subscriptions
+        if self.grandfathered:
+            display = True
+
+        # Registrar Subscriptions
+        if self.is_registrar_user() and self.registrar.grandfathered:
+            display = True
+
+        return display
 
     ### merging accounts ###
 
