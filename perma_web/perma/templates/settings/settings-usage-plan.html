@@ -1,7 +1,7 @@
 {% extends "settings-layout.html" %}
 {% block top_banner %}
   {% if request.user.is_authenticated and request.user.should_see_payment_system_upgrade_banner %}
-    {% include "includes/top_banner.html" %}
+    {% include "includes/top_banner_generic.html" %}
   {% endif %}
 {% endblock top_banner %}
 {% load humanize %}
