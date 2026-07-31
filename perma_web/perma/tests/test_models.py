@@ -1740,28 +1740,44 @@ SUBSCRIPTION_STATUSES = [
     (None, False),
 ]
 
-@override_switch('show_generic_payment_banner', active=True)
 @pytest.mark.parametrize("status,expected", SUBSCRIPTION_STATUSES)
 def test_paid_individual_sees_banner_for_current_and_hold(paying_user_factory, status, expected):
     user = paying_user_factory(cached_subscription_status=status)
-    assert user.should_see_payment_system_upgrade_banner() is expected
+    with override_switch('show_generic_payment_banner', active=True):
+        assert user.should_see_payment_system_upgrade_banner() is expected
+
+    with override_switch('show_generic_payment_banner', active=False):
+        assert user.should_see_payment_system_upgrade_banner() is False
 
 @override_switch('show_generic_payment_banner', active=True)
 def test_nonpaying_individual_does_not_see_banner(nonpaying_user_factory):
     user = nonpaying_user_factory(cached_subscription_status='Current')
     assert user.should_see_payment_system_upgrade_banner() is False
 
-@override_switch('show_generic_payment_banner', active=True)
 @pytest.mark.parametrize("status,expected", SUBSCRIPTION_STATUSES)
 def test_paid_registrar_user_sees_banner_for_current_and_hold(paying_registrar_user_factory, status, expected):
     user = paying_registrar_user_factory()
     user.registrar.cached_subscription_status = status
     user.registrar.save()
-    assert user.should_see_payment_system_upgrade_banner() is expected
 
-@override_switch('show_generic_payment_banner', active=True)
-def test_registrar_user_from_nonpaying_registrar_does_not_see_banner(registrar_user_factory):
-    user = registrar_user_factory()
-    user.registrar.cached_subscription_status = 'Current'
+    with override_switch('show_generic_payment_banner', active=True):
+        assert user.should_see_payment_system_upgrade_banner() is expected
+
+    with override_switch('show_generic_payment_banner', active=False):
+        assert user.should_see_payment_system_upgrade_banner() is False
+
+def test_grandfathered_user_sees_banner(paying_user_factory):
+    user = paying_user_factory()
+    assert user.should_see_grandfathered_banner() is False
+
+    user.grandfathered = True
+    user.save()
+    assert user.should_see_grandfathered_banner() is True
+
+def test_grandfathered_registrar_user_sees_banner(paying_registrar_user_factory):
+    user = paying_registrar_user_factory()
+    assert user.should_see_grandfathered_banner() is False
+
+    user.registrar.grandfathered = True
     user.registrar.save()
-    assert user.should_see_payment_system_upgrade_banner() is False
+    assert user.should_see_grandfathered_banner() is True
