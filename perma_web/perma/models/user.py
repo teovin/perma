@@ -427,10 +427,10 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
         display = False
         # Individual Subscriptions
         if (
-                self.cached_subscription_started and
-                self.cached_subscription_status in subscription_statuses
-            ):
-                display = True
+            self.cached_subscription_started and
+            self.cached_subscription_status in subscription_statuses
+        ):
+            display = True
 
         # Registrar Subscriptions
         if self.is_registrar_user():
