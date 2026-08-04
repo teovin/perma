@@ -108,7 +108,6 @@ urlpatterns = [
     re_path(r'^settings/tools/?$', user_settings.settings_tools, name='settings_tools'),
     re_path(r'^settings/usage-plan/?$', user_settings.settings_usage_plan, name='settings_usage_plan'),
     re_path(r'^settings/subscription/?$', RedirectView.as_view(url='/settings/usage-plan/', permanent=True), name='settings_subscription'),
-    re_path(r'^settings/subscription/cancel/?$', user_settings.settings_subscription_cancel, name='settings_subscription_cancel'),
     re_path(r'^settings/subscription/update/?$', user_settings.settings_subscription_update, name='settings_subscription_update'),
 
     # Link management

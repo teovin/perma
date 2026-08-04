@@ -180,7 +180,6 @@ def settings_usage_plan(request):
         'this_page': 'settings_usage_plan',
         'purchase_url': settings.PAYMENTS_APP_URLS['purchase'],
         'subscribe_url': settings.PAYMENTS_APP_URLS['subscribe'],
-        'cancel_confirm_url': reverse('settings_subscription_cancel'),
         'update_url': reverse('settings_subscription_update'),
         'accounts': accounts,
         'links_remaining': request.user.get_links_remaining(),
@@ -209,33 +208,6 @@ def settings_usage_plan(request):
         return render(request, 'settings/settings-usage-plan-grandfathered.html', context)
 
     return render(request, 'settings/settings-usage-plan.html', context)
-
-
-@sensitive_variables()
-@require_http_methods(["POST"])
-@user_passes_test_or_403(lambda user: user.can_view_usage_plan())
-def settings_subscription_cancel(request):
-    account_type = request.POST.get('account_type', '')
-    if account_type == 'Registrar':
-        customer = request.user.registrar
-    elif account_type == 'Individual':
-        customer = request.user
-    account = customer.get_subscription_info(timezone.now())
-    if not account['subscription']:
-        return HttpResponseForbidden()
-    context = {
-        'this_page': 'settings_subscription',
-        'cancel_url': settings.PAYMENTS_APP_URLS['cancel'],
-        'customer': customer,
-        'customer_type': account_type,
-        'account': account,
-        'data': prep_for_perma_payments({
-            'customer_pk': customer.id,
-            'customer_type': account_type,
-            'timestamp': timezone.now().timestamp()
-        }).decode('utf-8')
-    }
-    return render(request, 'settings/settings-subscription-cancel-confirm.html', context)
 
 
 @sensitive_variables()
