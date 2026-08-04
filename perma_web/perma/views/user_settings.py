@@ -140,47 +140,36 @@ def settings_usage_plan(request):
     accounts = []
     purchase_history = {}
     # Status messages for redirects back from the payments app after checkout,
-    # e.g. settings/usage-plan/?subscription=success. Only the Stripe payments
-    # app issues these redirects, so we only surface the messages when it is in
-    # use; on Cybersource these params never appear and are ignored.
+    # e.g. settings/usage-plan/?subscription=success.
     payment_status_level = payment_status_message = None
-    use_stripe = waffle.switch_is_active('use_stripe_payments_app')
-    if use_stripe:
-        payment_redirect_messages = {
-            ('subscription', 'success'): ('success', 'Your subscription has been created.'),
-            ('subscription', 'canceled'): ('info', 'Subscription checkout was canceled. You were not charged.'),
-            ('purchase', 'success'): ('success', 'Your link purchase succeeded.'),
-            ('purchase', 'canceled'): ('info', 'Link purchase checkout was canceled. You were not charged.'),
-            ('change', 'success'): ('success', (
-                'Your subscription change was submitted. Upgrades are billed immediately; '
-                'downgrades take effect at the end of your current billing period.'
-            )),
-            ('change', 'canceled'): ('success', (
-                'Your scheduled downgrade has been canceled. Your current plan will continue unchanged.'
-            )),
-            # Neutral wording: the Stripe portal returns here for any action it
-            # allows (payment-method update, invoice view, or cancellation), and
-            # the return does not tell us which. "Updated" is honest for all of
-            # them; the accurate canceled state, if any, shows below this banner.
-            ('update', 'success'): ('success', 'Your subscription settings have been updated.'),
-        }
-        for param in ('subscription', 'purchase', 'change', 'update'):
-            match = payment_redirect_messages.get((param, request.GET.get(param)))
-            if match:
-                payment_status_level, payment_status_message = match
-                break
+    payment_redirect_messages = {
+        ('subscription', 'success'): ('success', 'Your subscription has been created.'),
+        ('subscription', 'canceled'): ('info', 'Subscription checkout was canceled. You were not charged.'),
+        ('purchase', 'success'): ('success', 'Your link purchase succeeded.'),
+        ('purchase', 'canceled'): ('info', 'Link purchase checkout was canceled. You were not charged.'),
+        ('change', 'success'): ('success', (
+            'Your subscription change was submitted. Upgrades are billed immediately; '
+            'downgrades take effect at the end of your current billing period.'
+        )),
+        ('change', 'canceled'): ('success', (
+            'Your scheduled downgrade has been canceled. Your current plan will continue unchanged.'
+        )),
+        # Neutral wording: the Stripe portal returns here for any action it
+        # allows (payment-method update, invoice view, or cancellation), and
+        # the return does not tell us which. "Updated" is honest for all of
+        # them; the accurate canceled state, if any, shows below this banner.
+        ('update', 'success'): ('success', 'Your subscription settings have been updated.'),
+    }
+    for param in ('subscription', 'purchase', 'change', 'update'):
+        match = payment_redirect_messages.get((param, request.GET.get(param)))
+        if match:
+            payment_status_level, payment_status_message = match
+            break
     try:
         if request.user.is_registrar_user() and not request.user.registrar.nonpaying:
             accounts.append(request.user.registrar.get_subscription_info(timezone.now()))
         if not request.user.nonpaying:
             accounts.append(request.user.get_subscription_info(timezone.now()))
-            if not use_stripe:
-                # Under Stripe the purchase list is not rendered (history lives
-                # in the customer portal), so fetching it would be a round trip
-                # per page load for data we throw away. Bonus-link crediting is
-                # unaffected: that happens in get_subscription_info() above, off
-                # the /subscription/ payload, not this one.
-                purchase_history = request.user.get_purchase_history()
     except PermaPaymentsCommunicationException:
         context = {
             'this_page': 'settings_usage_plan',
@@ -198,17 +187,14 @@ def settings_usage_plan(request):
         'purchase_history': purchase_history,
         'bonus_packages': request.user.get_bonus_packages(),
         'display_cybersource_freeze_message': waffle.switch_is_active('display_cybersource_freeze_message'),
-        'allow_cybersource_transactions': waffle.switch_is_active('allow_cybersource_transactions'),
-        'use_stripe_payments_app': use_stripe,
         'payment_status_level': payment_status_level,
         'payment_status_message': payment_status_message,
     }
 
     # The "Billing and Purchase History" button posts straight to the payments
-    # app, like the bonus package buttons do. Stripe only: Cybersource has no
-    # customer portal to send anyone to. This section is about personal links,
+    # app, like the bonus package buttons do. This section is about personal links,
     # so the customer is always the LinkUser, never their registrar.
-    if use_stripe and not request.user.nonpaying:
+    if not request.user.nonpaying:
         context['billing_portal_url'] = settings.PAYMENTS_APP_URLS['billing']
         context['billing_encrypted_data'] = prep_for_perma_payments({
             'customer_pk': request.user.pk,
@@ -216,10 +202,8 @@ def settings_usage_plan(request):
             'timestamp': timezone.now().timestamp(),
         }).decode('utf-8')
 
-    grandfathered = not waffle.switch_is_active('allow_cybersource_transactions') and (
-        request.user.grandfathered or (
-            request.user.is_registrar_user() and request.user.registrar.grandfathered
-        )
+    grandfathered = request.user.grandfathered or (
+        request.user.is_registrar_user() and request.user.registrar.grandfathered
     )
     if grandfathered:
         return render(request, 'settings/settings-usage-plan-grandfathered.html', context)
@@ -237,7 +221,7 @@ def settings_subscription_cancel(request):
     elif account_type == 'Individual':
         customer = request.user
     account = customer.get_subscription_info(timezone.now())
-    if not waffle.switch_is_active('allow_cybersource_transactions') or not account['subscription']:
+    if not account['subscription']:
         return HttpResponseForbidden()
     context = {
         'this_page': 'settings_subscription',
@@ -264,16 +248,13 @@ def settings_subscription_update(request):
     elif account_type == 'Individual':
         customer = request.user
     account = customer.get_subscription_info(timezone.now())
-    # The update route funnels to the active payments app: the Stripe customer
-    # portal when use_stripe_payments_app is on, or the Cybersource card-update
-    # page when Cybersource transactions are allowed. Forbidden only when
-    # neither backend is accepting transactions (e.g. the migration freeze).
-    use_stripe = waffle.switch_is_active('use_stripe_payments_app')
-    if not (use_stripe or waffle.switch_is_active('allow_cybersource_transactions')) or not account['subscription']:
+    if not account['subscription']:
         return HttpResponseForbidden()
+
     # Special handling for grandfathered customers.
-    if customer.grandfathered and not waffle.switch_is_active('allow_cybersource_transactions'):
+    if customer.grandfathered:
         return HttpResponseForbidden()
+
     context = {
         'this_page': 'settings_subscription',
         'update_url': settings.PAYMENTS_APP_URLS['update'],
@@ -281,7 +262,6 @@ def settings_subscription_update(request):
         'customer': customer,
         'customer_type': account_type,
         'account': account,
-        'use_stripe_payments_app': use_stripe,
         'update_encrypted_data': prep_for_perma_payments({
             'customer_pk': customer.id,
             'customer_type': account_type,

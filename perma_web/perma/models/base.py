@@ -203,10 +203,7 @@ class CustomerModel(models.Model):
         Registrars only: an organization name is not personal data, while an
         individual's name is, and the payments service deliberately holds no
         individual PII. Individuals supply a name themselves at Stripe Checkout.
-        Sent only on the Stripe path; the Cybersource payload is unchanged.
         """
-        if not waffle.switch_is_active('use_stripe_payments_app'):
-            return None
         if self.customer_type != 'Registrar':
             return None
         return (getattr(self, 'name', '') or '').strip() or None
@@ -261,9 +258,9 @@ class CustomerModel(models.Model):
         if self.nonpaying:
             return None
 
-        # Return cached values if this is a grandfathered customer,
-        # and we are post-Cybersource. Do not interact with Perma Payments at all.
-        if self.grandfathered and not waffle.switch_is_active('allow_cybersource_transactions'):
+        # Return cached values if this is a grandfathered customer.
+        # Do not interact with Perma Payments at all.
+        if self.grandfathered:
 
             # make sure they still should be considered grandfathered
             if self.cached_subscription_status == 'Canceled' and self.cached_paid_through <= timezone.now():
