@@ -240,12 +240,13 @@ def test_subscribe_form_if_no_standing_subscription(prepped, client, user_withou
 
     individual_tier_count = len(settings.TIERS['Individual'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count + purchase_history_form
 
 
-def test_update_button_cancel_button_and_subscription_info_present_if_standing_subscription(client, user_with_monthly_subscription):
+def test_manage_button_and_subscription_info_present_if_standing_subscription(client, user_with_monthly_subscription):
     user = user_with_monthly_subscription
 
     client.force_login(user)
@@ -255,7 +256,7 @@ def test_update_button_cancel_button_and_subscription_info_present_if_standing_s
     assert b'Paid Through' in response.content
     assert b'Manage Subscription and Billing' in response.content
     assert b'Your subscription is <span class="blue-text">current</span>' in response.content
-    assert response.content.count(b'<input type="hidden" name="account_type"') == 2
+    assert response.content.count(b'<input type="hidden" name="account_type"') == 1
 
 
 def test_billing_portal_button_present(client, mocker, link_user, no_purchase_history):
@@ -576,7 +577,9 @@ def test_update_page_if_standing_subscription(model_prepped, view_prepped, clien
     # Should be able to up/downgrade to all monthly individual tiers, except the current tier
     available_tiers = len([tier for tier in settings.TIERS['Individual'] if tier['period'] == 'monthly']) - 1
 
-    assert b'Update Credit Card Information' in response.content
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
+
     assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 1
     assert b'Change Plan' in response.content
     assert b'Cancel Scheduled Downgrade' not in response.content
@@ -599,7 +602,8 @@ def test_update_page_if_downgrade_scheduled(model_prepped, view_prepped, client,
         data={'account_type':'Individual'}
     )
 
-    assert b'Update Credit Card Information' in response.content
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
     assert b'Cancel Scheduled Downgrade' in response.content
     assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 2
     assert b'<input required type="radio" name="encrypted_data"' not in response.content
@@ -619,7 +623,8 @@ def test_update_page_if_subscription_on_hold(prepped, client, user_with_on_hold_
         data={'account_type':'Individual'}
     )
 
-    assert b'Update Credit Card Information' in response.content
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
     assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 1
     assert response.content.count(prepped.return_value) == 1
     assert b'Change Plan' not in response.content
@@ -642,12 +647,13 @@ def test_registrar_user_nonpaying_registrar(prepped, client, registrar_user_from
 
     individual_tier_count = len(settings.TIERS['Individual'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert b'Get More Personal Links' in response.content
     assert b'Purchase a personal subscription' in response.content
     assert f'Purchase a subscription for {user.registrar.name}'.encode() not in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count + purchase_history_form
     assert response.content.count(prepped.return_value) == individual_tier_count + bonus_package_count
 
 
@@ -665,12 +671,13 @@ def test_paying_registrar_user_sees_both_subscribe_forms(prepped, client, regist
     # all tiers should be offered, both individual and registrar-level
     tier_count = len(settings.TIERS['Individual']) + len(settings.TIERS['Registrar'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert b'Get More Personal Links' in response.content
     assert b'Purchase a personal subscription' in response.content
     assert f'Purchase a subscription for {user.registrar.name}'.encode() in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == tier_count + bonus_package_count + purchase_history_form
     assert response.content.count(prepped.return_value) == tier_count + bonus_package_count
 
 
@@ -689,19 +696,19 @@ def test_paying_registrar_user_sees_subscriptions_independently(prepped, client,
 
     individual_tier_count = len(settings.TIERS['Individual'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert b'Get More Personal Links' in response.content
     assert b'Purchase a personal subscription' in response.content
     assert b'Purchase a subscription for Test Firm' not in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count + purchase_history_form
     assert response.content.count(prepped.return_value) == individual_tier_count + bonus_package_count
 
     assert b'Rate' in response.content
     assert b'Paid Through' in response.content
-    assert b'Modify Subscription' in response.content
-    assert response.content.count(b'<input type="hidden" name="account_type"') == 2
-    assert b'Cancel Subscription' in response.content
+    assert b'Manage Subscription and Billing' in response.content
+    assert response.content.count(b'<input type="hidden" name="account_type"') == 1
 
 
 @patch('perma.models.base.prep_for_perma_payments', autospec=True)
