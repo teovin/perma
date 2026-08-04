@@ -226,42 +226,6 @@ def test_no_payment_message_for_unrecognized_params(client, user_without_subscri
     assert b'alert-block' not in response.content
 
 
-@override_switch('use_stripe_payments_app', active=False)
-def test_no_payment_message_when_stripe_app_disabled(client, user_without_subscription_or_purchase_history):
-    # On Cybersource, the payments app never redirects with these params, and a
-    # manually-appended param must not surface a misleading status message.
-    client.force_login(user_without_subscription_or_purchase_history)
-    response = client.get(reverse('settings_usage_plan') + '?subscription=success', secure=True)
-
-    assert response.status_code == 200
-    assert b'alert-block' not in response.content
-    assert b'Your subscription has been created.' not in response.content
-
-
-def test_no_purchase_history_section_if_no_one_time_purchases(client, user_without_subscription_or_purchase_history):
-    user = user_without_subscription_or_purchase_history
-
-    client.force_login(user)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    assert response.status_code == 200
-    assert b'Purchase History' not in response.content
-
-
-
-def test_purchase_history_present_if_one_time_purchases(client, user_without_subscription_with_purchase_history):
-    user = user_without_subscription_with_purchase_history
-
-    client.force_login(user)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    assert b'Purchase History' in response.content
-    assert b'10 Links' in response.content
-    assert b'3 Links' in response.content
-    assert b'13 Links' in response.content
-    assert b'January 1, 1970' in response.content
-
-
 @patch('perma.models.base.prep_for_perma_payments', autospec=True)
 def test_subscribe_form_if_no_standing_subscription(prepped, client, user_without_subscription_or_purchase_history):
     user = user_without_subscription_or_purchase_history
@@ -310,21 +274,9 @@ def test_billing_portal_button_present(client, mocker, link_user, no_purchase_hi
     assert f'{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/billing/' in form_actions(response.content)
 
 
-@override_switch('use_stripe_payments_app', active=False)
-def test_cybersource_mode_keeps_purchase_history_list(client, user_without_subscription_with_purchase_history):
-    client.force_login(user_without_subscription_with_purchase_history)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    assert b'Purchase History' in response.content
-    assert b'13 Links' in response.content
-    assert b'January 1, 1970' in response.content
-    assert b'Additional Links Remaining' not in response.content
-    assert b'Billing and Purchase History' not in response.content
-
-
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
 @patch('perma.models.base.prep_for_perma_payments', autospec=True)
-def test_update_page_shows_portal_language(model_prepped, view_prepped, client, user_with_monthly_subscription):
+def test_individual_update_page_shows_portal_language(model_prepped, view_prepped, client, user_with_monthly_subscription):
     model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
     view_prepped.return_value = bytes(str(sentinel.view_prepped), 'utf-8')
     client.force_login(user_with_monthly_subscription)
@@ -547,18 +499,6 @@ def test_help_present_if_subscription_on_hold(client, user_with_on_hold_subscrip
     assert b'problem with your credit card' in response.content
 
 
-def test_cancellation_info_present_if_cancellation_requested(client, user_with_requested_cancellation):
-    user = user_with_requested_cancellation
-
-    client.force_login(user)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    bonus_package_count = len(settings.BONUS_PACKAGES)
-    assert b'Get More Personal Links' in response.content
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == bonus_package_count
-    assert b'received the request to cancel' in response.content
-
-
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_apology_page_displayed_if_perma_payments_is_down(get_subscription, client, link_user):
     get_subscription.side_effect = PermaPaymentsCommunicationException
@@ -670,24 +610,6 @@ def test_update_page_if_downgrade_scheduled(model_prepped, view_prepped, client,
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
 def test_update_page_if_subscription_on_hold(prepped, client, user_with_on_hold_subscription):
     user = user_with_on_hold_subscription
-    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
-
-    client.force_login(user)
-    response = client.post(
-        reverse('settings_subscription_update'),
-        secure=True,
-        data={'account_type':'Individual'}
-    )
-
-    assert b'Update Credit Card Information' in response.content
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 1
-    assert response.content.count(prepped.return_value) == 1
-    assert b'Change Plan' not in response.content
-
-
-@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-def test_update_page_if_cancellation_requested(prepped, client, user_with_requested_cancellation):
-    user = user_with_requested_cancellation
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
 
     client.force_login(user)

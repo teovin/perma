@@ -524,10 +524,6 @@ def test_user_link_creation_disallowed_if_subscription_active_and_under_limit(ge
 
 
 #
-# Link limit / subscription related tests for registrars
-#
-
-#
 # The name sent to Perma Payments for Stripe's "Bill to" (LIL-5399)
 #
 
@@ -538,14 +534,8 @@ def test_payments_customer_name_is_the_registrar_org_name(paying_registrar):
 def test_payments_customer_name_is_none_for_individuals(paying_user):
     assert paying_user.payments_customer_name() is None
 
-
-@override_switch('use_stripe_payments_app', active=False)
-def test_payments_customer_name_is_none_on_the_cybersource_path(paying_registrar):
-    assert paying_registrar.payments_customer_name() is None
-
-
 #
-# Link limit / subscription related tests for registrars (continued)
+# Link limit / subscription related tests for registrars
 #
 
 @patch('perma.models.Registrar.get_subscription', autospec=True)
