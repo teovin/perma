@@ -82,22 +82,6 @@
                   {% endif %}
                 {% endfor %}
               </div>
-          {% elif subscription.status == 'Cancellation Requested' %}
-            <p class="page-dek">
-              <span class="blue-text">Cancellation Request Pending</span>
-            </p>
-            <p class="page-dek">We've received the request to cancel your subscription. We're sorry to see you go!</p>
-            <p class="page-dek">
-              Please note that it can take up to one full business day for us to process a cancellation.
-              {% if subscription.paid_through %}
-                <p class="page-dek">
-                  You will continue to be able to create Perma Links
-                  {% if customer_type == 'Registrar' %}
-                    for {{ customer.name }}
-                  {% endif %}
-                  until {{ subscription.paid_through | date:"F jS, Y" }}.
-                </p>
-              {% endif %}
             {% elif subscription.status == 'Canceled' %}
               <p class="page-dek">
                 Your paid subscription has been <span class="blue-text">cancelled</span>. You will not be charged
