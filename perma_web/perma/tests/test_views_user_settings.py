@@ -13,41 +13,6 @@ from conftest import submit_form
 from unittest.mock import patch, sentinel
 from waffle.testutils import override_switch
 
-
-#
-# Cybersource -> Stripe rollout phases.
-#
-# Each phase is a combination of the three payment waffle switches. These
-# helpers let us assert per-phase behavior in one place, and in particular
-# confirm that once Cybersource transactions are switched off, no Perma route
-# can drive a transaction to Cybersource -- even if a URL is visited directly.
-#
-# (name, use_stripe_payments_app, allow_cybersource_transactions, display_cybersource_freeze_message)
-CYBERSOURCE_PHASE = ('cybersource', False, True, False)
-FREEZE_PHASE = ('freeze', False, False, True)
-STRIPE_PHASE = ('stripe', True, False, False)
-ALL_PHASES = [CYBERSOURCE_PHASE, FREEZE_PHASE, STRIPE_PHASE]
-
-# Bare Cybersource payment endpoints (from settings_testing.py). If any of these
-# is the action of a rendered form, that form posts a transaction to Cybersource.
-CYBERSOURCE_FORM_ACTIONS = {
-    settings.UPDATE_URL, settings.CHANGE_URL, settings.CANCEL_URL,
-    settings.PURCHASE_URL, settings.SUBSCRIBE_URL,
-}
-
-# Distinct Stripe app host used with override_settings so we can tell the two
-# backends apart in rendered form actions.
-STRIPE_APP_URL = 'https://stripe-app.test'
-
-
-@contextmanager
-def rollout_phase(use_stripe, allow_cybersource, freeze_message):
-    with override_switch('use_stripe_payments_app', active=use_stripe), \
-         override_switch('allow_cybersource_transactions', active=allow_cybersource), \
-         override_switch('display_cybersource_freeze_message', active=freeze_message):
-        yield
-
-
 def form_actions(content):
     return {form.get('action') for form in BeautifulSoup(content, 'html.parser').find_all('form') if form.get('action')}
 
@@ -226,7 +191,6 @@ def test_regular_user_can_see_usage_plan_page(client, link_user):
     assert response.status_code == 200
 
 
-@override_switch('use_stripe_payments_app', active=True)
 def test_payment_success_message_shown_after_redirect(client, user_without_subscription_or_purchase_history):
     client.force_login(user_without_subscription_or_purchase_history)
     response = client.get(reverse('settings_usage_plan') + '?subscription=success', secure=True)
@@ -236,7 +200,6 @@ def test_payment_success_message_shown_after_redirect(client, user_without_subsc
     assert b'Your subscription has been created.' in response.content
 
 
-@override_switch('use_stripe_payments_app', active=True)
 def test_downgrade_canceled_message_shown_after_redirect(client, user_without_subscription_or_purchase_history):
     client.force_login(user_without_subscription_or_purchase_history)
     response = client.get(reverse('settings_usage_plan') + '?change=canceled', secure=True)
@@ -246,7 +209,6 @@ def test_downgrade_canceled_message_shown_after_redirect(client, user_without_su
     assert b'Your scheduled downgrade has been canceled.' in response.content
 
 
-@override_switch('use_stripe_payments_app', active=True)
 def test_payment_canceled_message_shown_as_info_after_redirect(client, user_without_subscription_or_purchase_history):
     client.force_login(user_without_subscription_or_purchase_history)
     response = client.get(reverse('settings_usage_plan') + '?purchase=canceled', secure=True)
@@ -256,7 +218,6 @@ def test_payment_canceled_message_shown_as_info_after_redirect(client, user_with
     assert b'Link purchase checkout was canceled. You were not charged.' in response.content
 
 
-@override_switch('use_stripe_payments_app', active=True)
 def test_no_payment_message_for_unrecognized_params(client, user_without_subscription_or_purchase_history):
     client.force_login(user_without_subscription_or_purchase_history)
     response = client.get(reverse('settings_usage_plan') + '?subscription=bogus&foo=success', secure=True)
@@ -328,30 +289,12 @@ def test_update_button_cancel_button_and_subscription_info_present_if_standing_s
 
     assert b'Rate' in response.content
     assert b'Paid Through' in response.content
-    assert b'Modify Subscription' in response.content
-    assert b'Cancel Subscription' in response.content
+    assert b'Manage Subscription and Billing' in response.content
     assert b'Your subscription is <span class="blue-text">current</span>' in response.content
     assert response.content.count(b'<input type="hidden" name="account_type"') == 2
 
 
-@patch('perma.models.base.prep_for_perma_payments', autospec=True)
-@override_switch('use_stripe_payments_app', active=True)
-def test_stripe_mode_shows_subscribe_and_purchase_forms(prepped, client, user_without_subscription_or_purchase_history):
-    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
-    client.force_login(user_without_subscription_or_purchase_history)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    individual_tier_count = len(settings.TIERS['Individual'])
-    bonus_package_count = len(settings.BONUS_PACKAGES)
-    assert b'Purchase a personal subscription' in response.content
-    assert b'Get More Personal Links' in response.content
-    assert response.content.count(b'<form class="purchase-form') == bonus_package_count
-    assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
-
-
-@override_switch('use_stripe_payments_app', active=True)
-@override_settings(STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
-def test_stripe_mode_replaces_purchase_history_with_portal_button(client, mocker, link_user, no_purchase_history):
+def test_billing_portal_button_present(client, mocker, link_user, no_purchase_history):
     mocker.patch('perma.models.LinkUser.get_subscription', autospec=True, return_value=None)
     get_purchase_history = mocker.patch(
         'perma.models.LinkUser.get_purchase_history', autospec=True, return_value=no_purchase_history
@@ -364,13 +307,7 @@ def test_stripe_mode_replaces_purchase_history_with_portal_button(client, mocker
 
     assert response.status_code == 200
     assert b'Additional Links Remaining: 7 Links' in response.content
-    assert b'Billing and Purchase History' in response.content
-    assert b'Purchase History</h3>' not in response.content
-    assert f'{STRIPE_APP_URL}/billing/' in form_actions(response.content)
-    # Under Stripe the list is not rendered, so the page must not pay for the
-    # round trip that fetches it. Bonus links are still credited, off the
-    # /subscription/ payload.
-    get_purchase_history.assert_not_called()
+    assert f'{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/billing/' in form_actions(response.content)
 
 
 @override_switch('use_stripe_payments_app', active=False)
@@ -387,8 +324,7 @@ def test_cybersource_mode_keeps_purchase_history_list(client, user_without_subsc
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
 @patch('perma.models.base.prep_for_perma_payments', autospec=True)
-@override_switch('use_stripe_payments_app', active=True)
-def test_stripe_mode_update_page_shows_portal_language(model_prepped, view_prepped, client, user_with_monthly_subscription):
+def test_update_page_shows_portal_language(model_prepped, view_prepped, client, user_with_monthly_subscription):
     model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
     view_prepped.return_value = bytes(str(sentinel.view_prepped), 'utf-8')
     client.force_login(user_with_monthly_subscription)
@@ -404,8 +340,7 @@ def test_stripe_mode_update_page_shows_portal_language(model_prepped, view_prepp
     assert b'Update Credit Card Information' not in response.content
 
 
-@override_switch('use_stripe_payments_app', active=True)
-def test_stripe_mode_registrar_update_page_shows_contact_note(client, registrar_user_from_registrar_with_monthly_subscription):
+def test_registrar_update_page_shows_contact_note(client, registrar_user_from_registrar_with_monthly_subscription):
     client.force_login(registrar_user_from_registrar_with_monthly_subscription)
     response = client.post(
         reverse('settings_subscription_update'),
