@@ -709,6 +709,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         another_csv_data = 'first_name,last_name,email\nJohn2,Doe,john2doe@example.com\nJane2,Smith,jane2smith@example.com'
         invalid_csv_data = 'name\nJohn Doe'
         another_invalid_csv_data = 'first_name,last_name,email\nJohn,Doe,\nJane,Smith,janesmith@example.com'
+        csv_data_to_normalize = 'first_name,last_name,email\rJohn,Doe,johndoe@example.com\rJane,Smith,janesmith@example.com'
 
         valid_csv_file = create_csv_file('users.csv', csv_data)
         another_valid_csv_file = create_csv_file('another_valid_users.csv', another_csv_data)
@@ -716,6 +717,8 @@ class UserManagementViewsTestCase(PermaTestCase):
         invalid_csv_file = create_csv_file('invalid_users.csv', invalid_csv_data)
         another_invalid_csv_file = create_csv_file('another_invalid_users.csv', another_invalid_csv_data)
         csv_file_with_invalid_encoding = create_csv_file('users.csv', csv_data, 'utf-16')
+        blank_lines_csv_file = create_csv_file('blank_lines_users.csv', '\n\n')
+        normalized_line_endings_csv = create_csv_file('normalized_line_endings_users.csv', csv_data_to_normalize)
 
         request = RequestFactory().get('/')
         request.user = self.registrar_user
@@ -749,8 +752,18 @@ class UserManagementViewsTestCase(PermaTestCase):
         # invalid csv - non utf-8 encoding
         form4 = initialize_form(csv_file_with_invalid_encoding)
         self.assertFalse(form4.is_valid())
-        self.assertTrue("CSV file must be encoded with UTF-8."
+        self.assertTrue("CSV file must be encoded with UTF-8. Please save the file with UTF-8 encoding and try again."
                         in form4.errors['csv_file'])
+
+        # invalid csv - blank lines only (fieldnames is [])
+        form5 = initialize_form(blank_lines_csv_file)
+        self.assertFalse(form5.is_valid())
+        self.assertTrue("CSV file must contain a header row with first_name, last_name and email columns."
+                        in form5.errors['csv_file'])
+
+        # valid csv with normalized line endings
+        form6 = initialize_form(normalized_line_endings_csv)
+        self.assertTrue(form6.is_valid())
 
         # --- test user creation ---
         self.assertTrue(form1.is_valid())

@@ -512,16 +512,16 @@ class MultipleUsersFormWithOrganization(ModelForm):
 
         # validate for encoding errors
         try:
-            raw_contents = file.read().decode('utf-8')
+            raw_contents = file.read().decode('utf-8-sig')
         except UnicodeDecodeError:
-            raise forms.ValidationError("CSV file must be encoded with UTF-8.")
-        
-        csv_file = StringIO(raw_contents)
-        reader = csv.DictReader(csv_file)
+            raise forms.ValidationError("CSV file must be encoded with UTF-8. Please save the file with UTF-8 encoding and try again.")
 
-        # validate the headers
+        # normalize the line endings to save the user the trouble
+        raw_contents = raw_contents.replace('\r\n', '\n').replace('\r', '\n')
+        reader = csv.DictReader(StringIO(raw_contents))
         headers = reader.fieldnames
-        if not all(item in headers for item in ['first_name', 'last_name', 'email']):
+
+        if not headers or not all(item in headers for item in ['first_name', 'last_name', 'email']):
             raise forms.ValidationError("CSV file must contain a header row with first_name, last_name and email columns.")
 
         # validate the rows
