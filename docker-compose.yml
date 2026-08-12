@@ -64,7 +64,6 @@ services:
         aliases:
           - 'perma.test'
           - 'api.perma.test'
-      perma_payments:
       scoop_rest_api:
         aliases:
           - 'perma.test'
@@ -142,7 +141,6 @@ volumes:
   node_modules:
   postgres_data_16:
   redis_data:
-  pp_db_data_16:
   scoop_redis_data:
   scoop_postgres_data:
   scoop_access_key:
@@ -151,8 +149,6 @@ volumes:
 
 networks:
   default:
-  perma_payments:
-      name: perma-payments_default
   scoop_rest_api:
       name: perma-scoop-api_default
   scoop_rest_api_internal:
