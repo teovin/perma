@@ -283,6 +283,7 @@ class CustomerModel(models.Model):
             pending_change = {
                 'rate': post_data['subscription']['rate'],
                 'link_limit': post_data['subscription']['link_limit'],
+                'frequency': post_data['subscription']['frequency'],
                 'effective': subscription_change_effective
             }
         self.save(update_fields=['in_trial', 'cached_subscription_started', 'cached_subscription_status', 'cached_paid_through', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period'])

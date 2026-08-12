@@ -412,6 +412,9 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
         """
         return not self.nonpaying or (self.is_registrar_user() and not self.registrar.nonpaying)
 
+    def can_purchase_bonus_links(self):
+        return not self.nonpaying and not self.unlimited
+
     def should_see_grandfathered_banner(self):
         """
             Should the user see the "Payment System Upgrade" banner for grandfathered-in users?

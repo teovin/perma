@@ -1,0 +1,11 @@
+<p class="page-dek">
+  Your paid subscription has been <span class="blue-text">cancelled</span>. You will not be charged
+  again.
+</p>
+<p class="page-dek">
+  You will continue to be able to create Perma Links
+  {% if customer_type == 'Registrar' %}
+    for {{ customer.name }}
+  {% endif %}
+  until {{ subscription.paid_through | date:"F jS, Y" }}.
+</p>

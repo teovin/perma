@@ -233,6 +233,7 @@ def test_get_subscription_happy_path_with_pending_change(post, process, paying_u
             'pending_change': {
                 'rate': response['subscription']['rate'],
                 'link_limit': response['subscription']['link_limit'],
+                'frequency': response['subscription']['frequency'],
                 'effective': pp_date_from_post(response['subscription']['link_limit_effective_timestamp'])
             }
         }

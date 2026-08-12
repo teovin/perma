@@ -1,0 +1,11 @@
+<p class="page-dek">
+  Your subscription is <span class="blue-text">{{ subscription.status | lower }}</span>.
+</p>
+
+<div class="row">
+  <div class="col-xs-12">
+    <dl class="dl-horizontal">
+      {% include 'includes/subscription-definition.html' with sub=subscription paid_through=True paid=False %}
+    </dl>
+  </div>
+</div>
