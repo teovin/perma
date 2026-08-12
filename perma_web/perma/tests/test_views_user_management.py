@@ -405,10 +405,11 @@ class UserManagementViewsTestCase(PermaTestCase):
 
     def test_sponsored_user_export_user_list(self):
         expected_results = [
-            ('another_inactive_sponsored_user@example.com', 'inactive'),
-            ('another_sponsored_user@example.com', 'active'),
-            ('inactive_sponsored_user@example.com', 'inactive'),
-            ('test_sponsored_user@example.com', 'active'),
+            ('another_inactive_sponsored_user@example.com', 'Another Library', 'inactive'),
+            ('another_sponsored_user@example.com', 'Another Library', 'active'),
+            ('another_sponsored_user@example.com', 'A Third Library', 'active'),
+            ('inactive_sponsored_user@example.com', 'Test Library', 'inactive'),
+            ('test_sponsored_user@example.com', 'Test Library', 'active'),
         ]
 
         # Get CSV export output
@@ -423,8 +424,9 @@ class UserManagementViewsTestCase(PermaTestCase):
         csv_file = StringIO(csv_response.content.decode('utf8'))
         reader = csv.DictReader(csv_file)
         for index, record in enumerate(reader):
-            expected_email, expected_sponsorship_status = expected_results[index]
+            expected_email, expected_sponsoring_registrar, expected_sponsorship_status = expected_results[index]
             self.assertEqual(record['email'], expected_email)
+            self.assertEqual(record['sponsoring_registrar'], expected_sponsoring_registrar)
             self.assertEqual(record['sponsorship_status'], expected_sponsorship_status)
         self.assertEqual(index + 1, len(expected_results))
 
@@ -439,8 +441,9 @@ class UserManagementViewsTestCase(PermaTestCase):
         # Validate JSON output against expected results
         reader = json.loads(json_response.content)
         for index, record in enumerate(reader):
-            expected_email, expected_sponsorship_status = expected_results[index]
+            expected_email, expected_sponsoring_registrar, expected_sponsorship_status = expected_results[index]
             self.assertEqual(record['email'], expected_email)
+            self.assertEqual(record['sponsoring_registrar'], expected_sponsoring_registrar)
             self.assertEqual(record['sponsorship_status'], expected_sponsorship_status)
         self.assertEqual(index + 1, len(expected_results))
 

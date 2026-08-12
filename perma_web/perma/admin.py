@@ -478,7 +478,7 @@ class RegistrarAdmin(SimpleHistoryAdmin):
     list_filter = ('status', 'unlimited', 'nonpaying', 'cached_subscription_status', 'orgs_private_by_default', 'frozen')
     fieldsets = (
         (None, {'fields': ('name', 'email', 'website', 'address', 'status', 'type', 'international', 'tags', 'orgs_private_by_default', 'notes')}),
-        ("Tier", {'fields': ('nonpaying', 'base_rate', 'grandfathered', 'local_subscription_description', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
+        ("Tier", {'fields': ('nonpaying', 'base_rate', 'grandfathered', 'offer_monthly', 'offer_annual', 'local_subscription_description', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
         ("Enforcement (disputes/refunds)", {'fields': ('frozen',)}),
     )
     inlines = [

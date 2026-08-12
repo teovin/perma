@@ -237,6 +237,16 @@ def test_payment_success_message_shown_after_redirect(client, user_without_subsc
 
 
 @override_switch('use_stripe_payments_app', active=True)
+def test_downgrade_canceled_message_shown_after_redirect(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?change=canceled', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-success' in response.content
+    assert b'Your scheduled downgrade has been canceled.' in response.content
+
+
+@override_switch('use_stripe_payments_app', active=True)
 def test_payment_canceled_message_shown_as_info_after_redirect(client, user_without_subscription_or_purchase_history):
     client.force_login(user_without_subscription_or_purchase_history)
     response = client.get(reverse('settings_usage_plan') + '?purchase=canceled', secure=True)
@@ -337,6 +347,42 @@ def test_stripe_mode_shows_subscribe_and_purchase_forms(prepped, client, user_wi
     assert b'Get More Personal Links' in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
+
+
+@override_switch('use_stripe_payments_app', active=True)
+@override_settings(STRIPE_PAYMENTS_APP_EXTERNAL_URL=STRIPE_APP_URL)
+def test_stripe_mode_replaces_purchase_history_with_portal_button(client, mocker, link_user, no_purchase_history):
+    mocker.patch('perma.models.LinkUser.get_subscription', autospec=True, return_value=None)
+    get_purchase_history = mocker.patch(
+        'perma.models.LinkUser.get_purchase_history', autospec=True, return_value=no_purchase_history
+    )
+    link_user.bonus_links = 7
+    link_user.save()
+
+    client.force_login(link_user)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    assert response.status_code == 200
+    assert b'Additional Links Remaining: 7 Links' in response.content
+    assert b'Billing and Purchase History' in response.content
+    assert b'Purchase History</h3>' not in response.content
+    assert f'{STRIPE_APP_URL}/billing/' in form_actions(response.content)
+    # Under Stripe the list is not rendered, so the page must not pay for the
+    # round trip that fetches it. Bonus links are still credited, off the
+    # /subscription/ payload.
+    get_purchase_history.assert_not_called()
+
+
+@override_switch('use_stripe_payments_app', active=False)
+def test_cybersource_mode_keeps_purchase_history_list(client, user_without_subscription_with_purchase_history):
+    client.force_login(user_without_subscription_with_purchase_history)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    assert b'Purchase History' in response.content
+    assert b'13 Links' in response.content
+    assert b'January 1, 1970' in response.content
+    assert b'Additional Links Remaining' not in response.content
+    assert b'Billing and Purchase History' not in response.content
 
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
@@ -799,6 +845,42 @@ def test_paying_registrar_user_sees_subscriptions_independently(prepped, client,
     assert b'Modify Subscription' in response.content
     assert response.content.count(b'<input type="hidden" name="account_type"') == 2
     assert b'Cancel Subscription' in response.content
+
+
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_paying_registrar_user_sees_only_allowed_monthly_tier(prepped, client, registrar_user_from_paying_registrar_without_subscription):
+    user = registrar_user_from_paying_registrar_without_subscription
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    user.registrar.offer_monthly = True
+    user.registrar.offer_annual = False
+    user.registrar.save()
+
+    client.force_login(user)
+    response = client.get(
+        reverse('settings_usage_plan'),
+        secure=True
+    )
+
+    assert b'<span>Monthly plan' in response.content
+    assert b'<span>Annual plan' not in response.content
+
+
+@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_paying_registrar_user_sees_only_allowed_annual_tier(prepped, client, registrar_user_from_paying_registrar_without_subscription):
+    user = registrar_user_from_paying_registrar_without_subscription
+    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    user.registrar.offer_monthly = False
+    user.registrar.offer_annual = True
+    user.registrar.save()
+
+    client.force_login(user)
+    response = client.get(
+        reverse('settings_usage_plan'),
+        secure=True
+    )
+
+    assert b'<span>Monthly plan' not in response.content
+    assert b'<span>Annual plan' in response.content
 
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
