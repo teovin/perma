@@ -2160,3 +2160,8 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         self.submit_form('password_reset', data={'email': self.randomize_capitalization(email)})
         self.assertEqual(len(mail.outbox), 2)
+
+    def test_password_reset_rejects_control_characters(self):
+        # NUL / other control characters must not reach Postgres or cause a 500
+        self.submit_form('password_reset', data={'email': 'test\x00user@example.com'})
+        self.assertEqual(len(mail.outbox), 0)
