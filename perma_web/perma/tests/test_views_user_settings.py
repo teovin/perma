@@ -1,17 +1,12 @@
-from contextlib import contextmanager
-
 from bs4 import BeautifulSoup
-import pytest
 
 from django.urls import reverse
 from django.conf import settings
-from django.test import override_settings
 
 from perma.exceptions import PermaPaymentsCommunicationException
 
 from conftest import submit_form
 from unittest.mock import patch, sentinel
-from waffle.testutils import override_switch
 
 def form_actions(content):
     return {form.get('action') for form in BeautifulSoup(content, 'html.parser').find_all('form') if form.get('action')}
@@ -261,7 +256,7 @@ def test_manage_button_and_subscription_info_present_if_standing_subscription(cl
 
 def test_billing_portal_button_present(client, mocker, link_user, no_purchase_history):
     mocker.patch('perma.models.LinkUser.get_subscription', autospec=True, return_value=None)
-    get_purchase_history = mocker.patch(
+    mocker.patch(
         'perma.models.LinkUser.get_purchase_history', autospec=True, return_value=no_purchase_history
     )
     link_user.bonus_links = 7

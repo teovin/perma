@@ -3,7 +3,6 @@ import hmac
 import json
 import re
 import uuid
-import waffle
 
 import django.contrib.auth.models
 from dateutil.relativedelta import relativedelta

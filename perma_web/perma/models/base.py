@@ -2,7 +2,6 @@ import calendar
 from datetime import datetime
 from decimal import Decimal
 import logging
-import waffle
 
 import requests
 from django.conf import settings

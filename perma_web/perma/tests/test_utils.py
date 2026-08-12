@@ -4,7 +4,7 @@ from unittest.mock import patch, sentinel
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.exceptions import ValidationError
 from django.test.client import RequestFactory
 
 
@@ -24,8 +24,6 @@ from perma.utils import (
     unstringify_data
 )
 import pytest
-from django.test import override_settings
-from waffle.testutils import override_switch
 
 from .utils import SentinelException
 
