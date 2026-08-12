@@ -331,12 +331,14 @@ def manage_sponsored_user_export_user_list(request: HttpRequest) -> HttpResponse
         'last_name',
         'date_joined',
         'last_login',
+        'sponsoring_registrar',
         'sponsorship_status',
         'sponsorship_created_at',
         'sponsorship_expires_at'
     ]
     records = list_sponsored_users(request, export=True)
     users = records.annotate(
+        sponsoring_registrar=F('sponsorships__registrar__name'),
         sponsorship_status=F('sponsorships__status'),
         sponsorship_created_at=F('sponsorships__created_at'),
         sponsorship_expires_at=F('sponsorships__expires_at'),

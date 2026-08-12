@@ -421,6 +421,10 @@ def get_payments_app_url(route):
             urls['subscription_status'] = f"{settings.STRIPE_PAYMENTS_APP_INTERNAL_URL}/subscription/"
             urls['update'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/update/"
             urls['change'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/change/"
+            # Stripe-only: the customer portal has no Cybersource equivalent,
+            # so there is deliberately no entry for this route in the base
+            # dict. Callers must ask for it only when the switch is on.
+            urls['billing'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/billing/"
         else:
             # Fail loud rather than silently falling back to Cybersource: if the
             # switch is on, we must never route a "Stripe" transaction to

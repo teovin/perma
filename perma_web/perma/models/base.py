@@ -154,6 +154,10 @@ class CustomerModel(models.Model):
         blank=True,
         help_text="Special text that appears on the usage plan page, describing this customer's subscription."
     )
+    # "Offer" display options are a temporary measure for controlling which products are offered to particular customers.
+    # See LIL-5472.
+    offer_monthly = models.BooleanField(default=True)
+    offer_annual = models.BooleanField(default=True)
     cached_subscription_started = models.DateTimeField(
         null=True,
         blank=True,

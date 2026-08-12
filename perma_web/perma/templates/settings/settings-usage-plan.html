@@ -1,7 +1,7 @@
 {% extends "settings-layout.html" %}
 {% block top_banner %}
   {% if request.user.is_authenticated and request.user.should_see_payment_system_upgrade_banner %}
-    {% include "includes/top_banner.html" %}
+    {% include "includes/top_banner_generic.html" %}
   {% endif %}
 {% endblock top_banner %}
 {% load humanize %}
@@ -16,7 +16,7 @@
 
     <h2 class="body-ah">Usage Plan Page Temporarily Limited</h2>
 
-    <p class="page-dek">To improve your future billing and payment experience, we will be conducting a scheduled payment system upgrade and subscription migration from <strong>July 27 through July 31</strong>.</p>
+    <p class="page-dek">To improve your future billing and payment experience, we will be conducting a scheduled payment system upgrade and subscription migration from <strong>July 27 through August 3</strong>.</p>
 
     <p class="page-dek">During this time, payment, billing, and cancellation services accessed through Perma’s Usage Plan page will be limited. All other parts of the Perma platform will remain fully operational.</p>
 
@@ -53,6 +53,7 @@
               <div class="row">
                 {% for tier in account.tiers %}
                   {% if tier.type == 'upgrade' or tier.type == 'downgrade' %}
+                    {% if tier.period == 'monthly' and customer.offer_monthly or tier.period == 'annually' and customer.offer_annual %}
                     <form class="upgrade-form col-xs-12 col-md-3"
                           method="post"
                           action="{{ subscribe_url }}">
@@ -85,7 +86,7 @@
                           <span>Annual plan
                           </span>
                           <br>
-                          ${{ tier.required_fields.recurring_amount | intcomma }}/month
+                          ${{ tier.required_fields.recurring_amount | intcomma }}/year
                         </button>
                         {% else %}
                         <button>
@@ -99,6 +100,7 @@
                       {% endif %}
                       <input type="hidden" name="encrypted_data" value={{ tier.encrypted_data }}>
                     </form>
+                    {% endif %}
                   {% endif %}
                 {% endfor %}
               </div>
@@ -307,6 +309,12 @@
                   {% endif %}
                 </div>
               {% endif %}
+              {% if use_stripe_payments_app and subscription and customer_type == 'Individual' and subscription.frequency == 'monthly' %}
+                <hr>
+                <h3 class="body-ch">Remaining Links</h3>
+                {% widthratio links_remaining.0 1 -1 as negative_links_remaining %}
+                <p class="page-dek">You have created {{ customer.link_limit | add:negative_links_remaining}} of {{ customer.link_limit }} links this billing period.</p>
+              {% endif %}
             {% endwith %}
           {% endwith %}
         {% endwith %}
@@ -338,7 +346,21 @@
       {% else %}
         <p class="page-dek">New purchases are temporarily unavailable. If you are working on a time-sensitive project and need to make a one-time purchase of additional links, please <a href="{% url 'contact' %}?subject=Time%20Sensitive%20New%20Project%20Inquiry">contact us</a> so we can assist you directly.</p>
       {% endif %}
-      {% if purchase_history.purchases %}
+      {% if use_stripe_payments_app %}
+        <hr>
+        <h3 class="body-ch">Additional Links</h3>
+        <p class="page-dek">Additional Links Remaining: {{ request.user.bonus_links|default:0 }} Links</p>
+        {% if billing_portal_url %}
+          <div class="row subscription-buttons">
+            <div class="col-xs-12 col-md-6">
+              <form method="post" action="{{ billing_portal_url }}">
+                <input type="hidden" name="encrypted_data" value="{{ billing_encrypted_data }}">
+                <button class="btn btn-primary" type="submit">Billing and Purchase History</button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+      {% elif purchase_history.purchases %}
         <hr>
         <h3 class="body-ch">Purchase History</h3>
         <dl class="dl-horizontal">
