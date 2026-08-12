@@ -72,6 +72,7 @@ from perma.utils import (
     export_queryset,
     get_form_data,
     ratelimit_ip_key,
+    remove_control_characters,
     user_passes_test_or_403,
 )
 from perma.views.user_management.render import add_user_management_ui, render_user_management
@@ -1475,10 +1476,15 @@ def reset_password(request):
             return self.cleaned_data.get('username', '').lower()
 
     if request.method == "POST":
-        try:
-            target_user = LinkUser.objects.get(email=request.POST.get('email', '').lower())
-        except LinkUser.DoesNotExist:
+        email = request.POST.get('email', '').lower()
+        clean_email = remove_control_characters(email)
+
+        # Reject emails containing control characters before querying Postgres. Bots tend to submit these.
+        if email != clean_email:
             target_user = None
+        else:
+            target_user = LinkUser.objects.filter(email=email).first()
+
         if target_user:
             if not target_user.is_confirmed:
                 # Same activation URL as sign-up; copy matches the password-reset form they used.
