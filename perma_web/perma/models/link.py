@@ -26,10 +26,10 @@ from taggit.managers import TaggableManager
 
 from perma.utils import preserve_perma_wacz
 
-from .base import DeletableManager, DeletableModel, GenericStringTaggedItem
 from .folder import Folder
 from .organization import Organization
 from .user import LinkUser
+from .utils import DeletableManager, DeletableModel, GenericStringTaggedItem
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 import simple_history
 
-from .base import CustomerModel
+from .customer import CustomerModel
 from .folder import Folder
 from .organization import Organization
 from .registrar import Registrar, Sponsorship
