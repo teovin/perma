@@ -172,7 +172,6 @@ def test_get_subscription_happy_path_no_change_pending(post, process, paying_reg
             post.reset_mock()
 
 
-@override_switch('allow_cybersource_transactions', active=False)
 @patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_paying_user):
     subscription = grandfathered_paying_user.get_subscription()
@@ -189,7 +188,6 @@ def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_p
     }
 
 
-@override_switch('allow_cybersource_transactions', active=False)
 @patch('perma.models.base.process_perma_payments_transmission', autospec=True)
 @patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_expired_grandfathered_unsets_flag_and_calls_perma_payments(
