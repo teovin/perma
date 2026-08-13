@@ -22,7 +22,6 @@ from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month,
 
 from conftest import GENESIS
 import pytest
-from waffle.testutils import override_switch
 
 
 #
