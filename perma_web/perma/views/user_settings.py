@@ -137,7 +137,7 @@ def settings_tools(request):
 @user_passes_test_or_403(lambda user: user.can_view_usage_plan())
 def settings_usage_plan(request):
     accounts = []
-    purchase_history = {}
+
     # Status messages for redirects back from the payments app after checkout,
     # e.g. settings/usage-plan/?subscription=success.
     payment_status_level = payment_status_message = None
@@ -183,7 +183,6 @@ def settings_usage_plan(request):
         'update_url': reverse('settings_subscription_update'),
         'accounts': accounts,
         'links_remaining': request.user.get_links_remaining(),
-        'purchase_history': purchase_history,
         'bonus_packages': request.user.get_bonus_packages(),
         'billing_encrypted_data': prep_for_perma_payments({
             'customer_pk': request.user.pk,
