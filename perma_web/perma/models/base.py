@@ -457,7 +457,7 @@ class CustomerModel(models.Model):
                     # This means the customer is underpaying, by today's standards.
                     # We should not let them upgrade in the normal way.
                     # If we don't want this to happen, we should work it out via
-                    # the Perma admin, the Perma Payments admin, and/or CyberSource Business Center
+                    # the Perma admin, the Perma Payments admin, and/or Stripe Dashboard.
                     tier_type = 'unavailable'
                     todays_charge = Decimal(0)
                 else:

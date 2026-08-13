@@ -720,11 +720,6 @@ def test_annotate_tier_change_disallowed_with_pending_downgrade(is_active, custo
 # check upgrade monthly tiers for customers with subscriptions
 
 def test_annotate_tier_monthly_active_subscription_upgrade_first_of_month(customers):
-    '''
-    Observe, if this change of recurring_amount DOES get picked up by CyberSource
-    in time for today's recurring charge, then the customer will be overcharged.
-    We would need to refund them tier['amount'].
-    '''
     now = GENESIS.replace(day=1)
     next_month = first_day_of_next_month(now)
     next_year = today_next_year(now)
@@ -956,13 +951,6 @@ def test_annotate_tier_annually_active_subscription_upgrade_midyear(customers):
 
 
 def test_annotate_tier_annually_active_subscription_upgrade_on_anniversary(customers):
-    '''
-    Observe, if this change of recurring_amount DOES NOT get picked up by CyberSource
-    in time for today's recurring charge, then the customer will not be charged
-    for this upgrade for a whole year LOL!
-    We'll need to manually charge them the difference between the tiers.
-    Why do I have this working the opposite way for months and years?
-    '''
     now = GENESIS.replace(day=1)
     next_month = first_day_of_next_month(now)
     next_year = today_next_year(now)
