@@ -107,7 +107,6 @@ def post_process_settings(settings):
         'purchase_history': f"{settings['STRIPE_PAYMENTS_APP_INTERNAL_URL']}/purchase-history/",
         'acknowledge_purchase': f"{settings['STRIPE_PAYMENTS_APP_INTERNAL_URL']}/acknowledge-purchase/",
         'subscribe': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/subscribe/",
-        'cancel': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/cancel-request/",
         'subscription_status': f"{settings['STRIPE_PAYMENTS_APP_INTERNAL_URL']}/subscription/",
         'update': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/update/",
         'change': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/change/",

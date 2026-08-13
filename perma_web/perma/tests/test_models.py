@@ -17,7 +17,6 @@ from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month,
 
 from conftest import GENESIS
 import pytest
-from waffle.testutils import override_switch
 
 
 #
@@ -167,7 +166,6 @@ def test_get_subscription_happy_path_no_change_pending(post, process, paying_reg
             post.reset_mock()
 
 
-@override_switch('allow_cybersource_transactions', active=False)
 @patch('perma.models.customer.requests.post', autospec=True)
 def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_paying_user):
     subscription = grandfathered_paying_user.get_subscription()
@@ -184,7 +182,6 @@ def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_p
     }
 
 
-@override_switch('allow_cybersource_transactions', active=False)
 @patch('perma.models.customer.process_perma_payments_transmission', autospec=True)
 @patch('perma.models.customer.requests.post', autospec=True)
 def test_get_subscription_expired_grandfathered_unsets_flag_and_calls_perma_payments(
@@ -718,11 +715,6 @@ def test_annotate_tier_change_disallowed_with_pending_downgrade(is_active, custo
 # check upgrade monthly tiers for customers with subscriptions
 
 def test_annotate_tier_monthly_active_subscription_upgrade_first_of_month(customers):
-    '''
-    Observe, if this change of recurring_amount DOES get picked up by CyberSource
-    in time for today's recurring charge, then the customer will be overcharged.
-    We would need to refund them tier['amount'].
-    '''
     now = GENESIS.replace(day=1)
     next_month = first_day_of_next_month(now)
     next_year = today_next_year(now)
@@ -954,13 +946,6 @@ def test_annotate_tier_annually_active_subscription_upgrade_midyear(customers):
 
 
 def test_annotate_tier_annually_active_subscription_upgrade_on_anniversary(customers):
-    '''
-    Observe, if this change of recurring_amount DOES NOT get picked up by CyberSource
-    in time for today's recurring charge, then the customer will not be charged
-    for this upgrade for a whole year LOL!
-    We'll need to manually charge them the difference between the tiers.
-    Why do I have this working the opposite way for months and years?
-    '''
     now = GENESIS.replace(day=1)
     next_month = first_day_of_next_month(now)
     next_year = today_next_year(now)

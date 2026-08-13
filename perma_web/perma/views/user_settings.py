@@ -1,6 +1,5 @@
 import itertools
 import uuid
-import waffle
 
 from django.conf import settings
 from django.contrib import messages
@@ -191,7 +190,6 @@ def settings_usage_plan(request):
             'customer_type': 'Individual',
             'timestamp': timezone.now().timestamp(),
         }).decode('utf-8'),
-        'display_cybersource_freeze_message': waffle.switch_is_active('display_cybersource_freeze_message'),
         'payment_status_level': payment_status_level,
         'payment_status_message': payment_status_message,
     }
