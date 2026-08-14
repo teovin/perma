@@ -1,31 +1,10 @@
 {% extends "settings-layout.html" %}
-{% block top_banner %}
-  {% if request.user.is_authenticated and request.user.should_see_payment_system_upgrade_banner %}
-    {% include "includes/top_banner_generic.html" %}
-  {% endif %}
-{% endblock top_banner %}
 {% load humanize %}
 {% block title %} | Settings{% endblock %}
 {% block dashboardContent %}
 
   {% if payment_status_message %}
     <div class="alert alert-{{ payment_status_level }} alert-block">{{ payment_status_message }}</div>
-  {% endif %}
-
-  {% if display_cybersource_freeze_message %}
-
-    <h2 class="body-ah">Usage Plan Page Temporarily Limited</h2>
-
-    <p class="page-dek">To improve your future billing and payment experience, we will be conducting a scheduled payment system upgrade and subscription migration from <strong>July 27 through August 3</strong>.</p>
-
-    <p class="page-dek">During this time, payment, billing, and cancellation services accessed through Perma’s Usage Plan page will be limited. All other parts of the Perma platform will remain fully operational.</p>
-
-    <h3 class="body-bh">Existing subscribers</h3>
-    <p class="page-dek">As mentioned in earlier communications, during the migration to our new payment system you may not be able to modify your subscription, update your credit card information, or cancel your subscription. If you need help with any of these actions during this period, please <a href="{% url 'contact' %}?subject=Help%20With%20Subscription">contact us</a> so we can assist you manually.</p>
-
-    <h3 class="body-bh">New subscribers</h3>
-    <p class="page-dek">If you are working on a time-sensitive project and need to start a new subscription or make a one-time purchase of additional links during this period, please <a href="{% url 'contact' %}?subject=Time%20Sensitive%20New%20Project%20Inquiry">contact us</a> so we can assist you directly.</p>
-
   {% endif %}
 
   {% for account in accounts %}
@@ -41,7 +20,6 @@
             <p class="page-dek">Subscription Reference: {{ subscription.reference_number }}</p>
           {% endif %}
           {% if not subscription %}
-            {% if use_stripe_payments_app or allow_cybersource_transactions %}
               {% if customer_type == 'Registrar' %}
                 <p class="page-dek">Purchase a subscription for {{ customer.name }}</p>
                 {% if customer.local_subscription_description %}
@@ -104,25 +82,6 @@
                   {% endif %}
                 {% endfor %}
               </div>
-            {% else %}
-              <p class="page-dek">New subscriptions are temporarily unavailable. If you are working on a time-sensitive project and need to start a new subscription, please <a href="{% url 'contact' %}?subject=Time%20Sensitive%20New%20Project%20Inquiry">contact us</a> so we can assist you directly.</p>
-            {% endif %}
-          {% elif subscription.status == 'Cancellation Requested' %}
-            <p class="page-dek">
-              <span class="blue-text">Cancellation Request Pending</span>
-            </p>
-            <p class="page-dek">We've received the request to cancel your subscription. We're sorry to see you go!</p>
-            <p class="page-dek">
-              Please note that it can take up to one full business day for us to process a cancellation.
-              {% if subscription.paid_through %}
-                <p class="page-dek">
-                  You will continue to be able to create Perma Links
-                  {% if customer_type == 'Registrar' %}
-                    for {{ customer.name }}
-                  {% endif %}
-                  until {{ subscription.paid_through | date:"F jS, Y" }}.
-                </p>
-              {% endif %}
             {% elif subscription.status == 'Canceled' %}
               <p class="page-dek">
                 Your paid subscription has been <span class="blue-text">cancelled</span>. You will not be charged
@@ -135,24 +94,22 @@
                 {% endif %}
                 until {{ subscription.paid_through | date:"F jS, Y" }}.
               </p>
-              {% if use_stripe_payments_app %}
-                <div class="row subscription-buttons">
-                  <div class="col-xs-12 col-md-6">
-                    <form method="post" action="{{ update_url }}">
-                      {% csrf_token %}
-                      <input type="hidden" name="account_type" value={{ customer_type }}>
-                      <button class="btn btn-primary" type="submit">Manage Subscription and Billing</button>
-                    </form>
-                  </div>
+              <div class="row subscription-buttons">
+                <div class="col-xs-12 col-md-6">
+                  <form method="post" action="{{ update_url }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="account_type" value={{ customer_type }}>
+                    <button class="btn btn-primary" type="submit">Manage Subscription and Billing</button>
+                  </form>
                 </div>
-              {% endif %}
+              </div>
             {% else %}
               {% if subscription.status == 'Hold' %}
                 <p class="page-dek">
                   Your subscription is <span class="blue-text">on hold</span> due to a problem with your credit card.
                 </p>
                 <p class="page-dek">
-                  {% if use_stripe_payments_app %}You can update payment information by clicking the "Manage Subscription and Billing" button below. {% elif allow_cybersource_transactions %}You can update payment information by clicking the "Modify Subscription" button below. {% endif %}If you need
+                  You can update payment information by clicking the "Manage Subscription and Billing" button below. If you need
                   assistance or believe this message is in error, please <a href="{% url 'contact' %}?subject=Subscription%20On%20Hold">contact us</a>.
                 </p>
               {% else %}
@@ -283,7 +240,6 @@
                   </div>
                 {% endif %}
                   <div class="row subscription-buttons">
-                    {% if use_stripe_payments_app %}
                     <div class="col-xs-12 col-md-6">
                       <form method="post" action="{{ update_url }}">
                         {% csrf_token %}
@@ -291,25 +247,9 @@
                         <button class="btn btn-primary" type="submit">Manage Subscription and Billing</button>
                       </form>
                     </div>
-                    {% elif allow_cybersource_transactions %}
-                    <div class="col-xs-12 col-md-6">
-                      <form method="post" action="{{ update_url }}">
-                        {% csrf_token %}
-                        <input type="hidden" name="account_type" value={{ customer_type }}>
-                        <button class="btn btn-primary" type="submit">Modify Subscription</button>
-                      </form>
-                    </div>
-                    <div class="col-xs-12 col-md-6">
-                      <form method="post" action="{{ cancel_confirm_url }}">
-                        {% csrf_token %}
-                        <input type="hidden" name="account_type" value={{ customer_type }}>
-                        <button class="btn cancel" type="submit">Cancel Subscription</button>
-                      </form>
-                    </div>
-                  {% endif %}
-                </div>
+                  </div>
               {% endif %}
-              {% if use_stripe_payments_app and subscription and customer_type == 'Individual' and subscription.frequency == 'monthly' %}
+              {% if subscription and customer_type == 'Individual' and subscription.frequency == 'monthly' %}
                 <hr>
                 <h3 class="body-ch">Remaining Links</h3>
                 {% widthratio links_remaining.0 1 -1 as negative_links_remaining %}
@@ -320,7 +260,6 @@
         {% endwith %}
       {% endfor %}
       <h2 class="body-ah">Get More Personal Links</h2>
-      {% if use_stripe_payments_app or allow_cybersource_transactions %}
         <p class="page-dek">A one-time purchase, for people with or without subscriptions.</p>
         <p class="fine-print">
           Have a subscription? These extra links carry over. You can make them whenever you want, and you
@@ -343,10 +282,6 @@
             </form>
           {% endfor %}
         </div>
-      {% else %}
-        <p class="page-dek">New purchases are temporarily unavailable. If you are working on a time-sensitive project and need to make a one-time purchase of additional links, please <a href="{% url 'contact' %}?subject=Time%20Sensitive%20New%20Project%20Inquiry">contact us</a> so we can assist you directly.</p>
-      {% endif %}
-      {% if use_stripe_payments_app %}
         <hr>
         <h3 class="body-ch">Additional Links</h3>
         <p class="page-dek">Additional Links Remaining: {{ request.user.bonus_links|default:0 }} Links</p>
@@ -360,35 +295,5 @@
             </div>
           </div>
         {% endif %}
-      {% elif purchase_history.purchases %}
-        <hr>
-        <h3 class="body-ch">Purchase History</h3>
-        <dl class="dl-horizontal">
-          {% for purchase in purchase_history.purchases %}
-            <dt>
-              {{ purchase.date | date:"F j, Y" }}:
-            </dt>
-            <dd>
-              {{ purchase.reference_number }}
-            </dd>
-            <dd>
-              {{ purchase.link_quantity }} Links
-            </dd>
-          {% endfor %}
-        </dl>
-        <dl class="dl-horizontal">
-          <dt>
-            TOTAL
-          </dt>
-          <dd>
-            {{ purchase_history.total_links }} Links
-          </dd>
-          <dt>
-            REMAINING
-          </dt>
-          <dd>
-            {{ request.user.bonus_links }} Links
-          </dd>
-        </dl>
-      {% endif %}
+
     {% endblock %}

@@ -2,7 +2,6 @@ import calendar
 from datetime import datetime
 from decimal import Decimal
 import logging
-import waffle
 
 import requests
 from django.conf import settings
@@ -16,7 +15,6 @@ from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
 
 from perma.exceptions import InvalidTransmissionException, PermaPaymentsCommunicationException
 from perma.utils import (
-    get_payments_app_url,
     pp_date_from_post,
     prep_for_perma_payments,
     process_perma_payments_transmission,
@@ -204,10 +202,7 @@ class CustomerModel(models.Model):
         Registrars only: an organization name is not personal data, while an
         individual's name is, and the payments service deliberately holds no
         individual PII. Individuals supply a name themselves at Stripe Checkout.
-        Sent only on the Stripe path; the Cybersource payload is unchanged.
         """
-        if not waffle.switch_is_active('use_stripe_payments_app'):
-            return None
         if self.customer_type != 'Registrar':
             return None
         return (getattr(self, 'name', '') or '').strip() or None
@@ -219,7 +214,7 @@ class CustomerModel(models.Model):
 
         try:
             r = requests.post(
-                get_payments_app_url('purchase_history'),
+                settings.PAYMENTS_APP_URLS['purchase_history'],
                 timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                 data={
                     'encrypted_data': prep_for_perma_payments({
@@ -262,9 +257,9 @@ class CustomerModel(models.Model):
         if self.nonpaying:
             return None
 
-        # Return cached values if this is a grandfathered customer,
-        # and we are post-Cybersource. Do not interact with Perma Payments at all.
-        if self.grandfathered and not waffle.switch_is_active('allow_cybersource_transactions'):
+        # Return cached values if this is a grandfathered customer.
+        # Do not interact with Perma Payments at all.
+        if self.grandfathered:
 
             # make sure they still should be considered grandfathered
             if self.cached_subscription_status == 'Canceled' and self.cached_paid_through <= timezone.now():
@@ -286,7 +281,7 @@ class CustomerModel(models.Model):
 
         try:
             r = requests.post(
-                get_payments_app_url('subscription_status'),
+                settings.PAYMENTS_APP_URLS['subscription_status'],
                 timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                 data={
                     'encrypted_data': prep_for_perma_payments({
@@ -462,7 +457,7 @@ class CustomerModel(models.Model):
                     # This means the customer is underpaying, by today's standards.
                     # We should not let them upgrade in the normal way.
                     # If we don't want this to happen, we should work it out via
-                    # the Perma admin, the Perma Payments admin, and/or CyberSource Business Center
+                    # the Perma admin, the Perma Payments admin, and/or Stripe Dashboard.
                     tier_type = 'unavailable'
                     todays_charge = Decimal(0)
                 else:
@@ -554,7 +549,7 @@ class CustomerModel(models.Model):
                     self.save(update_fields=['bonus_links'])
                     try:
                         r = requests.post(
-                            get_payments_app_url('acknowledge_purchase'),
+                            settings.PAYMENTS_APP_URLS['acknowledge_purchase'],
                             timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                             data={
                                 'encrypted_data': prep_for_perma_payments({

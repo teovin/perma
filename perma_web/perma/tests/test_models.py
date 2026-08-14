@@ -22,7 +22,6 @@ from perma.utils import pp_date_from_post, tz_datetime, first_day_of_next_month,
 
 from conftest import GENESIS
 import pytest
-from waffle.testutils import override_switch
 
 
 #
@@ -172,7 +171,6 @@ def test_get_subscription_happy_path_no_change_pending(post, process, paying_reg
             post.reset_mock()
 
 
-@override_switch('allow_cybersource_transactions', active=False)
 @patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_paying_user):
     subscription = grandfathered_paying_user.get_subscription()
@@ -189,7 +187,6 @@ def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_p
     }
 
 
-@override_switch('allow_cybersource_transactions', active=False)
 @patch('perma.models.base.process_perma_payments_transmission', autospec=True)
 @patch('perma.models.base.requests.post', autospec=True)
 def test_get_subscription_expired_grandfathered_unsets_flag_and_calls_perma_payments(
@@ -524,32 +521,18 @@ def test_user_link_creation_disallowed_if_subscription_active_and_under_limit(ge
 
 
 #
-# Link limit / subscription related tests for registrars
-#
-
-#
 # The name sent to Perma Payments for Stripe's "Bill to" (LIL-5399)
 #
 
-@override_switch('use_stripe_payments_app', active=True)
 def test_payments_customer_name_is_the_registrar_org_name(paying_registrar):
     assert paying_registrar.payments_customer_name() == paying_registrar.name
 
 
-@override_switch('use_stripe_payments_app', active=True)
 def test_payments_customer_name_is_none_for_individuals(paying_user):
-    # An individual's name is personal data; they supply one themselves at
-    # Stripe Checkout instead, so perma never sends it.
     assert paying_user.payments_customer_name() is None
 
-
-@override_switch('use_stripe_payments_app', active=False)
-def test_payments_customer_name_is_none_on_the_cybersource_path(paying_registrar):
-    assert paying_registrar.payments_customer_name() is None
-
-
 #
-# Link limit / subscription related tests for registrars (continued)
+# Link limit / subscription related tests for registrars
 #
 
 @patch('perma.models.Registrar.get_subscription', autospec=True)
@@ -736,11 +719,6 @@ def test_annotate_tier_change_disallowed_with_pending_downgrade(is_active, custo
 # check upgrade monthly tiers for customers with subscriptions
 
 def test_annotate_tier_monthly_active_subscription_upgrade_first_of_month(customers):
-    '''
-    Observe, if this change of recurring_amount DOES get picked up by CyberSource
-    in time for today's recurring charge, then the customer will be overcharged.
-    We would need to refund them tier['amount'].
-    '''
     now = GENESIS.replace(day=1)
     next_month = first_day_of_next_month(now)
     next_year = today_next_year(now)
@@ -972,13 +950,6 @@ def test_annotate_tier_annually_active_subscription_upgrade_midyear(customers):
 
 
 def test_annotate_tier_annually_active_subscription_upgrade_on_anniversary(customers):
-    '''
-    Observe, if this change of recurring_amount DOES NOT get picked up by CyberSource
-    in time for today's recurring charge, then the customer will not be charged
-    for this upgrade for a whole year LOL!
-    We'll need to manually charge them the difference between the tiers.
-    Why do I have this working the opposite way for months and years?
-    '''
     now = GENESIS.replace(day=1)
     next_month = first_day_of_next_month(now)
     next_year = today_next_year(now)
@@ -1729,42 +1700,8 @@ def test_move_subfolder_with_bonus_links_to_org_folder(complex_user_with_bonus_l
 
 
 #
-# should_see_payment_system_upgrade_banner
+# Should see a payment system upgrade banner
 #
-
-SUBSCRIPTION_STATUSES = [
-    ('Current', True),
-    ('Hold', True),
-    ('Canceled', True),
-    ('Cancellation Requested', True),
-    (None, False),
-]
-
-@pytest.mark.parametrize("status,expected", SUBSCRIPTION_STATUSES)
-def test_paid_individual_sees_banner_for_current_and_hold(paying_user_factory, status, expected):
-    user = paying_user_factory(cached_subscription_status=status)
-    with override_switch('show_generic_payment_banner', active=True):
-        assert user.should_see_payment_system_upgrade_banner() is expected
-
-    with override_switch('show_generic_payment_banner', active=False):
-        assert user.should_see_payment_system_upgrade_banner() is False
-
-@override_switch('show_generic_payment_banner', active=True)
-def test_nonpaying_individual_does_not_see_banner(nonpaying_user_factory):
-    user = nonpaying_user_factory(cached_subscription_status='Current')
-    assert user.should_see_payment_system_upgrade_banner() is False
-
-@pytest.mark.parametrize("status,expected", SUBSCRIPTION_STATUSES)
-def test_paid_registrar_user_sees_banner_for_current_and_hold(paying_registrar_user_factory, status, expected):
-    user = paying_registrar_user_factory()
-    user.registrar.cached_subscription_status = status
-    user.registrar.save()
-
-    with override_switch('show_generic_payment_banner', active=True):
-        assert user.should_see_payment_system_upgrade_banner() is expected
-
-    with override_switch('show_generic_payment_banner', active=False):
-        assert user.should_see_payment_system_upgrade_banner() is False
 
 def test_grandfathered_user_sees_banner(paying_user_factory):
     user = paying_user_factory()

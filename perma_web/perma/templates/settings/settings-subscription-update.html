@@ -12,7 +12,7 @@
       {% endif %}
     </h2>
 
-    {% if use_stripe_payments_app and customer_type == 'Registrar' %}
+    {% if customer_type == 'Registrar' %}
       <h3 class="body-bh">Upgrade or Downgrade Your Subscription</h3>
 
       <p class="page-dek">Please contact <a href="mailto:info@perma.cc?subject={{ customer.name }}'s%20Usage%20Needs">info@perma.cc</a> to discuss your usage needs.</p>
@@ -92,16 +92,12 @@
       {% endif %}
     {% endif %}
 
-    {% if use_stripe_payments_app %}
-      <h3 class="body-bh">Manage Payment and Billing</h3>
-      <p class="page-dek">Update payment information, view invoices and receipts, or cancel your subscription via Stripe's secure customer portal.</p>
-    {% else %}
-      <h3 class="body-bh">Update Credit Card Information</h3>
-    {% endif %}
+    <h3 class="body-bh">Manage Payment and Billing</h3>
+    <p class="page-dek">Update payment information, view invoices and receipts, or cancel your subscription via Stripe's secure customer portal.</p>
     <form method="post" action="{{ update_url }}">
       <input type="hidden" name="encrypted_data" value={{ update_encrypted_data }}>
       <button class="btn btn-primary" type="submit">
-        {% if use_stripe_payments_app %}Manage Payment and Billing{% else %}Update Credit Card Information{% endif %}
+        Manage Payment and Billing
       </button>
     </form>
 

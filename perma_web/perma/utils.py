@@ -24,7 +24,7 @@ import zipfile
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ImproperlyConfigured, PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.storage import storages
 from django.core.paginator import EmptyPage, Page, Paginator
 from django.core.serializers.json import DjangoJSONEncoder
@@ -398,46 +398,6 @@ def remove_whitespace(s):
 ### perma payments
 
 # communication
-
-def get_payments_app_url(route):
-    urls = {
-        'purchase': settings.PURCHASE_URL,
-        'purchase_history': settings.PURCHASE_HISTORY_URL,
-        'acknowledge_purchase': settings.ACKNOWLEDGE_PURCHASE_URL,
-        'subscribe': settings.SUBSCRIBE_URL,
-        'cancel': settings.CANCEL_URL,
-        'subscription_status': settings.SUBSCRIPTION_STATUS_URL,
-        'update': settings.UPDATE_URL,
-        'change': settings.CHANGE_URL,
-    }
-
-    if waffle.switch_is_active('use_stripe_payments_app'):
-        if settings.STRIPE_PAYMENTS_APP_INTERNAL_URL and settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL:
-            urls['purchase'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/purchase/"
-            urls['purchase_history'] = f"{settings.STRIPE_PAYMENTS_APP_INTERNAL_URL}/purchase-history/"
-            urls['acknowledge_purchase'] = f"{settings.STRIPE_PAYMENTS_APP_INTERNAL_URL}/acknowledge-purchase/"
-            urls['subscribe'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/subscribe/"
-            urls['cancel'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/cancel-request/"
-            urls['subscription_status'] = f"{settings.STRIPE_PAYMENTS_APP_INTERNAL_URL}/subscription/"
-            urls['update'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/update/"
-            urls['change'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/change/"
-            # Stripe-only: the customer portal has no Cybersource equivalent,
-            # so there is deliberately no entry for this route in the base
-            # dict. Callers must ask for it only when the switch is on.
-            urls['billing'] = f"{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/billing/"
-        else:
-            # Fail loud rather than silently falling back to Cybersource: if the
-            # switch is on, we must never route a "Stripe" transaction to
-            # Cybersource. Configure STRIPE_PAYMENTS_APP_*_URL before enabling
-            # use_stripe_payments_app. This surfaces on the usage plan page (and
-            # anywhere else a payments URL is needed).
-            raise ImproperlyConfigured(
-                "use_stripe_payments_app is on, but STRIPE_PAYMENTS_APP_INTERNAL_URL "
-                "and/or STRIPE_PAYMENTS_APP_EXTERNAL_URL are not set."
-            )
-
-    return urls[route]
-
 
 @sensitive_variables()
 def prep_for_perma_payments(dictionary):

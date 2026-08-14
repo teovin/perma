@@ -3,7 +3,6 @@ import hmac
 import json
 import re
 import uuid
-import waffle
 
 import django.contrib.auth.models
 from dateutil.relativedelta import relativedelta
@@ -412,36 +411,6 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
             Only authorized users should be able to see a paying registrar's subscription options.
         """
         return not self.nonpaying or (self.is_registrar_user() and not self.registrar.nonpaying)
-
-    ### banner visibility ###
-    
-    def should_see_payment_system_upgrade_banner(self):
-        """
-            Should the user see the temporary "Payment System Upgrade Period" banner?
-        """
-        if not waffle.switch_is_active('show_generic_payment_banner'):
-            return False
-
-        subscription_statuses = ['Current', 'Hold', 'Canceled', 'Cancellation Requested']
-
-        display = False
-        # Individual Subscriptions
-        if (
-            self.cached_subscription_started and
-            self.cached_subscription_status in subscription_statuses
-        ):
-            display = True
-
-        # Registrar Subscriptions
-        if self.is_registrar_user():
-            registrar = self.registrar
-            if (
-                registrar.cached_subscription_started and
-                registrar.cached_subscription_status in subscription_statuses
-            ):
-                display = True
-
-        return display
 
     def should_see_grandfathered_banner(self):
         """
