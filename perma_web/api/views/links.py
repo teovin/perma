@@ -283,6 +283,7 @@ class AuthenticatedLinkListExportView(BaseView):
                 ('status', report_status(link)),
                 ('error_message', link.capture_job.message if link.has_capture_job() else ''),
                 ('title', link.submitted_title),
+                ('created_on', link.creation_timestamp.strftime('%B %d, %Y')),
                 ('perma_link', f"{request.scheme}://{request.get_host()}/{link.guid}")
             ])
             for link in queryset
