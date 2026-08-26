@@ -2,9 +2,7 @@ from django.db import models
 from django.db.models import Count
 from django.utils import timezone
 from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
-import logging
 
-logger = logging.getLogger(__name__)
 
 ### HELPERS ###
 
