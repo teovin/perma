@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 import simple_history
 
-from .base import CustomerModel
+from .customer import CustomerModel
 from .folder import Folder
 from .organization import Organization
 from .registrar import Registrar, Sponsorship
@@ -411,6 +411,9 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
             Only authorized users should be able to see a paying registrar's subscription options.
         """
         return not self.nonpaying or (self.is_registrar_user() and not self.registrar.nonpaying)
+
+    def can_purchase_bonus_links(self):
+        return not self.nonpaying and not self.unlimited
 
     def should_see_grandfathered_banner(self):
         """

@@ -1,0 +1,47 @@
+{% load humanize %}
+
+{% if sub.frequency == 'monthly' %}
+  <dt>
+    Rate:
+  </dt>
+  <dd>
+    ${{ sub.rate | intcomma }}/month{% if paid %} (paid){% endif %}
+  </dd>
+{% elif sub.frequency == 'annually' %}
+  <dt>
+    Rate:
+  </dt>
+  <dd>
+    ${{ sub.rate | intcomma }}/year{% if paid %} (paid){% endif %}
+  </dd>
+{% endif %}
+
+{% if paid_through %}
+  <dt>
+    Paid Through:
+  </dt>
+  <dd>
+    {{ sub.paid_through | date:"F jS, Y" }}
+  </dd>
+{% endif %}
+
+{% if customer_type == 'Registrar'%}
+  {% if customer.local_subscription_description %}
+    <dt>Usage plan:</dt>
+    <dd>{{ customer.local_subscription_description }}</dd>
+  {% endif %}
+{% elif sub.link_limit == 'unlimited' %}
+  <dt>
+    Links:
+  </dt>
+  <dd>
+    unlimited
+  </dd>
+{% else %}
+  <dt>
+    Included Links:
+  </dt>
+  <dd>
+    {{ sub.link_limit }}
+  </dd>
+{% endif %}

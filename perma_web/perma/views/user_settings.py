@@ -137,7 +137,7 @@ def settings_tools(request):
 @user_passes_test_or_403(lambda user: user.can_view_usage_plan())
 def settings_usage_plan(request):
     accounts = []
-    purchase_history = {}
+
     # Status messages for redirects back from the payments app after checkout,
     # e.g. settings/usage-plan/?subscription=success.
     payment_status_level = payment_status_message = None
@@ -178,26 +178,20 @@ def settings_usage_plan(request):
     context = {
         'this_page': 'settings_usage_plan',
         'purchase_url': settings.PAYMENTS_APP_URLS['purchase'],
+        'billing_portal_url': settings.PAYMENTS_APP_URLS['billing'],
         'subscribe_url': settings.PAYMENTS_APP_URLS['subscribe'],
         'update_url': reverse('settings_subscription_update'),
         'accounts': accounts,
         'links_remaining': request.user.get_links_remaining(),
-        'purchase_history': purchase_history,
         'bonus_packages': request.user.get_bonus_packages(),
-        'payment_status_level': payment_status_level,
-        'payment_status_message': payment_status_message,
-    }
-
-    # The "Billing and Purchase History" button posts straight to the payments
-    # app, like the bonus package buttons do. This section is about personal links,
-    # so the customer is always the LinkUser, never their registrar.
-    if not request.user.nonpaying:
-        context['billing_portal_url'] = settings.PAYMENTS_APP_URLS['billing']
-        context['billing_encrypted_data'] = prep_for_perma_payments({
+        'billing_encrypted_data': prep_for_perma_payments({
             'customer_pk': request.user.pk,
             'customer_type': 'Individual',
             'timestamp': timezone.now().timestamp(),
-        }).decode('utf-8')
+        }).decode('utf-8'),
+        'payment_status_level': payment_status_level,
+        'payment_status_message': payment_status_message,
+    }
 
     grandfathered = request.user.grandfathered or (
         request.user.is_registrar_user() and request.user.registrar.grandfathered

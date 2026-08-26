@@ -1,0 +1,17 @@
+<p class="page-dek">
+  Your subscription is <span class="blue-text">{{ subscription.status | lower }}</span>.
+</p>
+
+<div class="row">
+  <div class="col-xs-12">
+    <h3 class="body-ch">Current plan (through {{ subscription.paid_through | date:"F jS, Y" }})</h3>
+    <dl class="dl-horizontal">
+      {% include 'includes/subscription-definition.html' with sub=subscription paid_through=False paid=True %}
+    </dl>
+
+    <h3 class="body-ch">Scheduled change (effective {{ subscription.pending_change.effective | date:"F jS, Y" }})</h3>
+    <dl class="dl-horizontal">
+      {% include 'includes/subscription-definition.html' with sub=subscription.pending_change paid_through=False paid=False %}
+    </dl>
+  </div>
+</div>

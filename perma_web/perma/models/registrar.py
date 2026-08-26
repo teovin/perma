@@ -11,7 +11,8 @@ from taggit.managers import TaggableManager
 
 from perma.utils import tz_datetime
 
-from .base import CustomerModel, link_count_in_time_period, most_active_org_in_time_period
+from .customer import CustomerModel
+from .utils import link_count_in_time_period, most_active_org_in_time_period
 
 
 class RegistrarQuerySet(QuerySet):
