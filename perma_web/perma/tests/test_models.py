@@ -166,49 +166,6 @@ def test_get_subscription_happy_path_no_change_pending(post, process, paying_reg
             post.reset_mock()
 
 
-@patch('perma.models.customer.requests.post', autospec=True)
-def test_get_subscription_grandfathered_uses_cached_values(post, grandfathered_paying_user):
-    subscription = grandfathered_paying_user.get_subscription()
-
-    assert post.call_count == 0
-    assert subscription == {
-        'status': grandfathered_paying_user.cached_subscription_status,
-        'frequency': grandfathered_paying_user.link_limit_period,
-        'paid_through': grandfathered_paying_user.cached_paid_through,
-        'rate': str(grandfathered_paying_user.cached_subscription_rate),
-        'link_limit': str(grandfathered_paying_user.link_limit),
-        'pending_change': None,
-        'reference_number': None,
-    }
-
-
-@patch('perma.models.customer.process_perma_payments_transmission', autospec=True)
-@patch('perma.models.customer.requests.post', autospec=True)
-def test_get_subscription_expired_grandfathered_unsets_flag_and_calls_perma_payments(
-    post, process, expired_grandfathered_paying_user, spoof_pp_response_subscription,
-):
-    assert expired_grandfathered_paying_user.grandfathered
-
-    post.return_value.status_code = 200
-    response = spoof_pp_response_subscription(expired_grandfathered_paying_user)
-    process.return_value = response
-
-    subscription = expired_grandfathered_paying_user.get_subscription()
-    expired_grandfathered_paying_user.refresh_from_db()
-
-    assert not expired_grandfathered_paying_user.grandfathered
-    assert post.call_count == 1
-    assert subscription == {
-        'status': response['subscription']['status'],
-        'link_limit': response['subscription']['link_limit'],
-        'rate': response['subscription']['rate'],
-        'frequency': response['subscription']['frequency'],
-        'paid_through': pp_date_from_post('1970-01-21T00:00:00.000000Z'),
-        'pending_change': None,
-        'reference_number': response['subscription']['reference_number'],
-    }
-
-
 @patch('perma.models.customer.process_perma_payments_transmission', autospec=True)
 @patch('perma.models.customer.requests.post', autospec=True)
 def test_get_subscription_happy_path_with_pending_change(post, process, paying_user, spoof_pp_response_subscription_with_pending_change):
@@ -1694,23 +1651,3 @@ def test_move_subfolder_with_bonus_links_to_org_folder(complex_user_with_bonus_l
     bonus_link.refresh_from_db()
     assert not bonus_link.bonus_link
 
-
-#
-# Should see a payment system upgrade banner
-#
-
-def test_grandfathered_user_sees_banner(paying_user_factory):
-    user = paying_user_factory()
-    assert user.should_see_grandfathered_banner() is False
-
-    user.grandfathered = True
-    user.save()
-    assert user.should_see_grandfathered_banner() is True
-
-def test_grandfathered_registrar_user_sees_banner(paying_registrar_user_factory):
-    user = paying_registrar_user_factory()
-    assert user.should_see_grandfathered_banner() is False
-
-    user.registrar.grandfathered = True
-    user.registrar.save()
-    assert user.should_see_grandfathered_banner() is True

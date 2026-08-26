@@ -9,11 +9,6 @@
   {% render_bundle 'dashboard' 'css' %}
 {% endblock %}
 
-{% block top_banner %}
-  {% if request.user.is_authenticated and request.user.should_see_grandfathered_banner %}
-    {% include "includes/top_banner_grandfathered.html" %}
-  {% endif %}
-{% endblock top_banner %}
 
 {% block mainContent %}
 

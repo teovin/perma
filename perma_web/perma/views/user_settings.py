@@ -193,12 +193,6 @@ def settings_usage_plan(request):
         'payment_status_message': payment_status_message,
     }
 
-    grandfathered = request.user.grandfathered or (
-        request.user.is_registrar_user() and request.user.registrar.grandfathered
-    )
-    if grandfathered:
-        return render(request, 'settings/settings-usage-plan-grandfathered.html', context)
-
     return render(request, 'settings/settings-usage-plan.html', context)
 
 
@@ -213,10 +207,6 @@ def settings_subscription_update(request):
         customer = request.user
     account = customer.get_subscription_info(timezone.now())
     if not account['subscription']:
-        return HttpResponseForbidden()
-
-    # Special handling for grandfathered customers.
-    if customer.grandfathered:
         return HttpResponseForbidden()
 
     context = {

@@ -289,30 +289,6 @@ def test_update_routes_rejects_get(client, link_user):
     assert response.status_code == 405
 
 
-def test_grandfathered_usage_plan(client, grandfathered_user_for_usage_plan):
-    client.force_login(grandfathered_user_for_usage_plan)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    assert response.status_code == 200
-    content = response.content
-    assert b'(billing paused)'in content
-    assert b'Please enjoy uninterrupted service during the transition' in content
-    assert b'Manage Subscription and Billing' not in content
-
-
-def test_grandfathered_update_route(client, grandfathered_paying_user):
-
-
-    client.force_login(grandfathered_paying_user)
-    response = client.post(
-        reverse('settings_subscription_update'),
-        secure=True,
-        data={'account_type': 'Individual'},
-    )
-
-    assert response.status_code == 403
-
-
 def test_help_present_if_subscription_on_hold(client, user_with_on_hold_subscription):
     user = user_with_on_hold_subscription
 

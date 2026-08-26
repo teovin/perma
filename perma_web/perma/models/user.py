@@ -415,21 +415,6 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
     def can_purchase_bonus_links(self):
         return not self.nonpaying and not self.unlimited
 
-    def should_see_grandfathered_banner(self):
-        """
-            Should the user see the "Payment System Upgrade" banner for grandfathered-in users?
-        """
-        display = False
-        # Individual Subscriptions
-        if self.grandfathered:
-            display = True
-
-        # Registrar Subscriptions
-        if self.is_registrar_user() and self.registrar.grandfathered:
-            display = True
-
-        return display
-
     ### merging accounts ###
 
     def copy_memberships_from_users(self, users):

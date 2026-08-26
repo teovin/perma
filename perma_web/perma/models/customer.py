@@ -116,7 +116,6 @@ class CustomerModel(models.Model):
         help_text="If frozen, this account cannot create links regardless of subscription or "
                   "bonus links. Set when enforcing a dispute or refund; clear to restore access."
     )
-    grandfathered = models.BooleanField(default=False)
 
     @cached_property
     def customer_type(self):
@@ -185,28 +184,6 @@ class CustomerModel(models.Model):
     def get_subscription(self):
         if self.nonpaying:
             return None
-
-        # Return cached values if this is a grandfathered customer.
-        # Do not interact with Perma Payments at all.
-        if self.grandfathered:
-
-            # make sure they still should be considered grandfathered
-            if self.cached_subscription_status == 'Canceled' and self.cached_paid_through <= timezone.now():
-                logger.warning(f"The grandfathered subscription for {self} has expired; unsetting.")
-                self.grandfathered = False
-                self.save(update_fields=['grandfathered'])
-                self.refresh_from_db()
-
-            else:
-                return {
-                    'status': self.cached_subscription_status,
-                    'frequency': self.link_limit_period,
-                    'paid_through': self.cached_paid_through,
-                    'rate': str(self.cached_subscription_rate),
-                    'link_limit': 'unlimited' if self.unlimited else str(self.link_limit),
-                    'pending_change': None,
-                    'reference_number': None,
-                }
 
         try:
             r = requests.post(
