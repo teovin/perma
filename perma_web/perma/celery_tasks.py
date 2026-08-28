@@ -24,8 +24,8 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 from django.core.files.storage import storages
 from django.core.mail import mail_admins
-from django.db.models import F
-from django.db.models.functions import Greatest, Now
+from django.db.models import Count, F, OuterRef, Subquery, Value
+from django.db.models.functions import Coalesce, Greatest, Now
 from django.conf import settings
 from django.utils import timezone
 from django.template.defaultfilters import pluralize, filesizeformat
@@ -1615,6 +1615,31 @@ def warn_expiring_organization_users(warning_days=None):
                 except Exception:
                     logger.exception(f"Error emailing user {affiliation.user_id}")
                 break
+
+
+@shared_task(acks_late=True)
+def reconcile_user_link_counts(user_ids=None):
+    """
+    Set LinkUser.link_count to the count of non-deleted links created by each user.
+    Pass user_ids to limit it to specific users if needed.
+    """
+    non_deleted_link_count = Subquery(
+        Link.objects.filter(created_by_id=OuterRef("pk"))
+        .values("created_by_id")
+        .annotate(count=Count("pk"))
+        .values("count")
+    )
+
+    actual_link_count = Coalesce(non_deleted_link_count,Value(0))
+
+    users = LinkUser.objects.all()
+
+    if user_ids is not None:
+        users = users.filter(pk__in=user_ids)
+
+    updated = users.exclude(link_count=actual_link_count).update(link_count=actual_link_count)
+    logger.info(f"Updated {updated} LinkUser.link_count fields")
+    return updated
 
 
 @shared_task

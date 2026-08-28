@@ -1,3 +1,24 @@
+from perma.celery_tasks import reconcile_user_link_counts
+
+
+def test_reconcile_user_link_counts_sets_cache_from_non_deleted_links(link_user, link_factory):
+    """ Task to set LinkUser.link_count to the count of non-deleted links created by each user """
+    live = link_factory(created_by=link_user, submitted_url="http://example.com/live")
+    deleted = link_factory(created_by=link_user, submitted_url="http://example.com/deleted")
+    deleted.safe_delete()
+    deleted.save()
+
+    link_user.link_count = 99
+    link_user.save(update_fields=['link_count'])
+
+    updated = reconcile_user_link_counts(user_ids=[link_user.pk])
+
+    link_user.refresh_from_db()
+    assert updated == 1
+    assert link_user.link_count == 1
+    assert live.user_deleted is False
+
+
 def test_link_count_do_not_increment_after_saving_a_deleted_link(org_user, link_factory):
     """ Re-saving a user-deleted link must not count it as a new link """
     organization = org_user.organizations.first()
