@@ -1,3 +1,34 @@
+def test_link_count_do_not_increment_after_saving_a_deleted_link(org_user, link_factory):
+    """ Re-saving a user-deleted link must not count it as a new link """
+    organization = org_user.organizations.first()
+    registrar = organization.registrar
+    link = link_factory(
+        created_by=org_user,
+        submitted_url="http://example.com",
+        organization=organization,
+    )
+    link.safe_delete() 
+    link.save() # user should have 0 links now
+
+    # get the link counts before the link is saved again
+    org_user.refresh_from_db()
+    organization.refresh_from_db()
+    registrar.refresh_from_db()
+    user_count = org_user.link_count
+    org_count = organization.link_count
+    registrar_count = registrar.link_count
+
+    link.save() # user should still have 0 links
+
+    # get the link counts after the link is saved again
+    org_user.refresh_from_db()
+    organization.refresh_from_db()
+    registrar.refresh_from_db()
+    assert org_user.link_count == user_count
+    assert organization.link_count == org_count
+    assert registrar.link_count == registrar_count
+
+
 def test_link_count_regular_user(link_user, link_factory):
     """ We do some link count tallying on save """
     link_count = link_user.link_count
