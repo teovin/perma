@@ -7,26 +7,29 @@ def test_link_count_do_not_increment_after_saving_a_deleted_link(org_user, link_
         submitted_url="http://example.com",
         organization=organization,
     )
+    org_user.refresh_from_db()
+    organization.refresh_from_db()
+    registrar.refresh_from_db()
+    assert org_user.link_count == 1
+    assert organization.link_count == 1
+    assert registrar.link_count == 1
     link.safe_delete() 
-    link.save() # user should have 0 links now
+    link.save()
 
-    # get the link counts before the link is saved again
     org_user.refresh_from_db()
     organization.refresh_from_db()
     registrar.refresh_from_db()
-    user_count = org_user.link_count
-    org_count = organization.link_count
-    registrar_count = registrar.link_count
+    assert org_user.link_count == 0
+    assert organization.link_count == 0
+    assert registrar.link_count == 0
 
-    link.save() # user should still have 0 links
-
-    # get the link counts after the link is saved again
+    link.save()
     org_user.refresh_from_db()
     organization.refresh_from_db()
     registrar.refresh_from_db()
-    assert org_user.link_count == user_count
-    assert organization.link_count == org_count
-    assert registrar.link_count == registrar_count
+    assert org_user.link_count == 0
+    assert organization.link_count == 0
+    assert registrar.link_count == 0
 
 
 def test_link_count_regular_user(link_user, link_factory):
