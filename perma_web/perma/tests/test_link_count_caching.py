@@ -2,7 +2,7 @@ from perma.celery_tasks import reconcile_user_link_counts
 
 
 def test_reconcile_user_link_counts_sets_cache_from_non_deleted_links(link_user, link_factory):
-    """ Task to set LinkUser.link_count to the count of non-deleted links created by each user """
+    """ Task should set LinkUser.link_count to the count of non-deleted links created by each user """
     live = link_factory(created_by=link_user, submitted_url="http://example.com/live")
     deleted = link_factory(created_by=link_user, submitted_url="http://example.com/deleted")
     deleted.safe_delete()
