@@ -24,6 +24,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 from django.core.files.storage import storages
 from django.core.mail import mail_admins
+from django.db import transaction
 from django.db.models import Count, F, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce, Greatest, Now
 from django.conf import settings
@@ -1618,11 +1619,15 @@ def warn_expiring_organization_users(warning_days=None):
 
 
 @shared_task(acks_late=True)
-def reconcile_user_link_counts(user_ids=None):
+def reconcile_user_link_counts(dry_run=False, batch_size=None):
     """
     Set LinkUser.link_count to the count of non-deleted links created by each user.
-    Pass user_ids to limit it to specific users if needed.
+    Pass dry_run to count mismatches without updating.
+    Pass batch_size to run the job in batches.
     """
+    if batch_size is not None and batch_size <= 0:
+        raise ValueError("batch_size must be greater than 0")
+
     non_deleted_link_count = Subquery(
         Link.objects.filter(created_by_id=OuterRef("pk"))
         .values("created_by_id")
@@ -1630,15 +1635,30 @@ def reconcile_user_link_counts(user_ids=None):
         .values("count")
     )
 
-    actual_link_count = Coalesce(non_deleted_link_count,Value(0))
-
+    actual_link_count = Coalesce(non_deleted_link_count, Value(0))
     users = LinkUser.objects.all()
+    users = users.exclude(link_count=actual_link_count).order_by("pk")
 
-    if user_ids is not None:
-        users = users.filter(pk__in=user_ids)
+    if dry_run:
+        count = users.count()
+        logger.info(f"Would update {count} LinkUser records.")
+        return count
 
-    updated = users.exclude(link_count=actual_link_count).update(link_count=actual_link_count)
-    logger.info(f"Updated {updated} LinkUser.link_count fields")
+    if batch_size is None:
+        updated = users.update(link_count=actual_link_count)
+        logger.info(f"Updated {updated} LinkUser records.")
+        return updated
+
+    updated = 0
+    while True:
+        batch_ids = list(users.values_list("pk", flat=True)[:batch_size])
+        if not batch_ids:
+            break
+        with transaction.atomic():
+            batch_updated = LinkUser.objects.filter(pk__in=batch_ids).update(link_count=actual_link_count)
+        updated += batch_updated
+
+    logger.info(f"Updated a total of {updated} LinkUser records.")
     return updated
 
 

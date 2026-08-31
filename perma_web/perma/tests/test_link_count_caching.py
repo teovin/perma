@@ -11,12 +11,42 @@ def test_reconcile_user_link_counts_sets_cache_from_non_deleted_links(link_user,
     link_user.link_count = 99
     link_user.save(update_fields=['link_count'])
 
-    updated = reconcile_user_link_counts(user_ids=[link_user.pk])
+    updated = reconcile_user_link_counts()
 
     link_user.refresh_from_db()
-    assert updated == 1
+    assert updated >= 1
     assert link_user.link_count == 1
     assert live.user_deleted is False
+
+
+def test_reconcile_user_link_counts_dry_run_does_not_write(link_user, link_factory):
+    link_factory(created_by=link_user, submitted_url="http://example.com")
+    link_user.link_count = 99
+    link_user.save(update_fields=['link_count'])
+
+    count = reconcile_user_link_counts(dry_run=True)
+
+    link_user.refresh_from_db()
+    assert count >= 1
+    assert link_user.link_count == 99
+
+
+def test_reconcile_user_link_counts_updates_in_batches(link_user, link_user_factory, link_factory):
+    other_user = link_user_factory()
+    link_factory(created_by=link_user, submitted_url="http://example.com/a")
+    link_factory(created_by=other_user, submitted_url="http://example.com/b")
+    link_user.link_count = 99
+    other_user.link_count = 100
+    link_user.save(update_fields=['link_count'])
+    other_user.save(update_fields=['link_count'])
+
+    updated = reconcile_user_link_counts(batch_size=1)
+
+    link_user.refresh_from_db()
+    other_user.refresh_from_db()
+    assert updated >= 2
+    assert link_user.link_count == 1
+    assert other_user.link_count == 1
 
 
 def test_link_count_do_not_increment_after_saving_a_deleted_link(org_user, link_factory):
