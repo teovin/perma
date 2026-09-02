@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 import simple_history
 
-from .base import CustomerModel
+from .customer import CustomerModel
 from .folder import Folder
 from .organization import Organization
 from .registrar import Registrar, Sponsorship
@@ -368,20 +368,21 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
             else:
                 link_count = personal_links.filter(created_by_id=self.id, organization_id=None).count()
         elif period == 'monthly':
-            # MONTHLY RECURRING: links this calendar month (or, for new customers, links this month from the moment you started paying us)
-            if self.cached_subscription_started and \
-               self.cached_subscription_started.year == today.year and \
-               self.cached_subscription_started.month == today.month:
-                link_count = personal_links.filter(creation_timestamp__range=(self.cached_subscription_started, today), created_by_id=self.id, organization_id=None).count()
+            # MONTHLY RECURRING
+            if self.cached_paid_through:
+                # if you have a paid subscription, calculate via its expiry date
+                link_count = personal_links.filter(creation_timestamp__range=(self.cached_paid_through - relativedelta(months=1), today), created_by_id=self.id, organization_id=None).count()
             else:
+                # else, check the links created this calendar month
                 link_count = personal_links.filter(creation_timestamp__year=today.year, creation_timestamp__month__gte=today.month, created_by_id=self.id, organization_id=None).count()
         elif period == 'annually':
             # ANNUAL RECURRING
-            # if you have a paid subscription, calculate via its expiry date
             if self.cached_paid_through:
+                # if you have a paid subscription, calculate via its expiry date
                 link_count = personal_links.filter(creation_timestamp__range=(self.cached_paid_through - relativedelta(years=1), today), created_by_id=self.id, organization_id=None).count()
-            # else, check the last 365 days
-            link_count = personal_links.filter(creation_timestamp__range=(today - relativedelta(years=1), today), created_by_id=self.id, organization_id=None).count()
+            else:
+                # else, check the last 365 days
+                link_count = personal_links.filter(creation_timestamp__range=(today - relativedelta(years=1), today), created_by_id=self.id, organization_id=None).count()
         else:
             raise NotImplementedError("User's link_limit_period not yet handled.")
         return max(limit - link_count, 0)
@@ -398,6 +399,8 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
         return (self.links_remaining_in_period(self.link_limit_period, self.link_limit), self.link_limit_period, self.bonus_links or 0)
 
     def link_creation_allowed(self):
+        if self.frozen:
+            return False
         links_remaining, _, bonus_links = self.get_links_remaining()
         return links_remaining > 0 or bonus_links > 0
 
@@ -409,6 +412,8 @@ class LinkUser(CustomerModel, AbstractBaseUser, PermissionsMixin):
         """
         return not self.nonpaying or (self.is_registrar_user() and not self.registrar.nonpaying)
 
+    def can_purchase_bonus_links(self):
+        return not self.nonpaying and not self.unlimited
 
     ### merging accounts ###
 

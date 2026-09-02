@@ -6,9 +6,9 @@ from simple_history.models import HistoricalRecords
 
 from perma.utils import tz_datetime
 
-from .base import DeletableManager, DeletableModel, link_count_in_time_period
 from .folder import Folder
 from .registrar import Registrar
+from .utils import DeletableManager, DeletableModel, link_count_in_time_period
 
 
 class OrganizationQuerySet(QuerySet):

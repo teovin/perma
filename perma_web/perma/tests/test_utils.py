@@ -15,7 +15,8 @@ from perma.utils import (
     InvalidTransmissionException,
     decrypt_from_perma_payments,
     encrypt_for_perma_payments,
-    get_client_ip, prep_for_perma_payments,
+    get_client_ip,
+    prep_for_perma_payments,
     is_valid_timestamp,
     process_perma_payments_transmission,
     retrieve_fields,
@@ -30,6 +31,7 @@ from .utils import SentinelException
 def test_get_client_ip():
     request = RequestFactory().get('/some/route', REMOTE_ADDR="1.2.3.4")
     assert get_client_ip(request) == "1.2.3.4"
+
 
 #
 # our custom password validator

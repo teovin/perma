@@ -1,27 +1,26 @@
 import calendar
 from datetime import datetime
 from decimal import Decimal
-import logging
-
-import requests
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models, transaction
-from django.db.models import Count
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.views.decorators.debug import sensitive_variables
-from taggit.models import CommonGenericTaggedItemBase, TaggedItemBase
+import requests
+import logging
 
 from perma.exceptions import InvalidTransmissionException, PermaPaymentsCommunicationException
 from perma.utils import (
-    first_day_of_next_month,
     pp_date_from_post,
     prep_for_perma_payments,
     process_perma_payments_transmission,
+    today_next_month,
     today_next_year,
 )
 
 logger = logging.getLogger(__name__)
+
 
 ### CONSTANTS
 ACTIVE_SUBSCRIPTION_STATUSES = ['Current', 'Cancellation Requested']
@@ -46,38 +45,6 @@ CUSTOMER_TYPE_MAP = {
     'Registrar': 'Registrar'
 }
 
-
-### HELPERS ###
-
-# functions
-def link_count_in_time_period(links, start_time=None, end_time=None):
-    if start_time and end_time and (start_time > end_time):
-        raise ValueError("specified end time is earlier than specified start time")
-    elif start_time and end_time and (start_time == end_time):
-        links = links.filter(creation_timestamp=start_time)
-    else:
-        if start_time:
-            links = links.filter(creation_timestamp__gte=start_time)
-        if end_time:
-            links = links.filter(creation_timestamp__lte=end_time)
-    return links.count()
-
-def most_active_org_in_time_period(organizations, start_time=None, end_time=None):
-    if start_time and end_time and (start_time > end_time):
-        raise ValueError("specified end time is earlier than specified start time")
-    # unlike 'link_count_in_time_period', no special behavior required
-    # if start_time = end_time here. the end result is the same
-    else:
-        if start_time:
-            organizations = organizations.filter(links__creation_timestamp__gte=start_time)
-        if end_time:
-            organizations = organizations.filter(links__creation_timestamp__lte=end_time)
-        return organizations\
-            .annotate(num_links=Count('links'))\
-            .exclude(num_links=0)\
-            .order_by('-num_links')\
-            .first()
-
 def subscription_is_active(subscription):
     return subscription and (
         subscription['status'] in ACTIVE_SUBSCRIPTION_STATUSES or (
@@ -90,43 +57,6 @@ def subscription_is_active(subscription):
 def subscription_has_problem(subscription):
     return subscription and subscription['status'] in PROBLEM_SUBSCRIPTION_STATUSES
 
-
-# classes
-
-class DeletableManager(models.Manager):
-    """
-        Manager that excludes results where user_deleted=True by default.
-    """
-    def get_queryset(self):
-        # exclude deleted entries by default
-        return super(DeletableManager, self).get_queryset().filter(user_deleted=False)
-
-    def all_with_deleted(self):
-        return super(DeletableManager, self).get_queryset()
-
-
-class DeletableModel(models.Model):
-    """
-        Abstract base class that lets a model track deletion.
-    """
-    user_deleted = models.BooleanField(default=False, verbose_name="Deleted by user")
-    user_deleted_timestamp = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        abstract = True
-
-    def safe_delete(self):
-        self.user_deleted = True
-        self.user_deleted_timestamp = timezone.now()
-
-
-# django-taggit assumes the model being tagged has an integer primary key.
-# per http://django-taggit.readthedocs.io/en/latest/custom_tagging.html,
-# tag "through" this class if your model has a string as primary key.
-# tags = TaggableManager(through=GenericStringTaggedItem)
-# (copied straight from their docs)
-class GenericStringTaggedItem(CommonGenericTaggedItemBase, TaggedItemBase):
-    object_id = models.CharField(max_length=50, db_index=True)
 
 
 class CustomerModel(models.Model):
@@ -144,6 +74,17 @@ class CustomerModel(models.Model):
         default=Decimal(settings.DEFAULT_BASE_RATE),
         help_text="Base rate for calculating subscription cost."
     )
+    # Local subscription descriptions are a temporary measure for improving user experience.
+    # See LIL-5430.
+    local_subscription_description = models.TextField(
+        default="",
+        blank=True,
+        help_text="Special text that appears on the usage plan page, describing this customer's subscription."
+    )
+    # "Offer" display options are a temporary measure for controlling which products are offered to particular customers.
+    # See LIL-5472.
+    offer_monthly = models.BooleanField(default=True)
+    offer_annual = models.BooleanField(default=True)
     cached_subscription_started = models.DateTimeField(
         null=True,
         blank=True,
@@ -170,10 +111,29 @@ class CustomerModel(models.Model):
     link_limit = models.IntegerField(default=settings.DEFAULT_CREATE_LIMIT)
     link_limit_period = models.CharField(max_length=8, default=settings.DEFAULT_CREATE_LIMIT_PERIOD, choices=(('once','once'),('monthly','monthly'),('annually','annually')))
     bonus_links = models.PositiveIntegerField(blank=True, null=True)
+    frozen = models.BooleanField(
+        default=False,
+        help_text="If frozen, this account cannot create links regardless of subscription or "
+                  "bonus links. Set when enforcing a dispute or refund; clear to restore access."
+    )
 
     @cached_property
     def customer_type(self):
         return CUSTOMER_TYPE_MAP[type(self).__name__]
+
+    def payments_customer_name(self):
+        """
+        The name to send to the payments service, so Stripe invoices and
+        receipts show it under "Bill to" instead of an internal customer
+        description (LIL-5399).
+
+        Registrars only: an organization name is not personal data, while an
+        individual's name is, and the payments service deliberately holds no
+        individual PII. Individuals supply a name themselves at Stripe Checkout.
+        """
+        if self.customer_type != 'Registrar':
+            return None
+        return (getattr(self, 'name', '') or '').strip() or None
 
     @sensitive_variables()
     def get_purchase_history(self):
@@ -182,7 +142,7 @@ class CustomerModel(models.Model):
 
         try:
             r = requests.post(
-                settings.PURCHASE_HISTORY_URL,
+                settings.PAYMENTS_APP_URLS['purchase_history'],
                 timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                 data={
                     'encrypted_data': prep_for_perma_payments({
@@ -193,7 +153,7 @@ class CustomerModel(models.Model):
                 }
             )
             assert r.ok, r.status_code
-        except (requests.RequestException, AssertionError) as e:
+        except (requests.RequestException, AssertionError, ImproperlyConfigured) as e:
             msg = f"Communication with Perma-Payments failed: {e}"
             if settings.PERMA_PAYMENTS_IN_MAINTENANCE:
                 logger.info(msg)
@@ -227,7 +187,7 @@ class CustomerModel(models.Model):
 
         try:
             r = requests.post(
-                settings.SUBSCRIPTION_STATUS_URL,
+                settings.PAYMENTS_APP_URLS['subscription_status'],
                 timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                 data={
                     'encrypted_data': prep_for_perma_payments({
@@ -238,7 +198,7 @@ class CustomerModel(models.Model):
                 }
             )
             assert r.ok, r.status_code
-        except (requests.RequestException, AssertionError) as e:
+        except (requests.RequestException, AssertionError, ImproperlyConfigured) as e:
             msg = f"Communication with Perma-Payments failed: {e}"
             if settings.PERMA_PAYMENTS_IN_MAINTENANCE:
                 logger.info(msg)
@@ -262,6 +222,7 @@ class CustomerModel(models.Model):
         #
         # Then, handle subscription-related concerns
         #
+
         if post_data['subscription'] is None:
             if self.cached_subscription_started:
                 # reset this, so that link counts work properly if the customer
@@ -282,7 +243,12 @@ class CustomerModel(models.Model):
         self.cached_paid_through = pp_date_from_post(post_data['subscription']['paid_through'])
 
         pending_change = None
-        if subscription_change_effective <= timezone.now():
+        # Perma Payments should always supply an effective timestamp, but the
+        # field is nullable there, so a missing value would raise on the
+        # comparison below (None <= datetime). Treat a missing timestamp as
+        # already applied: show the returned tier as current with no pending
+        # change, rather than 500 the usage-plan page.
+        if subscription_change_effective is None or subscription_change_effective <= timezone.now():
             self.link_limit_period = post_data['subscription']['frequency']
             self.cached_subscription_rate = Decimal(post_data['subscription']['rate'])
             if post_data['subscription']['link_limit'] == 'unlimited':
@@ -294,6 +260,7 @@ class CustomerModel(models.Model):
             pending_change = {
                 'rate': post_data['subscription']['rate'],
                 'link_limit': post_data['subscription']['link_limit'],
+                'frequency': post_data['subscription']['frequency'],
                 'effective': subscription_change_effective
             }
         self.save(update_fields=['in_trial', 'cached_subscription_started', 'cached_subscription_status', 'cached_paid_through', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period'])
@@ -315,13 +282,20 @@ class CustomerModel(models.Model):
         '''
 
         # Calculate when, after today, the customer will/should next be charged.
-        # Calculate what fraction of the current subscription period remains,
-        # to use when determining how much to charge them today.
         if tier['period'] == 'monthly':
-            # monthly subscriptions are paid on the first of the next month
-            next_payment = next_month
-            days_in_month = calendar.monthrange(now.year, now.month)[1]
-            prorated_ratio = Decimal((next_payment - now).days / days_in_month)
+            # montly subscriptions are now paid on the anniversary of their creation.
+            # historically, monthly subscriptions were all paid on the first of the month.
+            if current_subscription:
+                # n.b. these values are nonsensical if the current subscription is not active.
+                # there is no good answer in that case.... so updating a non-active
+                # subscription is forbidden below. continuing to calculate the nonsensical values
+                # for these fields since.... that at least avoids type errors.
+                next_payment = current_subscription['paid_through']
+                days_in_month = calendar.monthrange(now.year, now.month)[1]
+                prorated_ratio = Decimal((next_payment - now).days / days_in_month)
+            else:
+                next_payment = next_month
+                prorated_ratio  = Decimal(1)
         elif tier['period'] == 'annually':
             # annual subscriptions are paid on the anniversary of their creation
             if current_subscription:
@@ -390,7 +364,7 @@ class CustomerModel(models.Model):
                     # This means the customer is underpaying, by today's standards.
                     # We should not let them upgrade in the normal way.
                     # If we don't want this to happen, we should work it out via
-                    # the Perma admin, the Perma Payments admin, and/or CyberSource Business Center
+                    # the Perma admin, the Perma Payments admin, and/or Stripe Dashboard.
                     tier_type = 'unavailable'
                     todays_charge = Decimal(0)
                 else:
@@ -409,9 +383,10 @@ class CustomerModel(models.Model):
 
     def get_subscription_info(self, now):
         timestamp = now.timestamp()
-        next_month = first_day_of_next_month(now)
+        next_month = today_next_month(now)
         next_year = today_next_year(now)
         subscription = self.get_subscription()
+        customer_name = self.payments_customer_name()
 
         tiers = []
         if subscription and subscription.get('pending_change'):
@@ -452,6 +427,8 @@ class CustomerModel(models.Model):
                     'link_limit': tier['link_limit'],
                     'link_limit_effective_timestamp': tier['link_limit_effective_timestamp']
                 }
+                if customer_name:
+                    required_fields['customer_name'] = customer_name
                 tiers.append({
                     'type': tier['type'],
                     'period': tier['period'],
@@ -479,7 +456,7 @@ class CustomerModel(models.Model):
                     self.save(update_fields=['bonus_links'])
                     try:
                         r = requests.post(
-                            settings.ACKNOWLEDGE_PURCHASE_URL,
+                            settings.PAYMENTS_APP_URLS['acknowledge_purchase'],
                             timeout=settings.PERMA_PAYMENTS_TIMEOUT,
                             data={
                                 'encrypted_data': prep_for_perma_payments({
@@ -489,7 +466,7 @@ class CustomerModel(models.Model):
                             }
                         )
                         assert r.ok, r.status_code
-                    except (requests.RequestException, AssertionError) as e:
+                    except (requests.RequestException, AssertionError, ImproperlyConfigured) as e:
                         msg = f"Communication with Perma-Payments failed: {str(e)}"
                         if settings.PERMA_PAYMENTS_IN_MAINTENANCE:
                             logger.info(msg)
@@ -507,6 +484,7 @@ class CustomerModel(models.Model):
 
     def get_bonus_packages(self):
         bonus_packages = []
+        customer_name = self.payments_customer_name()
         for package in settings.BONUS_PACKAGES:
             required_fields = {
                 'timestamp': datetime.utcnow().timestamp(),
@@ -515,6 +493,8 @@ class CustomerModel(models.Model):
                 'amount': package['price'],
                 'link_quantity': package['link_quantity']
             }
+            if customer_name:
+                required_fields['customer_name'] = customer_name
             bonus_packages.append({
                 'amount': required_fields['amount'],
                 'link_quantity': required_fields['link_quantity'],
@@ -544,4 +524,3 @@ class CustomerModel(models.Model):
         Must be implemented by children
         """
         raise NotImplementedError
-

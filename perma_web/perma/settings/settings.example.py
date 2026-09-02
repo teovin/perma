@@ -60,8 +60,4 @@ PERMA_PAYMENTS_ENCRYPTION_KEYS = {
     'perma_payments_public_key': 'base64encodedkey',
     'perma_public_key': 'base64encodedkey',
 }
-SUBSCRIBE_URL = 'https://perma-payments-subscribe-route'
-CANCEL_URL = 'https://perma-payments-cancel-request-route'
-SUBSCRIPTION_STATUS_URL = 'https://perma-payments-subscription-status-route'
-UPDATE_URL = 'https://perma-payments-update-route'
-CHANGE_URL = 'https://perma-payments-change-route'
+

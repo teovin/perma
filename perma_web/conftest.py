@@ -347,6 +347,7 @@ class NonpayingRegistrarFactory(RegistrarFactory):
 class PayingRegistrarFactory(RegistrarFactory):
     nonpaying = False
     cached_subscription_status = "Sentinel Status"
+    cached_subscription_started = GENESIS - relativedelta(years=1)
     cached_paid_through = GENESIS
     base_rate = Decimal(100.00)
     in_trial = False
@@ -438,6 +439,7 @@ class NonpayingUserFactory(LinkUserFactory):
 class PayingUserFactory(LinkUserFactory):
     nonpaying = False
     cached_subscription_status = "Sentinel Status"
+    cached_subscription_started = GENESIS - relativedelta(years=1)
     cached_paid_through = GENESIS
     cached_subscription_rate = Decimal(0.01)
     base_rate = Decimal(100.00)
@@ -826,19 +828,6 @@ def user_with_on_hold_subscription(mocker, link_user, on_hold_monthly_subscripti
     get_purchase_history = mocker.patch('perma.models.LinkUser.get_purchase_history', autospec=True)
 
     get_subscription.return_value = on_hold_monthly_subscription
-    get_purchase_history.return_value = no_purchase_history
-
-    yield link_user
-
-    get_subscription.assert_called_once_with(link_user)
-
-
-@pytest.fixture
-def user_with_requested_cancellation(mocker, link_user, cancellation_requested_subscription, no_purchase_history):
-    get_subscription = mocker.patch('perma.models.LinkUser.get_subscription', autospec=True)
-    get_purchase_history = mocker.patch('perma.models.LinkUser.get_purchase_history', autospec=True)
-
-    get_subscription.return_value = cancellation_requested_subscription
     get_purchase_history.return_value = no_purchase_history
 
     yield link_user

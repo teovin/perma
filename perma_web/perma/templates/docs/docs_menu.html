@@ -35,15 +35,15 @@
           {% if request.path == "/docs/perma-link-creation" %}</div>{% else %}</a>{% endif %}
         </div>
 
-        <div class="col col-sm-by5 overview-module col-no-gutter{% if request.path == "/docs/libraries" %} _active{% endif %}">
-          {% if request.path == "/docs/libraries" %}
+        <div class="col col-sm-by5 overview-module col-no-gutter{% if request.path == "/docs/registrars" %} _active{% endif %}">
+          {% if request.path == "/docs/registrars" %}
           <div class="overview-module-content" aria-current="page">
           {% else %}
-          <a class="overview-module-content" href="{% url 'docs_libraries' %}">
+          <a class="overview-module-content" href="{% url 'docs_registrars' %}">
           {% endif %}
             <strong class="overview-module-title">For Libraries and Other Registrars</strong>
             <p class="overview-module-description">Learn about the special role of libraries and other registrars in supporting Perma.cc.</p>
-          {% if request.path == "/docs/libraries" %}</div>{% else %}</a>{% endif %}
+          {% if request.path == "/docs/registrars" %}</div>{% else %}</a>{% endif %}
         </div>
 
         <div class="col col-sm-by5 overview-module col-no-gutter{% if request.path == "/docs/faq" %} _active{% endif %}">

@@ -1,3 +1,9 @@
+{% if request.user.is_staff %}
+<div class="embedded-form">
+  <h3 class="body-ah">API</h3>
+  <p>API key authentication is disabled for admin accounts. Non-admin users see a "Generate an API key" button here.</p>
+</div>
+{% else %}
 <form method="post" action="{% url 'api_key_create' %}" class="embedded-form">
 <h3 class="body-ah">API</h3>
   {{ api_form.non_field_errors }}
@@ -13,3 +19,4 @@
   <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
   <input type="submit" class="btn" value="{% if request.user.api_key.key %}Regenerate{% else %}Generate an{% endif %} API key">
 </form>
+{% endif %}
