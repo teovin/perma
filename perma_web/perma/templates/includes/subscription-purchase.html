@@ -1,0 +1,62 @@
+{% load humanize %}
+
+{% if customer_type == 'Registrar' %}
+  <p class="page-dek">Purchase a subscription for {{ customer.name }}</p>
+  {% if customer.local_subscription_description %}
+    <p class="fine-print">Usage plan: {{ customer.local_subscription_description}}</p>
+  {% endif %}
+{% else %}
+  <p class="page-dek">Purchase a personal subscription</p>
+{% endif %}
+
+<div class="row">
+  {% for tier in account.tiers %}
+    {% if tier.type == 'upgrade' or tier.type == 'downgrade' %}
+      {% if tier.period == 'monthly' and customer.offer_monthly or tier.period == 'annually' and customer.offer_annual %}
+        <form class="upgrade-form col-xs-12 col-md-3" method="post" action="{{ subscribe_url }}">
+          {% if tier.period == 'monthly' %}
+            {% if customer_type == 'Registrar' %}
+              <button>
+              <span>Monthly plan
+              </span>
+              <br>
+              ${{ tier.required_fields.recurring_amount | intcomma }}/month
+              </button>
+            {% else %}
+              <button>
+                <span>
+                  {{ tier.limit }} Links {% if tier.limit != "unlimited" %}per month{% endif %}
+                </span>
+                <br>
+                ${{ tier.required_fields.recurring_amount | intcomma }}/month
+                {% if tier.required_fields.recurring_amount != tier.required_fields.amount %}
+                  <br>
+                  <br>
+                  ${{ tier.required_fields.amount | intcomma }}
+                  this month (prorated)
+                {% endif %}
+              </button>
+            {% endif %}
+          {% elif tier.period == 'annually' %}
+            {% if customer_type == 'Registrar' %}
+              <button>
+                <span>Annual plan</span>
+                <br>
+                ${{ tier.required_fields.recurring_amount | intcomma }}/year
+              </button>
+            {% else %}
+              <button>
+                <span>
+                  {{ tier.limit }} Links {% if tier.limit != "unlimited" %}per year{% endif %}
+                </span>
+                <br>
+                ${{ tier.required_fields.amount | intcomma }}/year
+              </button>
+            {% endif %}
+          {% endif %}
+          <input type="hidden" name="encrypted_data" value={{ tier.encrypted_data }}>
+        </form>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</div>

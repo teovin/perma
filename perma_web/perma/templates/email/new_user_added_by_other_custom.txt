@@ -1,0 +1,10 @@
+TITLE: {{ subject }}
+
+{{ opening }}
+
+{% include 'email/includes/activation_link.txt' %}
+
+{% if closing %}{{ closing }}
+
+{% endif %}Thanks,
+The Perma.cc Team

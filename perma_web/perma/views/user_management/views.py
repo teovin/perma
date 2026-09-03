@@ -1,10 +1,13 @@
 import logging
+from abc import ABC, abstractmethod
+from typing import NotRequired, TypedDict
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
+from django.forms import Form
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, F, Max, Sum
 from django.db.models.functions import Coalesce, Greatest
@@ -26,7 +29,11 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import UpdateView
 from ratelimit.decorators import ratelimit
 
-from perma.email import send_user_email
+from perma.email import (
+    get_activation_email_context,
+    send_staff_invited_new_user_email,
+    send_user_email,
+)
 from perma.forms import (
     OrganizationForm,
     OrganizationWithRegistrarForm,
@@ -51,6 +58,13 @@ from perma.models import (
     Sponsorship,
     UserOrganizationAffiliation,
 )
+from perma.views.user_management.access import (
+    allow_staff,
+    allow_registrar,
+    allow_organization_user,
+    allow_staff_or_registrar,
+    allow_staff_registrar_or_org_user,
+)
 from perma.utils import (
     apply_pagination,
     apply_search_query,
@@ -58,8 +72,10 @@ from perma.utils import (
     export_queryset,
     get_form_data,
     ratelimit_ip_key,
+    remove_control_characters,
     user_passes_test_or_403,
 )
+from perma.views.user_management.render import add_user_management_ui, render_user_management
 from perma.views.common import valid_member_sorts, valid_org_sorts, valid_registrar_sorts
 from perma.views.user_sign_up import email_new_user
 from perma.celery_tasks import send_user_email_from_bulk_addition
@@ -72,24 +88,24 @@ logger = logging.getLogger(__name__)
 
 class RequireOrgOrRegOrAdminUser:
     """ Mixin for class-based views that requires user to be an org user, registrar user, or admin. """
-    @method_decorator(user_passes_test_or_403(lambda user: user.is_registrar_user() or user.is_organization_user or user.is_staff))
+    @method_decorator(user_passes_test_or_403(allow_staff_registrar_or_org_user))
     def dispatch(self, request, *args, **kwargs):
         return super(RequireOrgOrRegOrAdminUser, self).dispatch(request, *args, **kwargs)
 
 class RequireRegOrAdminUser:
     """ Mixin for class-based views that requires user to be a registrar user or admin. """
-    @method_decorator(user_passes_test_or_403(lambda user: user.is_registrar_user() or user.is_staff))
+    @method_decorator(user_passes_test_or_403(allow_staff_or_registrar))
     def dispatch(self, request, *args, **kwargs):
         return super(RequireRegOrAdminUser, self).dispatch(request, *args, **kwargs)
 
 class RequireAdminUser:
     """ Mixin for class-based views that requires user to be an admin. """
-    @method_decorator(user_passes_test_or_403(lambda user: user.is_staff))
+    @method_decorator(user_passes_test_or_403(allow_staff))
     def dispatch(self, request, *args, **kwargs):
         return super(RequireAdminUser, self).dispatch(request, *args, **kwargs)
 
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_registrar(request):
     """
     Perma admins can manage registrars (libraries)
@@ -136,10 +152,9 @@ def manage_registrar(request):
     # handle pagination
     registrars = apply_pagination(request, registrars)
 
-    return render(request, 'user_management/manage_registrars.html', {
+    return render_user_management(request, 'user_management/manage_registrars.html', {
         'registrars': registrars,
         'orgs_count': orgs_count,
-        # 'users_count': users_count,
         'this_page': 'users_registrars',
         'search_query': search_query,
         'status': status,
@@ -149,7 +164,7 @@ def manage_registrar(request):
 
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_single_registrar(request, registrar_id):
     """ Edit details for a registrar. """
 
@@ -166,14 +181,14 @@ def manage_single_registrar(request, registrar_id):
             else:
                 return HttpResponseRedirect(reverse('settings_affiliations'))
 
-    return render(request, 'user_management/manage_single_registrar.html', {
+    return render_user_management(request, 'user_management/manage_single_registrar.html', {
         'target_registrar': target_registrar,
         'this_page': 'users_registrars',
         'form': form
     })
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_organization(request):
     """
     Admin and registrar users can manage organizations (journals)
@@ -219,22 +234,19 @@ def manage_organization(request):
     # handle pagination
     orgs = apply_pagination(request, orgs)
 
-    return render(request, 'user_management/manage_orgs.html', {
+    return render_user_management(request, 'user_management/manage_orgs.html', {
         'orgs': orgs,
         'this_page': 'users_orgs',
         'search_query': search_query,
-
         'users_count': users_count,
-
         'registrars': Registrar.objects.all().order_by('name'),
         'registrar_filter': registrar_filter,
         'sort': sort,
-
         'form': form,
-    })
+    }, screen='manage_orgs')
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_single_organization(request, org_id):
     """ Edit organization details. """
     target_org = get_object_or_404(Organization, id=org_id)
@@ -251,14 +263,14 @@ def manage_single_organization(request, org_id):
             form.save()
             return HttpResponseRedirect(reverse('user_management_manage_organization'))
 
-    return render(request, 'user_management/manage_single_organization.html', {
+    return render_user_management(request, 'user_management/manage_single_organization.html', {
         'target_org': target_org,
         'this_page': 'users_orgs',
         'form': form,
     })
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_single_organization_delete(request, org_id):
     """
         Delete an empty org
@@ -276,42 +288,42 @@ def manage_single_organization_delete(request, org_id):
 
         return HttpResponseRedirect(reverse('user_management_manage_organization'))
 
-    return render(request, 'user_management/organization_delete_confirm.html', {
+    return render_user_management(request, 'user_management/organization_delete_confirm.html', {
         'target_org': target_org,
         'this_page': 'users_orgs',
     })
 
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_admin_user(request):
     return list_users_in_group(request, 'admin_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_admin_user_delete(request, user_id):
     return delete_user_in_group(request, user_id, 'admin_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_registrar_user(request):
     return list_users_in_group(request, 'registrar_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_registrar_user(request, user_id):
     return edit_user_in_group(request, user_id, 'registrar_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_registrar_user_delete(request, user_id):
     return delete_user_in_group(request, user_id, 'registrar_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_registrar_user_reactivate(request, user_id):
     return reactive_user_in_group(request, user_id, 'registrar_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_sponsored_user(request):
     return list_sponsored_users(request)
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_sponsored_user_export_user_list(request: HttpRequest) -> HttpResponse | JsonResponse:
     # Get query results via list_sponsored_users
     field_names = [
@@ -320,12 +332,14 @@ def manage_sponsored_user_export_user_list(request: HttpRequest) -> HttpResponse
         'last_name',
         'date_joined',
         'last_login',
+        'sponsoring_registrar',
         'sponsorship_status',
         'sponsorship_created_at',
         'sponsorship_expires_at'
     ]
     records = list_sponsored_users(request, export=True)
     users = records.annotate(
+        sponsoring_registrar=F('sponsorships__registrar__name'),
         sponsorship_status=F('sponsorships__status'),
         sponsorship_created_at=F('sponsorships__created_at'),
         sponsorship_expires_at=F('sponsorships__expires_at'),
@@ -340,42 +354,40 @@ def manage_sponsored_user_export_user_list(request: HttpRequest) -> HttpResponse
     return response
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_single_sponsored_user(request, user_id):
     return edit_user_in_group(request, user_id, 'sponsored_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_sponsored_user_delete(request, user_id):
     return delete_user_in_group(request, user_id, 'sponsored_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_sponsored_user_reactivate(request, user_id):
     return reactive_user_in_group(request, user_id, 'sponsored_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_user(request):
     return list_users_in_group(request, 'user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_user(request, user_id):
     return edit_user_in_group(request, user_id, 'user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_user_delete(request, user_id):
     return delete_user_in_group(request, user_id, 'user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_user_reactivate(request, user_id):
     return reactive_user_in_group(request, user_id, 'user')
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_organization_user(request):
     return list_users_in_group(request, 'organization_user')
 
 
-@user_passes_test_or_403(
-    lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user
-)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_organization_user_export_user_list(request: HttpRequest):
     """Return a file listing users across organizations."""
     # Get query results via list_sponsored_users
@@ -403,22 +415,20 @@ def manage_organization_user_export_user_list(request: HttpRequest):
     return response
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_single_organization_user(request, user_id):
     return edit_user_in_group(request, user_id, 'organization_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_organization_user_delete(request, user_id):
     return delete_user_in_group(request, user_id, 'organization_user')
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_organization_user_reactivate(request, user_id):
     return reactive_user_in_group(request, user_id, 'organization_user')
 
 
-@user_passes_test_or_403(
-    lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user
-)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_single_organization_export_user_list(
     request: HttpRequest, org_id: int
 ) -> HttpResponse | JsonResponse:
@@ -451,7 +461,7 @@ def manage_single_organization_export_user_list(
     return response
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def list_users_in_group(request: HttpRequest, group_name: str, export: bool = False):
     """
         Show list of users with given group name.
@@ -582,10 +592,10 @@ def list_users_in_group(request: HttpRequest, group_name: str, export: bool = Fa
     context['pretty_group_name_plural'] = context['pretty_group_name'] + "s"
     context['bulk_org_user_creation_feature_flag'] = flag_is_active(request, 'bulk-organization-user-creation')
 
-    return render(request, 'user_management/manage_users.html', context)
+    return render_user_management(request, 'user_management/manage_users.html', context, group_name=group_name)
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def list_sponsored_users(
     request: HttpRequest, group_name: str = 'sponsored_user', export: bool = False
 ) -> HttpResponse | QuerySet[LinkUser]:
@@ -671,7 +681,7 @@ def list_sponsored_users(
     }
     context['pretty_group_name_plural'] = context['pretty_group_name'] + "s"
 
-    return render(request, 'user_management/manage_users.html', context)
+    return render_user_management(request, 'user_management/manage_users.html', context, group_name=group_name)
 
 
 def edit_user_in_group(request, user_id, group_name):
@@ -717,18 +727,74 @@ def edit_user_in_group(request, user_id, group_name):
         'affiliations': affiliations,
     }
 
-    return render(request, 'user_management/manage_single_user.html', context)
+    return render_user_management(request, 'user_management/manage_single_user.html', context)
 
 
 ### ADD USER TO GROUP ###
+
+class UserAddedEmailContext(TypedDict):
+    """Template context for new_user_added_by_other.txt (values must be JSON-serializable for bulk Celery tasks)."""
+    requester_name: str
+    on_behalf_of: NotRequired[str]
+
+
+class UserConfirmationEmailContext(TypedDict, total=False):
+    """Template context for existing-user confirmation emails (values must be JSON-serializable for bulk Celery tasks)."""
+    account_settings_page: str
+    org: str
+    registrar: str
+    sponsoring_registrar: str
+
 
 class BaseAddUserToGroup(UpdateView):
     """
         Base class for views that take an email address and either add a new user, or add the user to
         a given group if they already exist.
     """
-    is_batch = False
-    
+
+    def send_new_user_activation_email(self, form: Form) -> None:
+        """Send staff-invited activation email. Override when a registrar applies."""
+        send_staff_invited_new_user_email(
+            self.object,
+            context=self.get_user_added_email_context(form),
+            request=self.request,
+        )
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization | Registrar | None:
+        """
+        Return org/registrar to mention in the new-user email, or None if not applicable.
+
+        When not None, the value is passed as on_behalf_of in the staff-invited new-user email.
+        All values must be JSON-serializable (str()'d in get_user_added_email_context) for bulk Celery tasks.
+        """
+        return None
+
+    def get_user_added_email_context(self, form: Form) -> UserAddedEmailContext:
+        context: UserAddedEmailContext = {
+            'requester_name': self.request.user.get_full_name(),
+        }
+        on_behalf_of = self.get_user_added_email_on_behalf_of(form)
+        if on_behalf_of is not None:
+            context['on_behalf_of'] = str(on_behalf_of)
+        return context
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        """
+        Return template-specific confirmation context keys, or {} if not applicable.
+
+        Keys must match the variables used in confirmation_email_template
+        (e.g. org, registrar, sponsoring_registrar). All values must be
+        JSON-serializable strings for bulk Celery tasks.
+        """
+        return {}
+
+    def get_user_confirmation_email_context(self, form: Form) -> UserConfirmationEmailContext:
+        context: UserConfirmationEmailContext = {
+            'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
+        }
+        context.update(self.get_confirmation_email_extra_context(form))
+        return context
+
     def __init__(self, **kwargs):
         super(BaseAddUserToGroup, self).__init__(**kwargs)
         self.extra_context = {}
@@ -769,10 +835,11 @@ class BaseAddUserToGroup(UpdateView):
 
     def get_context_data(self, **kwargs):
         """ Populate template context with supplied email address. """
-        return dict(
+        context = dict(
             super(BaseAddUserToGroup, self).get_context_data(**kwargs),
             user_email=self.request.GET.get('email'),
             **self.extra_context)
+        return add_user_management_ui(context, self.request)
 
     def form_valid(self, form):
         """ If form is submitted successfully, show success message and send email to target user. """
@@ -781,84 +848,55 @@ class BaseAddUserToGroup(UpdateView):
         def add_message(level, title, body):
             messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
 
-        def send_bulk_addition_emails(users, email_function, template):
-            extra_context = {
-                'org': form.cleaned_data['organizations'].name,
-                'requester': self.request.user.get_full_name(),
-                'account_settings_page': self.request.build_absolute_uri(reverse('settings_profile')),
-            }
-            host = f"{self.request.scheme}://{self.request.get_host()}"
-
-            for obj in users.values():
-                try:
-                    if email_function == 'email_new_user':
-                        send_user_email_from_bulk_addition.delay(obj.raw_email, extra_context, template, host, is_new_user=True)
-                    else:
-                        send_user_email_from_bulk_addition.delay(obj.raw_email, extra_context, template, is_new_user=False)
-                except Exception as e:
-                    logger.exception(f"Failed to send email to {obj.raw_email}: {e}")
-
-        if not self.is_batch:
-            if self.is_new:
-                email_new_user(
-                    self.request,
-                    self.object,
-                    self.user_added_email_template,
-                    {'form': form}
-                )
-                add_message(
-                    messages.SUCCESS,
-                    "Account created!",
-                    f"<strong>{self.object.email}</strong> will receive an email with instructions on how to activate the account and create a password."
-                )
-            else:
-                send_user_email(
-                    self.object.raw_email,
-                    self.confirmation_email_template,
-                    {
-                        'account_settings_page': f"https://{self.request.get_host()}{reverse('settings_profile')}",
-                        'form': form
-                    }
-                )
-                add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
-        else:
-            if form.created_users:
-                send_bulk_addition_emails(form.created_users, 'email_new_user', self.user_added_email_template)
-            if form.updated_users:
-                send_bulk_addition_emails(form.updated_users, 'send_user_email', self.confirmation_email_template)
-
-            success_message = (
-                "New users will receive an email with instructions on how to activate their accounts and create a password.<br>"
-                "Existing users will receive an email notifying them about their updated organization affiliation."
+        if self.is_new:
+            self.send_new_user_activation_email(form)
+            add_message(
+                messages.SUCCESS,
+                "Account created!",
+                f"<strong>{self.object.email}</strong> will receive an email with instructions on how to activate the account and create a password."
             )
-
-            if form.ineligible_users:
-                ineligible_user_emails = ", ".join(form.ineligible_users)
-                error_message = (
-                    f"The following users were not added to {form.cleaned_data['organizations']} because they are "
-                    f"already a registrar user or admin user and cannot be added to an individual organization: {ineligible_user_emails}"
-                )
-                if form.created_users or form.updated_users:
-                    add_message(
-                        messages.SUCCESS,
-                        "Success!",
-                        f"{success_message}<br><br>Note: {error_message}"
-                    )
-                else:
-                    add_message(messages.ERROR, "Error!", error_message)
-            else:
-                add_message(messages.SUCCESS, "Success!", success_message)
+        else:
+            send_user_email(
+                self.object.raw_email,
+                self.confirmation_email_template,
+                self.get_user_confirmation_email_context(form),
+            )
+            add_message(messages.SUCCESS, "Success!", f"<strong>{self.object.email}</strong> added.")
 
         return response
 
 
-class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
+class RegistrarAffiliatedAddUserToGroup(BaseAddUserToGroup, ABC):
+    """Staff invites tied to a registrar (org, registrar user, sponsorship, bulk org)."""
+
+    @abstractmethod
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        """Registrar pk for CUSTOM_EMAILS_FOR_REGISTRAR lookup."""
+
+    def send_new_user_activation_email(self, form: Form) -> None:
+        send_staff_invited_new_user_email(
+            self.object,
+            registrar_id=self.get_invitation_registrar_id(form),
+            context=self.get_user_added_email_context(form),
+            request=self.request,
+        )
+
+
+class AddUserToOrganization(RequireOrgOrRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_organization_confirm.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
     confirmation_email_template = 'email/user_added_to_organization.txt'
-    user_added_email_template = 'email/new_user_added_to_org_by_other.txt'
     new_user_form = UserFormWithOrganization
     existing_user_form = UserAddOrganizationForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'org': str(form.cleaned_data['organizations'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['organizations'].registrar_id
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
+        return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
         """ Filter organizations to those current user can access. """
@@ -877,13 +915,103 @@ class AddUserToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
         return True, ""
 
 
-class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGroup):
+class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/add_multiple_users_to_org.html'
     success_url = reverse_lazy('user_management_manage_organization_user')
-    confirmation_email_template = 'email/user_added_to_organization_from_bulk_form.txt'
-    user_added_email_template = 'email/new_user_added_to_org_by_other_from_bulk_form.txt'
+    confirmation_email_template = 'email/user_added_to_organization.txt'
     new_user_form = MultipleUsersFormWithOrganization
-    is_batch = True
+
+    def _enqueue_bulk_emails(
+        self,
+        users: dict[str, LinkUser],
+        *,
+        template: str | None,
+        context: UserAddedEmailContext | UserConfirmationEmailContext,
+        is_new_user: bool,
+        registrar_id: int,
+    ) -> None:
+        host = f"{self.request.scheme}://{self.request.get_host()}"
+        for user in users.values():
+            try:
+                send_user_email_from_bulk_addition.delay(
+                    user.raw_email,
+                    context,
+                    template,
+                    host,
+                    is_new_user=is_new_user,
+                    registrar_id=registrar_id,
+                )
+            except Exception:
+                logger.exception(f"Failed to send email to {user.raw_email}")
+
+    def _send_bulk_new_user_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=None,
+            context=self.get_user_added_email_context(form),
+            is_new_user=True,
+            registrar_id=self.get_invitation_registrar_id(form),
+        )
+
+    def _send_bulk_confirmation_emails(self, form: Form, users: dict[str, LinkUser]) -> None:
+        self._enqueue_bulk_emails(
+            users,
+            template=self.confirmation_email_template,
+            context=self.get_user_confirmation_email_context(form),
+            is_new_user=False,
+            registrar_id=self.get_invitation_registrar_id(form),
+        )
+
+    def form_valid(self, form):
+        """
+        CSV bulk-add creates or updates many users in one submit.
+
+        Skip BaseAddUserToGroup.form_valid (single-user emails and messages). Call
+        super(BaseAddUserToGroup, self) to run only UpdateView's save-and-redirect,
+        then send bulk emails and show batch-specific flash messages.
+        """
+        response = super(BaseAddUserToGroup, self).form_valid(form)
+
+        def add_message(level, title, body):
+            messages.add_message(self.request, level, f'<h4>{title}</h4>{body}', extra_tags='safe')
+
+        if form.created_users:
+            self._send_bulk_new_user_emails(form, form.created_users)
+        if form.updated_users:
+            self._send_bulk_confirmation_emails(form, form.updated_users)
+
+        success_message = (
+            "New users will receive an email with instructions on how to activate their accounts and create a password.<br>"
+            "Existing users will receive an email notifying them about their updated organization affiliation."
+        )
+
+        if form.ineligible_users:
+            ineligible_user_emails = ", ".join(form.ineligible_users)
+            error_message = (
+                f"The following users were not added to {form.cleaned_data['organizations']} because they are "
+                f"already a registrar user or admin user and cannot be added to an individual organization: {ineligible_user_emails}"
+            )
+            if form.created_users or form.updated_users:
+                add_message(
+                    messages.SUCCESS,
+                    "Success!",
+                    f"{success_message}<br><br>Note: {error_message}"
+                )
+            else:
+                add_message(messages.ERROR, "Error!", error_message)
+        else:
+            add_message(messages.SUCCESS, "Success!", success_message)
+
+        return response
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'org': str(form.cleaned_data['organizations'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['organizations'].registrar_id
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Organization:
+        return form.cleaned_data['organizations']
 
     def get_form_kwargs(self):
         """ Filter organizations to those current user can access. """
@@ -896,13 +1024,21 @@ class AddMultipleUsersToOrganization(RequireOrgOrRegOrAdminUser, BaseAddUserToGr
         return True, ""
 
 
-class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
+class AddUserToRegistrar(RequireRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_registrar_user')
     confirmation_email_template = 'email/user_added_to_registrar.txt'
-    user_added_email_template = 'email/new_user_added_to_registrar_by_other.txt'
     new_user_form = UserFormWithRegistrar
     existing_user_form = UserAddRegistrarForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'registrar': str(form.cleaned_data['registrar'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['registrar'].pk
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
+        return form.cleaned_data['registrar']
 
     def get_form_kwargs(self):
         """ Filter registrars to those current user can access. """
@@ -929,13 +1065,21 @@ class AddUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
         return True, ""
 
 
-class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, BaseAddUserToGroup):
+class AddSponsoredUserToRegistrar(RequireRegOrAdminUser, RegistrarAffiliatedAddUserToGroup):
     template_name = 'user_management/user_add_to_sponsoring_registrar_confirm.html'
     success_url = reverse_lazy('user_management_manage_sponsored_user')
     confirmation_email_template = 'email/user_added_to_sponsoring_registrar.txt'
-    user_added_email_template = 'email/new_user_added_to_sponsoring_registrar_by_other.txt'
     new_user_form = UserFormWithSponsoringRegistrar
     existing_user_form = UserAddSponsoringRegistrarForm
+
+    def get_confirmation_email_extra_context(self, form: Form) -> dict[str, str]:
+        return {'sponsoring_registrar': str(form.cleaned_data['sponsoring_registrars'])}
+
+    def get_invitation_registrar_id(self, form: Form) -> int:
+        return form.cleaned_data['sponsoring_registrars'].pk
+
+    def get_user_added_email_on_behalf_of(self, form: Form) -> Registrar:
+        return form.cleaned_data['sponsoring_registrars']
 
     def get_form_kwargs(self):
         """ Filter registrars to those current user can access. """
@@ -958,7 +1102,6 @@ class AddUserToAdmin(RequireAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_to_admin_confirm.html'
     success_url = reverse_lazy('user_management_manage_admin_user')
     confirmation_email_template = 'email/user_added_to_admin.txt'
-    user_added_email_template = 'email/new_user_added_by_other.txt'
     new_user_form = UserFormWithAdmin
     existing_user_form = UserAddAdminForm
 
@@ -970,7 +1113,6 @@ class AddUserToAdmin(RequireAdminUser, BaseAddUserToGroup):
 class AddRegularUser(RequireAdminUser, BaseAddUserToGroup):
     template_name = 'user_management/user_add_confirm.html'
     success_url = reverse_lazy('user_management_manage_user')
-    user_added_email_template = 'email/new_user_added_by_other.txt'
     new_user_form = UserForm
     existing_user_form = UserForm
 
@@ -979,7 +1121,7 @@ class AddRegularUser(RequireAdminUser, BaseAddUserToGroup):
         return self.is_new, "User already exists."
 
 
-@user_passes_test_or_403(lambda user: user.is_organization_user)
+@user_passes_test_or_403(allow_organization_user)
 def organization_user_leave_organization(request, org_id):
     try:
         org = Organization.objects.accessible_to(request.user).get(pk=org_id)
@@ -1002,7 +1144,7 @@ def organization_user_leave_organization(request, org_id):
     return render(request, 'user_management/user_leave_confirm.html', context)
 
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def delete_user_in_group(request, user_id, group_name):
     """
         Delete particular user with given group name.
@@ -1028,7 +1170,7 @@ def delete_user_in_group(request, user_id, group_name):
     return render(request, 'user_management/user_delete_confirm.html', context)
 
 
-@user_passes_test_or_403(lambda user: user.is_registrar_user() or user.is_organization_user or user.is_staff)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_single_organization_user_remove(request, user_id):
     """
         Remove an organization user from an org.
@@ -1051,7 +1193,7 @@ def manage_single_organization_user_remove(request, user_id):
     return HttpResponseRedirect(reverse('user_management_manage_organization_user'))
 
 
-@user_passes_test_or_403(lambda user: user.is_registrar_user() or user.is_organization_user or user.is_staff)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def manage_single_organization_user_expiration_date(request, user_id, organization_id):
     """
         Modify the affiliation expiration date of an org user
@@ -1075,7 +1217,7 @@ def manage_single_organization_user_expiration_date(request, user_id, organizati
     })
 
 
-@user_passes_test_or_403(lambda user: user.is_registrar_user())
+@user_passes_test_or_403(allow_registrar)
 def manage_single_registrar_user_remove(request, user_id):
     """
         Remove a registrar user from a registrar.
@@ -1123,7 +1265,7 @@ def toggle_status(request, user_id, registrar_id, status):
     return render(request, f"user_management/user_{'readd' if status == 'active' else 'remove'}_sponsored_confirm.html", {'target_user': target_user, 'registrar': registrar})
 
 
-@user_passes_test_or_403(lambda user: user.is_registrar_user() or user.is_staff)
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_single_sponsored_user_remove(request, user_id, registrar_id):
     """
         Deactivate an active sponsorship for a user
@@ -1131,7 +1273,7 @@ def manage_single_sponsored_user_remove(request, user_id, registrar_id):
     return toggle_status(request, user_id, registrar_id, 'inactive')
 
 
-@user_passes_test_or_403(lambda user: user.is_registrar_user() or user.is_staff)
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_single_sponsored_user_readd(request, user_id, registrar_id):
     """
         Reactivate an inactive sponsorship for a user
@@ -1139,7 +1281,7 @@ def manage_single_sponsored_user_readd(request, user_id, registrar_id):
     return toggle_status(request, user_id, registrar_id, 'active')
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_single_sponsored_user_links(request, user_id, registrar_id):
     target_user = get_object_or_404(LinkUser, id=user_id)
     registrar =  get_object_or_404(Registrar, id=registrar_id)
@@ -1154,7 +1296,7 @@ def manage_single_sponsored_user_links(request, user_id, registrar_id):
     links = Link.objects.filter(folders__in=folders).select_related('capture_job').prefetch_related('captures').order_by('-creation_timestamp')
     links = apply_pagination(request, links)
 
-    return render(request, 'user_management/manage_single_user_links.html', {
+    return render_user_management(request, 'user_management/manage_single_user_links.html', {
         'this_page': 'users_sponsored_users',
         'target_user': target_user,
         'registrar': registrar,
@@ -1162,7 +1304,7 @@ def manage_single_sponsored_user_links(request, user_id, registrar_id):
     })
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user())
+@user_passes_test_or_403(allow_staff_or_registrar)
 def manage_single_sponsored_user_expiration_date(request, user_id, registrar_id):
     """
         Modify the sponsorship expiration date of a user
@@ -1189,7 +1331,7 @@ def manage_single_sponsored_user_expiration_date(request, user_id, registrar_id)
     })
 
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def manage_single_admin_user_remove(request, user_id):
     """
         Basically demote a admin to a regular user.
@@ -1213,7 +1355,7 @@ def manage_single_admin_user_remove(request, user_id):
     return render(request, 'user_management/user_remove_admin_confirm.html', context)
 
 
-@user_passes_test_or_403(lambda user: user.is_staff)
+@user_passes_test_or_403(allow_staff)
 def reactive_user_in_group(request, user_id, group_name):
     """
         Reactivate particular user with given group name.
@@ -1250,7 +1392,7 @@ def not_active(request):
         return render(request, 'registration/not_active.html', context)
 
 
-@user_passes_test_or_403(lambda user: user.is_staff or user.is_registrar_user() or user.is_organization_user)
+@user_passes_test_or_403(allow_staff_registrar_or_org_user)
 def resend_activation(request, user_id):
     """
     Sends a user another account activation email.
@@ -1334,19 +1476,23 @@ def reset_password(request):
             return self.cleaned_data.get('username', '').lower()
 
     if request.method == "POST":
-        try:
-            target_user = LinkUser.objects.get(email=request.POST.get('email', '').lower())
-        except LinkUser.DoesNotExist:
+        email = request.POST.get('email', '').lower()
+        clean_email = remove_control_characters(email)
+
+        # Reject emails containing control characters before querying Postgres. Bots tend to submit these.
+        if email != clean_email:
             target_user = None
+        else:
+            target_user = LinkUser.objects.filter(email=email).first()
+
         if target_user:
             if not target_user.is_confirmed:
-                # This is a weird area... We're doing this, for now, to help
-                # smooth things for the users who sign up while we are transitioning
-                # to new activation links. We think it will be less confusing for them
-                # to receive a "password reset" email, since we ARE asking them to fill
-                # our that form, rather than a welcome email. We can readdress later...
-                # this whole architecture needs some tidying.
-                email_new_user(request, target_user, template="email/unactivated_user_reset_email.txt")
+                # Same activation URL as sign-up; copy matches the password-reset form they used.
+                send_user_email(
+                    target_user.raw_email,
+                    'email/unactivated_user_reset_email.txt',
+                    get_activation_email_context(target_user, request=request),
+                )
             if target_user.is_confirmed and not target_user.is_active:
                 return HttpResponseRedirect(reverse('user_management_account_is_deactivated'))
 

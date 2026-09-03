@@ -254,6 +254,10 @@ PASSWORD_RESET_TIMEOUT = 3 * 24 * 60 * 60
 # Subscription packages/Payments
 #
 
+# No trailing slash
+STRIPE_PAYMENTS_APP_INTERNAL_URL = None
+STRIPE_PAYMENTS_APP_EXTERNAL_URL = None
+
 PERMA_PAYMENTS_TIMEOUT = 3
 PERMA_PAYMENTS_TIMESTAMP_MAX_AGE_SECONDS = 120
 PERMA_PAYMENTS_IN_MAINTENANCE = False
@@ -496,6 +500,8 @@ CELERY_TASK_ROUTES = {
     'perma.celery_tasks.queue_file_deleted_confirmation_tasks': {'queue': 'ia-readonly'},
     'perma.celery_tasks.confirm_file_deleted_from_daily_item': {'queue': 'ia-readonly'},
     'perma.celery_tasks.conditionally_queue_internet_archive_uploads_for_date_range': {'queue': 'ia-readonly'},
+    'perma.celery_tasks.queue_internet_archive_pending_work': {'queue': 'ia-readonly'},
+    'perma.celery_tasks.queue_internet_archive_privacy_toggled_still_pending': {'queue': 'ia-readonly'},
     'perma.celery_tasks.queue_internet_archive_deletions': {'queue': 'ia-readonly'},
     'perma.celery_tasks.queue_internet_archive_uploads_required_from_privacy_toggle': {'queue': 'ia-readonly'},
     'perma.celery_tasks.queue_internet_archive_deletions_required_from_privacy_toggle': {'queue': 'ia-readonly'},
@@ -631,13 +637,13 @@ USE_ANALYTICS_VIEWS = [
     'contingency_plan',
     'docs',
     'docs_perma_link_creation',
-    'docs_libraries',
+    'docs_registrars',
     'docs_faq',
     'docs_accounts',
     'dev_docs',
     'sign_up',
     'sign_up_courts',
-    'sign_up_firms',
+    'sign_up_orgs',
     'sign_up_libraries'
 ]
 
@@ -661,6 +667,7 @@ TEMPLATE_VISIBLE_SETTINGS = (
     'API_VERSION',
     'SECURE_SSL_REDIRECT',
     'DEBUG',
+    'DEFAULT_FROM_EMAIL',
     'HOST',
     'USE_ANALYTICS',
     'USE_ANALYTICS_VIEWS',
@@ -673,3 +680,19 @@ TEMPLATE_VISIBLE_SETTINGS = (
 
 # schema viewer
 VIEW_SCHEMA = False
+
+# Custom staff-invited new-user emails for specific registrars.
+# Used by send_staff_invited_new_user_email.
+# Format:
+# CUSTOM_EMAILS_FOR_REGISTRAR = {
+#     1: {  # registrar id, as an int
+#         # template_file is optional, below is the default value
+#         'template_file': 'email/new_user_added_by_other_custom.txt',
+#         # below are the context values required for the default template;
+#         # supply your own keys/values as necessary if specifying your own template.
+#         'subject': 'Custom email subject line',
+#         'opening': 'Opening paragraph, before the activation link section',
+#         'closing': 'Closing paragraph, after the activation link section.',
+#     },
+# }
+CUSTOM_EMAILS_FOR_REGISTRAR = {}

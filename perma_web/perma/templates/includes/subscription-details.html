@@ -1,0 +1,28 @@
+<p class="page-dek">Subscription Reference: {{ subscription.reference_number }}</p>
+
+{% if subscription.status == 'Canceled' %}
+  {% include 'includes/subscription-canceled.html' %}
+{% elif subscription.status == 'Hold' %}
+  {% include 'includes/subscription-hold.html' %}
+{% elif subscription.pending_change %}
+  {% include 'includes/subscription-current-pending-change.html' %}
+{% else %}
+  {% include 'includes/subscription-current.html' %}
+{% endif %}
+
+<div class="row subscription-buttons">
+  <div class="col-xs-12 col-md-6">
+    <form method="post" action="{{ update_url }}">
+      {% csrf_token %}
+      <input type="hidden" name="account_type" value={{ customer_type }}>
+      <button class="btn btn-primary" type="submit">Manage Subscription and Billing</button>
+    </form>
+  </div>
+</div>
+
+{% if customer_type == 'Individual' and not customer.unlimited %}
+  <hr>
+  <h3 class="body-ch">Remaining Links</h3>
+  {% widthratio links_remaining.0 1 -1 as negative_links_remaining %}
+  <p class="page-dek">You have created {{ customer.link_limit | add:negative_links_remaining }} of {{ customer.link_limit }} links this billing period.</p>
+{% endif %}

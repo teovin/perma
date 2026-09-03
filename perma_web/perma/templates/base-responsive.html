@@ -38,6 +38,7 @@
   </head>
   <body class="{% block bodyFlags %}{% endblock bodyFlags %}">
     {% block modals %}{% endblock modals %}
+    {% block top_banner %}{% endblock top_banner %}
     <div id="after-modals">
       <a href="#main-skip-target" class="skip-link">Skip to main content</a>
       <a href="#footer-skip-target" class="skip-link">Skip to footer</a>
@@ -93,8 +94,6 @@
                     <li class="footer-nav-item"><a href="{{ base_url }}{% url 'docs' %}">Guide</a></li>
                     <li class="footer-nav-item"><a href="{{ base_url }}{% url 'dev_docs' %}">Developers</a></li>
                     <li class="footer-nav-item"><a href="{{ base_url }}{% url 'contact' %}">Contact</a></li>
-                    <li class="footer-nav-item"><a href="https://blogs.law.harvard.edu/perma/">Blog</a></li>
-                    <li class="footer-nav-item"><a href="https://twitter.com/permacc">Twitter</a></li>
                     <li class="footer-nav-item"><a href="https://github.com/harvard-lil/perma">GitHub</a></li>
                     <li class="footer-nav-item"><a href="https://status.perma.cc/">Status</a></li>
                   </ul>

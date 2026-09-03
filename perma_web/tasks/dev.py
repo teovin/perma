@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from invoke import task
 import json
 import os
@@ -10,9 +10,11 @@ from tqdm import tqdm
 
 from django.conf import settings
 from django.http import HttpRequest
+from django.utils import timezone
 
 from perma.email import send_user_email, send_self_email, registrar_users, registrar_users_plus_stats
-from perma.models import Link, LinkUser, Registrar
+from perma.models import Link, LinkUser, Registrar, CaptureJob
+from perma.utils import DEFAULT_IA_UPLOAD_HEALTH_SPAN_DAYS, build_ia_upload_health_report
 
 import logging
 logger = logging.getLogger(__name__)
@@ -74,14 +76,52 @@ def init_db(ctx):
 
 
 @task
-def count_pending_ia_links(ctx):
+def report_ia_upload_health(
+    ctx,
+    mode='auto',
+    auto_detail_max_days=10,
+    span_days=DEFAULT_IA_UPLOAD_HEALTH_SPAN_DAYS,
+    span_start='',
+    span_end='',
+):
     """
-    For use in monitoring the size of the queue.
+    Report Internet Archive daily upload backlog health as JSON.
+
+    Output is grouped by scope:
+      span — the analysis period (start, end, days)
+      global — metrics across all time (not limited to span)
+      in_span — metrics limited to span
+
+    Span (pick one style):
+      span_days=10 (default) — last 10 days ending today, with per-day detail
+      span_days=90 --span-start DATE — N days starting on that date
+      span_days=90 --span-end DATE — N days ending on that date
+      span_start + span_end — explicit range (span_days ignored)
+      span_days=all — full daily-item dataset (backlog floor through today by
+        default; combine with span_start and/or span_end to adjust). May be expensive.
+
+    mode:
+      auto (default) — per-day breakdown when the count of in-span days with initial_uploads_incomplete
+        and in-span missing days are both <= auto_detail_max_days; otherwise aggregate only
+      detailed — always per-day breakdown for the span
+      summary — always aggregate counts for the span
+
+    Examples:
+      invoke report-ia-upload-health
+      invoke report-ia-upload-health --span-days 90 --span-start 2010-01-01
+      invoke report-ia-upload-health --span-days 90 --span-end 2015-06-01
+      invoke report-ia-upload-health --span-start 2010-01-01 --span-end 2010-06-30
+      invoke report-ia-upload-health --span-days all --mode summary
+      invoke report-ia-upload-health --span-days all --span-start 2022-01-01
     """
-    count = Link.objects.visible_to_ia().filter(
-        internet_archive_upload_status__in=['not_started', 'failed', 'upload_or_reupload_required', 'deleted']
-    ).count()
-    print(count)
+    report = build_ia_upload_health_report(
+        mode=mode,
+        auto_detail_max_days=auto_detail_max_days,
+        span_days=span_days,
+        span_start=span_start or None,
+        span_end=span_end or None,
+    )
+    print(json.dumps(report, indent=2))
 
 
 @task
@@ -91,6 +131,58 @@ def count_links_without_cached_playback_status(ctx):
     """
     count = Link.objects.permanent().filter(cached_can_play_back__isnull=True).count()
     print(count)
+
+
+@task
+def capture_queue_health(ctx, quiet=False, window=50, max_uncompleted=25, stuck_minutes=20, max_stuck=25):
+    """
+    Report on whether captures are completing, flagging two conditions:
+
+      1. Of the most recently created {window} links, how many still have a
+         capture (other than a user upload) in the 'pending' state. This is the
+         original status.perma.cc/monitor heuristic -- a snapshot of whether
+         recent captures are succeeding right now -- and fires when more than
+         {max_uncompleted} of them are unfinished. This can happen the moment 50
+         links are submitted, even in a healthy queue.
+      2. How many CaptureJobs are old enough to have finished but are still
+         pending/in_progress: fires when
+         more than {max_stuck} jobs have been unfinished for over
+         {stuck_minutes} minutes.
+
+    Report if *either* condition is exceeded.
+    With --quiet (for cron/alerting) print nothing unless something is wrong;
+    otherwise print both numbers for a human.
+    """
+    # 1. Recent-window pending snapshot (original /monitor heuristic).
+    recent_link_ids = list(
+        Link.objects.order_by('-creation_timestamp')
+        .values_list('pk', flat=True)[:window]
+    )
+    uncompleted = Link.objects.filter(
+        pk__in=recent_link_ids,
+        captures__status='pending',
+        captures__user_upload=False,
+    ).distinct().count()
+
+    # 2. Stuck jobs: too old to still be unfinished. Age comes from
+    # Link.creation_timestamp (write-once); CaptureJob.creation_timestamp is
+    # auto_now and so tracks last save, not submission.
+    cutoff = timezone.now() - timedelta(minutes=stuck_minutes)
+    stuck = CaptureJob.objects.filter(
+        status__in=['pending', 'in_progress'],
+        link__creation_timestamp__lt=cutoff,
+    ).count()
+
+    problems = []
+    if uncompleted > max_uncompleted:
+        problems.append(f"{uncompleted} uncompleted captures in the most recent {window}")
+    if stuck > max_stuck:
+        problems.append(f"{stuck} captures unfinished for over {stuck_minutes} minutes")
+
+    if problems:
+        print("; ".join(problems))
+    elif not quiet:
+        print(f"OK: {uncompleted} uncompleted in last {window}, {stuck} unfinished over {stuck_minutes} min")
 
 
 @task
@@ -246,4 +338,3 @@ def update_cloudflare_cache(ctx):
     for ip_filename in ('ips-v4', 'ips-v6'):
         with open(os.path.join(settings.CLOUDFLARE_DIR, ip_filename), 'w') as ip_file:
             ip_file.write(requests.get(f'https://www.cloudflare.com/{ip_filename}').text)
-

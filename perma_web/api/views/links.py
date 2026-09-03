@@ -14,8 +14,8 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from perma.celery_tasks import (
+    delete_link_from_daily_item,
     run_next_capture,
-    request_internet_archive_deletion_from_privacy_toggle,
     upload_link_to_internet_archive
 )
 from perma.models import Capture, CaptureJob, Folder, Link, LinkBatch
@@ -287,6 +287,8 @@ class AuthenticatedLinkListExportView(BaseView):
                 ('status', report_status(link)),
                 ('error_message', link.capture_job.message if link.has_capture_job() else ''),
                 ('title', link.submitted_title),
+                ('created_on', link.creation_timestamp.strftime('%B %d, %Y')),
+                ('notes', link.notes),
                 ('perma_link', f"{request.scheme}://{request.get_host()}/{link.guid}")
             ])
             for link in queryset
@@ -363,7 +365,7 @@ class AuthenticatedLinkDetailView(BaseView):
                     link.internet_archive_upload_status = 'deletion_required'
                     link.save(update_fields=["internet_archive_upload_status"])
                     logger.info(f"Link {link.guid} was toggled to private. Requesting the IA deletion.")
-                    request_internet_archive_deletion_from_privacy_toggle(link)
+                    delete_link_from_daily_item.delay(link.guid)
 
             # include remaining links in response
             links_remaining = request.user.get_links_remaining()

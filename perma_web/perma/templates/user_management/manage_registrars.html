@@ -167,7 +167,7 @@
                 </a>
               {% else %}
                 <a class="action" href="{% url 'user_management_manage_single_registrar' registrar.id %}">edit <span class="sr-only">{{ registrar.name }}</span></a>
-                {% if request.user.is_staff %}
+                {% if user_management_perms.can_link_registrar_admin %}
                   <a class="action" href="{% url "admin:perma_registrar_change" registrar.id %}">edit <div class="sr-wrapper"><span class="sr-only">{{ registrar.name }} </span></div>in admin console</a>
                 {% endif %}
               {% endif %}

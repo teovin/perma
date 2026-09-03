@@ -62,21 +62,17 @@ def post_process_settings(settings):
             'task': 'perma.celery_tasks.sync_subscriptions_from_perma_payments',
             'schedule': crontab(hour='23', minute='0')
         },
-        'conditionally_queue_internet_archive_uploads_for_date_range': {
-            'task': 'perma.celery_tasks.conditionally_queue_internet_archive_uploads_for_date_range',
+        'queue_internet_archive_pending_work': {
+            'task': 'perma.celery_tasks.queue_internet_archive_pending_work',
             'schedule': crontab(minute="*/5"),
             'args': (
                 os.environ.get('IA_UPLOAD_START_DATESTRING') or None,
                 os.environ.get('IA_UPLOAD_END_DATESTRING') or None
             )
         },
-        'queue_internet_archive_uploads_required_from_privacy_toggle': {
-            'task': 'perma.celery_tasks.queue_internet_archive_uploads_required_from_privacy_toggle',
-            'schedule': crontab(minute="10,40"),
-        },
-        'queue_internet_archive_deletions_required_from_privacy_toggle': {
-            'task': 'perma.celery_tasks.queue_internet_archive_deletions_required_from_privacy_toggle',
-            'schedule': crontab(minute="20,50"),
+        'queue_internet_archive_privacy_toggled_still_pending': {
+            'task': 'perma.celery_tasks.queue_internet_archive_privacy_toggled_still_pending',
+            'schedule': crontab(hour='3', minute='0'),
         },
         'confirm_files_uploaded_to_internet_archive': {
             'task': 'perma.celery_tasks.queue_file_uploaded_confirmation_tasks',
@@ -105,3 +101,18 @@ def post_process_settings(settings):
     }
     settings['CELERY_BEAT_SCHEDULE'] = dict(((job, celerybeat_job_options[job]) for job in settings.get('CELERY_BEAT_JOB_NAMES', [])),
                                            **settings.get('CELERY_BEAT_SCHEDULE', {}))
+
+
+    # set up Payments App URLS
+    assert 'STRIPE_PAYMENTS_APP_EXTERNAL_URL' in settings and settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL'] is not None, "Set DJANGO__STRIPE_PAYMENTS_APP_EXTERNAL_URL env var!"
+    assert 'STRIPE_PAYMENTS_APP_INTERNAL_URL' in settings and settings['STRIPE_PAYMENTS_APP_INTERNAL_URL'] is not None, "Set DJANGO__STRIPE_PAYMENTS_APP_INTERNAL_URL env var!"
+    settings['PAYMENTS_APP_URLS'] = {
+        'purchase': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/purchase/",
+        'purchase_history': f"{settings['STRIPE_PAYMENTS_APP_INTERNAL_URL']}/purchase-history/",
+        'acknowledge_purchase': f"{settings['STRIPE_PAYMENTS_APP_INTERNAL_URL']}/acknowledge-purchase/",
+        'subscribe': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/subscribe/",
+        'subscription_status': f"{settings['STRIPE_PAYMENTS_APP_INTERNAL_URL']}/subscription/",
+        'update': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/update/",
+        'change': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/change/",
+        'billing': f"{settings['STRIPE_PAYMENTS_APP_EXTERNAL_URL']}/billing/",
+    }

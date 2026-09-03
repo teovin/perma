@@ -35,7 +35,6 @@ This document contains tips and tricks for working with Perma.
 - [Working with Redis](#working-with-redis)
 - [Running with DEBUG=False locally](#running-with-debugfalse-locally)
 - [Perma Payments](#perma-payments)
-  - [Test Perma Interaction with Perma Payments](#test-perma-interaction-with-perma-payments)
 - [Scoop](#scoop)
 - [Working with Superset](#working-with-superset)
 
@@ -442,40 +441,9 @@ __NB__: If you make changes to static files, like CSS, while running with `DEBUG
 
 ## Perma Payments
 
-Aspects of Perma's paid subscription service are handled by the companion application, [Perma Payments](https://github.com/harvard-lil/perma-payments).
+Aspects of Perma's paid subscription service are handled by the companion application, [Perma Payments](https://github.com/harvard-lil/perma-payments-stripe).
 
-By default, Perma's `docker-compose.yml` file will spin up a local Perma Payments for you to experiment with. For more fruitful experimentation, configure Perma Payments to interact with CyberSource's test tier by running Payments with a custom `settings.py` that contains our credentials. See `docker-compose.yml` and `services/docker/perma-payments/settings.py.example` for more information. CyberSource cannot communicate its responses back to your local instance, but you can simulate active subscriptions using the Django admin.
-
-### Test Perma Interaction with Perma Payments
-
-You may also decide to run both services by running `docker compose` in both repositories simultaneously, with a tweaked Perma network config.
-
-First, head over to the [`Perma Payments` repo](https://github.com/harvard-lil/perma-payments/blob/develop/README.md#running-locally) for instructions on how to spin that up.
-
-Once it's running, spin up Perma... but with a slightly different command than usual, so that it doesn't try to create its own Perma Payments, but instead uses the already-running one:
-
-```
-docker compose -f docker-compose.yml up -d
-```
-
-Then, run Perma's dev server as usual:
-
-```
-docker compose exec web invoke run
-```
-
-When you are finished, take down the Perma containers by running:
-
-```
-docker compose -f docker-compose.yml down
-```
-
-Don't worry if you get the following error:
-
-`ERROR: error while removing network: network perma-payments_default id 1902203ed2ca5dee5b57462201db417638317baef142e112173ee300461eb527 has active endpoints`
-
-It just means that Perma Payments is still running: the network is maintained until both projects are down. Head back over to the Perma Payments repo and run `docker compose down` there... and you're done.
-
+For the most fruitful experimentation, configure Perma to interact with a locally-running instance of Perma Payments that is itself wired up to a Stripe sandbox. Head over to the Perma Payments repo for detailed installation instructions.
 
 ## Scoop
 

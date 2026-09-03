@@ -11,7 +11,6 @@ Perma.cc helps authors and journals create permanent archived citations in their
 ## Connect with Perma.cc
 
 - Use Perma.cc at [Perma.cc](https://perma.cc)
-- Twitter [@permacc](https://twitter.com/permacc)
 - Email us at [info@perma.cc](mailto:info@perma.cc)
 
 ## Installation

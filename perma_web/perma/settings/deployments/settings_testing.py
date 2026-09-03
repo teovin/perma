@@ -88,15 +88,6 @@ PERMA_PAYMENTS_ENCRYPTION_KEYS = {
     'perma_payments_public_key': 'DG8o9cS5Lgeuu7XAF08sw0aOX7mJFu9TVEtdrrBQHDY=',
 }
 
-PURCHASE_URL = '/purchase/'
-PURCHASE_HISTORY_URL = '/purchase-history/'
-ACKNOWLEDGE_PURCHASE_URL = '/acknowledge-purchase/'
-SUBSCRIBE_URL = '/subscribe/'
-CANCEL_URL = '/cancel-request/'
-SUBSCRIPTION_STATUS_URL = '/subscription/'
-UPDATE_URL = '/update/'
-CHANGE_URL = '/change/'
-
 
 # lots of subscription packages, to be thorough
 TIERS = {
@@ -147,3 +138,14 @@ TIERS = {
         }
     ]
 }
+
+# Keep these lines last:
+#
+# Because in testing, pytest is pointed directly at this file,
+# [tool.pytest.ini_options]
+# DJANGO_SETTINGS_MODULE = "perma.settings.deployments.settings_testing",
+# settings/__init__.py is not loaded, so post_process_settings never runs.
+#
+# Call it directly here instead.
+from ..utils.post_processing import post_process_settings
+post_process_settings(globals())

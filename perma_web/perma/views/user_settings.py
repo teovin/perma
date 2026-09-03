@@ -137,13 +137,38 @@ def settings_tools(request):
 @user_passes_test_or_403(lambda user: user.can_view_usage_plan())
 def settings_usage_plan(request):
     accounts = []
-    purchase_history = {}
+
+    # Status messages for redirects back from the payments app after checkout,
+    # e.g. settings/usage-plan/?subscription=success.
+    payment_status_level = payment_status_message = None
+    payment_redirect_messages = {
+        ('subscription', 'success'): ('success', 'Your subscription has been created.'),
+        ('subscription', 'canceled'): ('info', 'Subscription checkout was canceled. You were not charged.'),
+        ('purchase', 'success'): ('success', 'Your link purchase succeeded.'),
+        ('purchase', 'canceled'): ('info', 'Link purchase checkout was canceled. You were not charged.'),
+        ('change', 'success'): ('success', (
+            'Your subscription change was submitted. Upgrades are billed immediately; '
+            'downgrades take effect at the end of your current billing period.'
+        )),
+        ('change', 'canceled'): ('success', (
+            'Your scheduled downgrade has been canceled. Your current plan will continue unchanged.'
+        )),
+        # Neutral wording: the Stripe portal returns here for any action it
+        # allows (payment-method update, invoice view, or cancellation), and
+        # the return does not tell us which. "Updated" is honest for all of
+        # them; the accurate canceled state, if any, shows below this banner.
+        ('update', 'success'): ('success', 'Your subscription settings have been updated.'),
+    }
+    for param in ('subscription', 'purchase', 'change', 'update'):
+        match = payment_redirect_messages.get((param, request.GET.get(param)))
+        if match:
+            payment_status_level, payment_status_message = match
+            break
     try:
         if request.user.is_registrar_user() and not request.user.registrar.nonpaying:
             accounts.append(request.user.registrar.get_subscription_info(timezone.now()))
         if not request.user.nonpaying:
             accounts.append(request.user.get_subscription_info(timezone.now()))
-            purchase_history = request.user.get_purchase_history()
     except PermaPaymentsCommunicationException:
         context = {
             'this_page': 'settings_usage_plan',
@@ -152,43 +177,23 @@ def settings_usage_plan(request):
 
     context = {
         'this_page': 'settings_usage_plan',
-        'purchase_url': settings.PURCHASE_URL,
-        'subscribe_url': settings.SUBSCRIBE_URL,
-        'cancel_confirm_url': reverse('settings_subscription_cancel'),
+        'purchase_url': settings.PAYMENTS_APP_URLS['purchase'],
+        'billing_portal_url': settings.PAYMENTS_APP_URLS['billing'],
+        'subscribe_url': settings.PAYMENTS_APP_URLS['subscribe'],
         'update_url': reverse('settings_subscription_update'),
         'accounts': accounts,
-        'purchase_history': purchase_history,
-        'bonus_packages': request.user.get_bonus_packages()
-
+        'links_remaining': request.user.get_links_remaining(),
+        'bonus_packages': request.user.get_bonus_packages(),
+        'billing_encrypted_data': prep_for_perma_payments({
+            'customer_pk': request.user.pk,
+            'customer_type': 'Individual',
+            'timestamp': timezone.now().timestamp(),
+        }).decode('utf-8'),
+        'payment_status_level': payment_status_level,
+        'payment_status_message': payment_status_message,
     }
+
     return render(request, 'settings/settings-usage-plan.html', context)
-
-
-@sensitive_variables()
-@require_http_methods(["POST"])
-@user_passes_test_or_403(lambda user: user.can_view_usage_plan())
-def settings_subscription_cancel(request):
-    account_type = request.POST.get('account_type', '')
-    if account_type == 'Registrar':
-        customer = request.user.registrar
-    elif account_type == 'Individual':
-        customer = request.user
-    account = customer.get_subscription_info(timezone.now())
-    if not account['subscription']:
-        return HttpResponseForbidden()
-    context = {
-        'this_page': 'settings_subscription',
-        'cancel_url': settings.CANCEL_URL,
-        'customer': customer,
-        'customer_type': account_type,
-        'account': account,
-        'data': prep_for_perma_payments({
-            'customer_pk': customer.id,
-            'customer_type': account_type,
-            'timestamp': timezone.now().timestamp()
-        }).decode('utf-8')
-    }
-    return render(request, 'settings/settings-subscription-cancel-confirm.html', context)
 
 
 @sensitive_variables()
@@ -203,10 +208,11 @@ def settings_subscription_update(request):
     account = customer.get_subscription_info(timezone.now())
     if not account['subscription']:
         return HttpResponseForbidden()
+
     context = {
         'this_page': 'settings_subscription',
-        'update_url': settings.UPDATE_URL,
-        'change_url': settings.CHANGE_URL,
+        'update_url': settings.PAYMENTS_APP_URLS['update'],
+        'change_url': settings.PAYMENTS_APP_URLS['change'],
         'customer': customer,
         'customer_type': account_type,
         'account': account,
@@ -224,6 +230,11 @@ def api_key_create(request):
     """
     Generate or regenerate an API key for the user
     """
+
+    # API key authentication is disabled for admin users (see api.authentication),
+    # so don't let them create keys that wouldn't work.
+    if request.user.is_staff:
+        return HttpResponseForbidden()
 
     if request.method == "POST":
         try:

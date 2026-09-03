@@ -8,6 +8,7 @@ from django.db import connection
 from django.db.models.functions import Upper
 from django.db.models import Count, Max, Q
 from django.db.models.sql.where import WhereNode
+from django import forms
 from django.forms import ModelForm
 from django.template.defaultfilters import filesizeformat
 from django.utils.functional import cached_property
@@ -451,6 +452,11 @@ class FasterAdminPaginator(Paginator):
 ### admin models ###
 
 class RegistrarChangeForm(ModelForm):
+    type = forms.MultipleChoiceField(
+        choices=Registrar.REGISTRAR_TYPE_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
     def __init__(self, *args, **kwargs):
         super(RegistrarChangeForm, self).__init__(*args, **kwargs)
@@ -467,12 +473,13 @@ class RegistrarAdmin(SimpleHistoryAdmin):
     form = RegistrarChangeForm
 
     search_fields = ['name', 'email', 'website']
-    list_display = ['name', 'status', 'email', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate']
+    list_display = ['name', 'status', 'email', 'type', 'international', 'website', 'address', 'registrar_users', 'last_active', 'orgs_count', 'link_count', 'tag_list', 'orgs_private_by_default', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate', 'local_subscription_description', 'frozen']
     list_editable = ['status']
-    list_filter = ('status', 'unlimited', 'nonpaying', 'cached_subscription_status', 'orgs_private_by_default')
+    list_filter = ('status', 'unlimited', 'nonpaying', 'cached_subscription_status', 'orgs_private_by_default', 'frozen')
     fieldsets = (
-        (None, {'fields': ('name', 'email', 'website', 'address', 'status', 'tags', 'orgs_private_by_default', 'notes')}),
-        ("Tier", {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
+        (None, {'fields': ('name', 'email', 'website', 'address', 'status', 'type', 'international', 'tags', 'orgs_private_by_default', 'notes')}),
+        ("Tier", {'fields': ('nonpaying', 'base_rate', 'offer_monthly', 'offer_annual', 'local_subscription_description', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'bonus_links')}),
+        ("Enforcement (disputes/refunds)", {'fields': ('frozen',)}),
     )
     inlines = [
         new_class("OrganizationInline", admin.TabularInline, model=Organization,
@@ -575,7 +582,8 @@ class LinkUserAdmin(UserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'raw_email', 'notes')}),
         (None, {'fields': ('password',)}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_confirmed', 'registrar', 'groups')}),
-        ('Tier', {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'unlimited', 'link_limit', 'link_limit_period', 'in_trial', 'bonus_links')}),
+        ('Tier', {'fields': ('nonpaying', 'base_rate', 'cached_subscription_started', 'cached_subscription_status', 'cached_subscription_rate', 'cached_paid_through', 'unlimited', 'link_limit', 'link_limit_period', 'in_trial', 'bonus_links')}),
+        ('Enforcement (disputes/refunds)', {'fields': ('frozen',)}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     add_fieldsets = (
@@ -585,9 +593,9 @@ class LinkUserAdmin(UserAdmin):
         }),
     )
     raw_id_fields = ['registrar']
-    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'is_confirmed', 'in_trial', 'unlimited', 'nonpaying','cached_subscription_status', 'cached_subscription_started', 'cached_subscription_rate', 'base_rate', 'bonus_links', 'date_joined', 'last_login', 'link_count', 'registrar')
+    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active', 'is_confirmed', 'in_trial', 'unlimited', 'nonpaying', 'cached_subscription_status', 'cached_subscription_started', 'cached_paid_through', 'cached_subscription_rate', 'base_rate', 'bonus_links', 'frozen', 'date_joined', 'last_login', 'link_count', 'registrar')
     search_fields = ('first_name', 'last_name', 'email')
-    list_filter = ('is_staff', 'is_active', 'in_trial', 'unlimited', 'nonpaying', 'cached_subscription_status', RegistrarUserFilter, OrgUserFilter, OrgUserForRegistrarFilter)
+    list_filter = ('is_staff', 'is_active', 'in_trial', 'unlimited', 'nonpaying', 'cached_subscription_status', 'frozen', RegistrarUserFilter, OrgUserFilter, OrgUserForRegistrarFilter)
     ordering = ('-id',)
     readonly_fields = ['date_joined']
     # Adds so many fields to the form that it becomes illegal to submit,
@@ -627,7 +635,7 @@ class LinkAdmin(SimpleHistoryAdmin):
         ('Organization', {'fields': ('folders', 'notes')}),
         ('Mirroring', {'fields': ('archive_timestamp', 'internet_archive_upload_status', 'cached_can_play_back')}),
     )
-    readonly_fields = ['guid', 'capture_job', 'folders', 'creation_timestamp', 'formatted_warc_size', 'formatted_wacz_size', 'captured_by_software', 'captured_by_browser', 'archive_timestamp']
+    readonly_fields = ['guid', 'capture_job', 'folders', 'creation_timestamp', 'created_by', 'formatted_warc_size', 'formatted_wacz_size', 'captured_by_software', 'captured_by_browser', 'user_deleted', 'user_deleted_timestamp', 'archive_timestamp']
     inlines = [
         new_class("CaptureInline", admin.TabularInline, model=Capture,
                   fields=['role', 'status', 'url', 'content_type', 'record_type', 'user_upload'],
@@ -744,8 +752,8 @@ class LinkBatchAdmin(admin.ModelAdmin):
 
 
 class InternetArchiveItemAdmin(admin.ModelAdmin):
-    list_display = ['identifier', 'confirmed_exists', 'cached_is_dark', 'added_date', 'span', 'cached_file_count', 'tasks_in_progress', 'complete', 'last_derived', 'derive_required', 'internet_archive_link']
-    list_filter = [IAIdentifierFilter, IAItemTypeFilter, IAItemHasTasksFilter, 'confirmed_exists', 'complete', 'cached_is_dark']
+    list_display = ['identifier', 'confirmed_exists', 'cached_is_dark', 'added_date', 'span', 'cached_file_count', 'tasks_in_progress', 'initial_uploads_complete', 'last_derived', 'derive_required', 'internet_archive_link']
+    list_filter = [IAIdentifierFilter, IAItemTypeFilter, IAItemHasTasksFilter, 'confirmed_exists', 'initial_uploads_complete', 'cached_is_dark']
     readonly_fields = ['identifier', 'cached_is_dark', 'added_date', 'span', 'cached_title', 'cached_description', 'cached_file_count', 'last_derived']
 
     paginator = FasterAdminPaginator

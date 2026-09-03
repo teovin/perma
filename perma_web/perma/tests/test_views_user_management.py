@@ -405,10 +405,11 @@ class UserManagementViewsTestCase(PermaTestCase):
 
     def test_sponsored_user_export_user_list(self):
         expected_results = [
-            ('another_inactive_sponsored_user@example.com', 'inactive'),
-            ('another_sponsored_user@example.com', 'active'),
-            ('inactive_sponsored_user@example.com', 'inactive'),
-            ('test_sponsored_user@example.com', 'active'),
+            ('another_inactive_sponsored_user@example.com', 'Another Library', 'inactive'),
+            ('another_sponsored_user@example.com', 'Another Library', 'active'),
+            ('another_sponsored_user@example.com', 'A Third Library', 'active'),
+            ('inactive_sponsored_user@example.com', 'Test Library', 'inactive'),
+            ('test_sponsored_user@example.com', 'Test Library', 'active'),
         ]
 
         # Get CSV export output
@@ -423,8 +424,9 @@ class UserManagementViewsTestCase(PermaTestCase):
         csv_file = StringIO(csv_response.content.decode('utf8'))
         reader = csv.DictReader(csv_file)
         for index, record in enumerate(reader):
-            expected_email, expected_sponsorship_status = expected_results[index]
+            expected_email, expected_sponsoring_registrar, expected_sponsorship_status = expected_results[index]
             self.assertEqual(record['email'], expected_email)
+            self.assertEqual(record['sponsoring_registrar'], expected_sponsoring_registrar)
             self.assertEqual(record['sponsorship_status'], expected_sponsorship_status)
         self.assertEqual(index + 1, len(expected_results))
 
@@ -439,8 +441,9 @@ class UserManagementViewsTestCase(PermaTestCase):
         # Validate JSON output against expected results
         reader = json.loads(json_response.content)
         for index, record in enumerate(reader):
-            expected_email, expected_sponsorship_status = expected_results[index]
+            expected_email, expected_sponsoring_registrar, expected_sponsorship_status = expected_results[index]
             self.assertEqual(record['email'], expected_email)
+            self.assertEqual(record['sponsoring_registrar'], expected_sponsoring_registrar)
             self.assertEqual(record['sponsorship_status'], expected_sponsorship_status)
         self.assertEqual(index + 1, len(expected_results))
 
@@ -706,6 +709,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         another_csv_data = 'first_name,last_name,email\nJohn2,Doe,john2doe@example.com\nJane2,Smith,jane2smith@example.com'
         invalid_csv_data = 'name\nJohn Doe'
         another_invalid_csv_data = 'first_name,last_name,email\nJohn,Doe,\nJane,Smith,janesmith@example.com'
+        csv_data_to_normalize = 'first_name,last_name,email\rJohn,Doe,johndoe@example.com\rJane,Smith,janesmith@example.com'
 
         valid_csv_file = create_csv_file('users.csv', csv_data)
         another_valid_csv_file = create_csv_file('another_valid_users.csv', another_csv_data)
@@ -713,6 +717,8 @@ class UserManagementViewsTestCase(PermaTestCase):
         invalid_csv_file = create_csv_file('invalid_users.csv', invalid_csv_data)
         another_invalid_csv_file = create_csv_file('another_invalid_users.csv', another_invalid_csv_data)
         csv_file_with_invalid_encoding = create_csv_file('users.csv', csv_data, 'utf-16')
+        blank_lines_csv_file = create_csv_file('blank_lines_users.csv', '\n\n')
+        normalized_line_endings_csv = create_csv_file('normalized_line_endings_users.csv', csv_data_to_normalize)
 
         request = RequestFactory().get('/')
         request.user = self.registrar_user
@@ -746,8 +752,18 @@ class UserManagementViewsTestCase(PermaTestCase):
         # invalid csv - non utf-8 encoding
         form4 = initialize_form(csv_file_with_invalid_encoding)
         self.assertFalse(form4.is_valid())
-        self.assertTrue("CSV file must be encoded with UTF-8."
+        self.assertTrue("CSV file must be encoded with UTF-8. Please save the file with UTF-8 encoding and try again."
                         in form4.errors['csv_file'])
+
+        # invalid csv - blank lines only (fieldnames is [])
+        form5 = initialize_form(blank_lines_csv_file)
+        self.assertFalse(form5.is_valid())
+        self.assertTrue("CSV file must contain a header row with first_name, last_name and email columns."
+                        in form5.errors['csv_file'])
+
+        # valid csv with normalized line endings
+        form6 = initialize_form(normalized_line_endings_csv)
+        self.assertTrue(form6.is_valid())
 
         # --- test user creation ---
         self.assertTrue(form1.is_valid())
@@ -1800,8 +1816,8 @@ class UserManagementViewsTestCase(PermaTestCase):
 
     def create_firm_usage_form(self):
         return {
-            'estimated_number_of_accounts': '10 - 50',
-            'estimated_perma_links_per_month': '100+',
+            'estimated_number_of_seats': '10 - 50',
+            'estimated_perma_links_per_month': '101 - 500',
         }
 
     def create_firm_user_form(self):
@@ -1835,7 +1851,7 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         # Existing user's email address, no firm info (should not succeed due to missing values)
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={'a-address': self.randomize_capitalization(existing_user['email'])},
         )
         expected_emails_sent += 0
@@ -1843,7 +1859,7 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         # Existing user's email address + firm info
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={
                 'a-address': self.randomize_capitalization(existing_user['email']),
                 'a-registrar_user_candidate': firm_user_form['registrar_user_candidate'],
@@ -1858,7 +1874,7 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         # New user email address, don't create account
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={
                 'a-address': firm_user_form['raw_email'],
                 'a-registrar_user_candidate': firm_user_form['registrar_user_candidate'],
@@ -1873,7 +1889,7 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         # New user email address, create account
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={
                 'a-address': firm_user_form['raw_email'],
                 'a-registrar_user_candidate': firm_user_form['registrar_user_candidate'],
@@ -1894,7 +1910,7 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         # Existing user
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={
                 'a-address': existing_user['email'],
                 'a-registrar_user_candidate': firm_user_form['registrar_user_candidate'],
@@ -1914,7 +1930,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         firm_usage_form = self.create_firm_usage_form()
         firm_user_form = self.create_firm_user_form()
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={
                 'a-address': firm_user_form['raw_email'],
                 'create_account': True,
@@ -1938,7 +1954,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         error_keys = [
             'email',
             'website',
-            'estimated_number_of_accounts',
+            'estimated_number_of_seats',
             'estimated_perma_links_per_month',
             'name',
             'registrar_user_candidate',
@@ -1946,7 +1962,7 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         # Not logged in, blank submission reports correct fields required
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={},
             form_keys=['registrar_form', 'usage_form', 'user_form'],
             error_keys=error_keys,
@@ -1956,7 +1972,7 @@ class UserManagementViewsTestCase(PermaTestCase):
         # Logged in, blank submission reports same fields required
         # (This is odd; see issue 1749)
         self.submit_form(
-            'sign_up_firms',
+            'sign_up_orgs',
             data={},
             form_keys=['registrar_form', 'usage_form', 'user_form'],
             user='test_user@example.com',
@@ -2157,3 +2173,8 @@ class UserManagementViewsTestCase(PermaTestCase):
 
         self.submit_form('password_reset', data={'email': self.randomize_capitalization(email)})
         self.assertEqual(len(mail.outbox), 2)
+
+    def test_password_reset_rejects_control_characters(self):
+        # NUL / other control characters must not reach Postgres or cause a 500
+        self.submit_form('password_reset', data={'email': 'test\x00user@example.com'})
+        self.assertEqual(len(mail.outbox), 0)

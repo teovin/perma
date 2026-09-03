@@ -8,6 +8,9 @@ from perma.exceptions import PermaPaymentsCommunicationException
 from conftest import submit_form
 from unittest.mock import patch, sentinel
 
+def form_actions(content):
+    return {form.get('action') for form in BeautifulSoup(content, 'html.parser').find_all('form') if form.get('action')}
+
 
 #
 # User's own settings
@@ -183,31 +186,42 @@ def test_regular_user_can_see_usage_plan_page(client, link_user):
     assert response.status_code == 200
 
 
-def test_no_purchase_history_section_if_no_one_time_purchases(client, user_without_subscription_or_purchase_history):
-    user = user_without_subscription_or_purchase_history
-
-    client.force_login(user)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
+def test_payment_success_message_shown_after_redirect(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?subscription=success', secure=True)
 
     assert response.status_code == 200
-    assert b'Purchase History' not in response.content
+    assert b'alert-success' in response.content
+    assert b'Your subscription has been created.' in response.content
 
 
+def test_downgrade_canceled_message_shown_after_redirect(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?change=canceled', secure=True)
 
-def test_purchase_history_present_if_one_time_purchases(client, user_without_subscription_with_purchase_history):
-    user = user_without_subscription_with_purchase_history
-
-    client.force_login(user)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    assert b'Purchase History' in response.content
-    assert b'10 Links' in response.content
-    assert b'3 Links' in response.content
-    assert b'13 Links' in response.content
-    assert b'January 1, 1970' in response.content
+    assert response.status_code == 200
+    assert b'alert-success' in response.content
+    assert b'Your scheduled downgrade has been canceled.' in response.content
 
 
-@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+def test_payment_canceled_message_shown_as_info_after_redirect(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?purchase=canceled', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-info' in response.content
+    assert b'Link purchase checkout was canceled. You were not charged.' in response.content
+
+
+def test_no_payment_message_for_unrecognized_params(client, user_without_subscription_or_purchase_history):
+    client.force_login(user_without_subscription_or_purchase_history)
+    response = client.get(reverse('settings_usage_plan') + '?subscription=bogus&foo=success', secure=True)
+
+    assert response.status_code == 200
+    assert b'alert-block' not in response.content
+
+
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
 def test_subscribe_form_if_no_standing_subscription(prepped, client, user_without_subscription_or_purchase_history):
     user = user_without_subscription_or_purchase_history
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
@@ -221,12 +235,13 @@ def test_subscribe_form_if_no_standing_subscription(prepped, client, user_withou
 
     individual_tier_count = len(settings.TIERS['Individual'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count + purchase_history_form
 
 
-def test_update_button_cancel_button_and_subscription_info_present_if_standing_subscription(client, user_with_monthly_subscription):
+def test_manage_button_and_subscription_info_present_if_standing_subscription(client, user_with_monthly_subscription):
     user = user_with_monthly_subscription
 
     client.force_login(user)
@@ -234,10 +249,44 @@ def test_update_button_cancel_button_and_subscription_info_present_if_standing_s
 
     assert b'Rate' in response.content
     assert b'Paid Through' in response.content
-    assert b'Modify Subscription' in response.content
-    assert b'Cancel Subscription' in response.content
+    assert b'Manage Subscription and Billing' in response.content
     assert b'Your subscription is <span class="blue-text">current</span>' in response.content
-    assert response.content.count(b'<input type="hidden" name="account_type"') == 2
+    assert response.content.count(b'<input type="hidden" name="account_type"') == 1
+
+
+def test_billing_portal_button_present(client, mocker, link_user, no_purchase_history):
+    mocker.patch('perma.models.LinkUser.get_subscription', autospec=True, return_value=None)
+    mocker.patch(
+        'perma.models.LinkUser.get_purchase_history', autospec=True, return_value=no_purchase_history
+    )
+    link_user.bonus_links = 7
+    link_user.save()
+
+    client.force_login(link_user)
+    response = client.get(reverse('settings_usage_plan'), secure=True)
+
+    assert response.status_code == 200
+    assert b'Additional Links Remaining: 7 Links' in response.content
+    assert f'{settings.STRIPE_PAYMENTS_APP_EXTERNAL_URL}/billing/' in form_actions(response.content)
+
+
+def test_registrar_update_page_shows_contact_note(client, registrar_user_from_registrar_with_monthly_subscription):
+    client.force_login(registrar_user_from_registrar_with_monthly_subscription)
+    response = client.post(
+        reverse('settings_subscription_update'),
+        secure=True,
+        data={'account_type': 'Registrar'}
+    )
+
+    assert response.status_code == 200
+    assert b'Please contact' in response.content
+    assert b'info@perma.cc' in response.content
+
+
+def test_update_routes_rejects_get(client, link_user):
+    client.force_login(link_user)
+    response = client.get(reverse('settings_subscription_update'), secure=True)
+    assert response.status_code == 405
 
 
 def test_help_present_if_subscription_on_hold(client, user_with_on_hold_subscription):
@@ -249,18 +298,6 @@ def test_help_present_if_subscription_on_hold(client, user_with_on_hold_subscrip
     assert b'problem with your credit card' in response.content
 
 
-def test_cancellation_info_present_if_cancellation_requested(client, user_with_requested_cancellation):
-    user = user_with_requested_cancellation
-
-    client.force_login(user)
-    response = client.get(reverse('settings_usage_plan'), secure=True)
-
-    bonus_package_count = len(settings.BONUS_PACKAGES)
-    assert b'Get More Personal Links' in response.content
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == bonus_package_count
-    assert b'received the request to cancel' in response.content
-
-
 @patch('perma.models.LinkUser.get_subscription', autospec=True)
 def test_apology_page_displayed_if_perma_payments_is_down(get_subscription, client, link_user):
     get_subscription.side_effect = PermaPaymentsCommunicationException
@@ -270,43 +307,6 @@ def test_apology_page_displayed_if_perma_payments_is_down(get_subscription, clie
     assert b'is currently unavailable' in response.content
     assert b'<input type="hidden" name="encrypted_data"' not in response.content
     get_subscription.assert_called_once_with(link_user)
-
-
-def test_unauthorized_user_cannot_see_cancellation_page(client, nonpaying_user):
-    assert not nonpaying_user.can_view_usage_plan()
-    client.force_login(nonpaying_user)
-    response = client.post(
-        reverse('settings_subscription_cancel'),
-        secure=True
-    )
-    assert response.status_code == 403
-
-
-def test_authorized_user_cant_use_get_for_cancellation_page(client, link_user):
-    assert link_user.can_view_usage_plan()
-    client.force_login(link_user)
-    response = client.get(
-        reverse('settings_subscription_cancel'),
-        secure=True
-    )
-    assert response.status_code == 405
-
-
-@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-def test_authorized_user_cancellation_confirm_form(prepped, client, user_with_monthly_subscription):
-    user = user_with_monthly_subscription
-    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
-
-    client.force_login(user)
-    response = client.post(
-        reverse('settings_subscription_cancel'),
-        secure=True,
-        data={'account_type':'Individual'}
-    )
-
-    assert b'<input type="hidden" name="encrypted_data"' in response.content
-    assert prepped.return_value in response.content
-    assert b'Are you sure you want to cancel' in response.content
 
 
 def test_update_page_if_no_standing_subscription(client, user_without_subscription_or_purchase_history):
@@ -322,7 +322,7 @@ def test_update_page_if_no_standing_subscription(client, user_without_subscripti
 
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
 def test_update_page_if_standing_subscription(model_prepped, view_prepped, client, user_with_monthly_subscription):
     user = user_with_monthly_subscription
     model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
@@ -338,7 +338,9 @@ def test_update_page_if_standing_subscription(model_prepped, view_prepped, clien
     # Should be able to up/downgrade to all monthly individual tiers, except the current tier
     available_tiers = len([tier for tier in settings.TIERS['Individual'] if tier['period'] == 'monthly']) - 1
 
-    assert b'Update Credit Card Information' in response.content
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
+
     assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 1
     assert b'Change Plan' in response.content
     assert b'Cancel Scheduled Downgrade' not in response.content
@@ -348,7 +350,7 @@ def test_update_page_if_standing_subscription(model_prepped, view_prepped, clien
 
 
 @patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
 def test_update_page_if_downgrade_scheduled(model_prepped, view_prepped, client, user_with_scheduled_downgrade):
     user = user_with_scheduled_downgrade
     model_prepped.return_value = bytes(str(sentinel.model_prepped), 'utf-8')
@@ -361,7 +363,8 @@ def test_update_page_if_downgrade_scheduled(model_prepped, view_prepped, client,
         data={'account_type':'Individual'}
     )
 
-    assert b'Update Credit Card Information' in response.content
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
     assert b'Cancel Scheduled Downgrade' in response.content
     assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 2
     assert b'<input required type="radio" name="encrypted_data"' not in response.content
@@ -381,25 +384,8 @@ def test_update_page_if_subscription_on_hold(prepped, client, user_with_on_hold_
         data={'account_type':'Individual'}
     )
 
-    assert b'Update Credit Card Information' in response.content
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 1
-    assert response.content.count(prepped.return_value) == 1
-    assert b'Change Plan' not in response.content
-
-
-@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-def test_update_page_if_cancellation_requested(prepped, client, user_with_requested_cancellation):
-    user = user_with_requested_cancellation
-    prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
-
-    client.force_login(user)
-    response = client.post(
-        reverse('settings_subscription_update'),
-        secure=True,
-        data={'account_type':'Individual'}
-    )
-
-    assert b'Update Credit Card Information' in response.content
+    assert b'Manage Payment and Billing' in response.content
+    assert b"Stripe's secure customer portal" in response.content
     assert response.content.count(b'<input type="hidden" name="encrypted_data"') == 1
     assert response.content.count(prepped.return_value) == 1
     assert b'Change Plan' not in response.content
@@ -407,7 +393,7 @@ def test_update_page_if_cancellation_requested(prepped, client, user_with_reques
 
 # Subscriptions, Registrar Users
 
-@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
 def test_registrar_user_nonpaying_registrar(prepped, client, registrar_user_from_nonpaying_registrar):
     user = registrar_user_from_nonpaying_registrar
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
@@ -422,16 +408,17 @@ def test_registrar_user_nonpaying_registrar(prepped, client, registrar_user_from
 
     individual_tier_count = len(settings.TIERS['Individual'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert b'Get More Personal Links' in response.content
     assert b'Purchase a personal subscription' in response.content
     assert f'Purchase a subscription for {user.registrar.name}'.encode() not in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count + purchase_history_form
     assert response.content.count(prepped.return_value) == individual_tier_count + bonus_package_count
 
 
-@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
 def test_paying_registrar_user_sees_both_subscribe_forms(prepped, client, registrar_user_from_paying_registrar_without_subscription):
     user = registrar_user_from_paying_registrar_without_subscription
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
@@ -445,16 +432,17 @@ def test_paying_registrar_user_sees_both_subscribe_forms(prepped, client, regist
     # all tiers should be offered, both individual and registrar-level
     tier_count = len(settings.TIERS['Individual']) + len(settings.TIERS['Registrar'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert b'Get More Personal Links' in response.content
     assert b'Purchase a personal subscription' in response.content
     assert f'Purchase a subscription for {user.registrar.name}'.encode() in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == tier_count + bonus_package_count + purchase_history_form
     assert response.content.count(prepped.return_value) == tier_count + bonus_package_count
 
 
-@patch('perma.models.base.prep_for_perma_payments', autospec=True)
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
 def test_paying_registrar_user_sees_subscriptions_independently(prepped, client, registrar_user_from_registrar_with_monthly_subscription):
     user = registrar_user_from_registrar_with_monthly_subscription
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
@@ -469,58 +457,55 @@ def test_paying_registrar_user_sees_subscriptions_independently(prepped, client,
 
     individual_tier_count = len(settings.TIERS['Individual'])
     bonus_package_count = len(settings.BONUS_PACKAGES)
+    purchase_history_form = 1
     assert b'Get More Personal Links' in response.content
     assert b'Purchase a personal subscription' in response.content
     assert b'Purchase a subscription for Test Firm' not in response.content
     assert response.content.count(b'<form class="purchase-form') == bonus_package_count
     assert response.content.count(b'<form class="upgrade-form') == individual_tier_count
-    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count
+    assert response.content.count(b'<input type="hidden" name="encrypted_data"') == individual_tier_count + bonus_package_count + purchase_history_form
     assert response.content.count(prepped.return_value) == individual_tier_count + bonus_package_count
 
     assert b'Rate' in response.content
     assert b'Paid Through' in response.content
-    assert b'Modify Subscription' in response.content
-    assert response.content.count(b'<input type="hidden" name="account_type"') == 2
-    assert b'Cancel Subscription' in response.content
+    assert b'Manage Subscription and Billing' in response.content
+    assert response.content.count(b'<input type="hidden" name="account_type"') == 1
 
 
-@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-def test_paying_registrar_user_personal_cancellation_confirm_form(prepped, client, registrar_user_from_paying_registrar_with_personal_subscription):
-    user = registrar_user_from_paying_registrar_with_personal_subscription
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
+def test_paying_registrar_user_sees_only_allowed_monthly_tier(prepped, client, registrar_user_from_paying_registrar_without_subscription):
+    user = registrar_user_from_paying_registrar_without_subscription
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    user.registrar.offer_monthly = True
+    user.registrar.offer_annual = False
+    user.registrar.save()
 
     client.force_login(user)
-    response = client.post(
-        reverse('settings_subscription_cancel'),
-        secure=True,
-        data={'account_type':'Individual'}
+    response = client.get(
+        reverse('settings_usage_plan'),
+        secure=True
     )
 
-    assert b'<input type="hidden" name="encrypted_data"' in response.content
-    assert prepped.return_value in response.content
-    assert b'Are you sure you want to cancel' in response.content
-    assert user.registrar.name.encode() not in response.content
-    assert b'personal' in response.content
+    assert b'<span>Monthly plan' in response.content
+    assert b'<span>Annual plan' not in response.content
 
 
-
-@patch('perma.views.user_settings.prep_for_perma_payments', autospec=True)
-def test_paying_registrar_user_institutional_cancellation_confirm_form(prepped, client, registrar_user_from_registrar_with_monthly_subscription):
-    user = registrar_user_from_registrar_with_monthly_subscription
+@patch('perma.models.customer.prep_for_perma_payments', autospec=True)
+def test_paying_registrar_user_sees_only_allowed_annual_tier(prepped, client, registrar_user_from_paying_registrar_without_subscription):
+    user = registrar_user_from_paying_registrar_without_subscription
     prepped.return_value = bytes(str(sentinel.prepped), 'utf-8')
+    user.registrar.offer_monthly = False
+    user.registrar.offer_annual = True
+    user.registrar.save()
 
     client.force_login(user)
-    response = client.post(
-        reverse('settings_subscription_cancel'),
-        secure=True,
-        data={'account_type':'Registrar'}
+    response = client.get(
+        reverse('settings_usage_plan'),
+        secure=True
     )
 
-    assert b'<input type="hidden" name="encrypted_data"' in response.content
-    assert prepped.return_value in response.content
-    assert b'Are you sure you want to cancel' in response.content
-    assert user.registrar.name.encode() in response.content
-    assert b'Personal' not in response.content
+    assert b'<span>Monthly plan' not in response.content
+    assert b'<span>Annual plan' in response.content
 
 
 def test_paying_registrar_user_personal_update_form(client, registrar_user_from_paying_registrar_with_personal_subscription):

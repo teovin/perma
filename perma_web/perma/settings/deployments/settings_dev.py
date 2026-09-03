@@ -71,14 +71,11 @@ except ImportError:
 #
 # Perma Payments
 #
-PURCHASE_URL = 'http://localhost/purchase/'
-PURCHASE_HISTORY_URL = 'http://perma-payments/purchase-history/'
-ACKNOWLEDGE_PURCHASE_URL = 'http://perma-payments/acknowledge-purchase/'
-SUBSCRIBE_URL = 'http://localhost/subscribe/'
-CANCEL_URL = 'http://localhost/cancel-request/'
-SUBSCRIPTION_STATUS_URL = 'http://perma-payments/subscription/'
-UPDATE_URL = 'http://localhost/update/'
-CHANGE_URL = 'http://localhost/change/'
+
+# For now, point at an external Perma Payments application,
+# assumed to be running on the Docker host machine on port 8002
+STRIPE_PAYMENTS_APP_INTERNAL_URL = 'http://host.docker.internal:8002'
+STRIPE_PAYMENTS_APP_EXTERNAL_URL = 'http://perma-payments.test:8002'
 
 # Perma.cc encryption keys for communicating with Perma-Payments
 # generated using perma_payments.security.generate_public_private_keys
