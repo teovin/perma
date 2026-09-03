@@ -177,7 +177,6 @@ class Link(DeletableModel):
             models.Index(fields=['creation_timestamp', 'guid']),
             models.Index(fields=['-creation_timestamp', 'guid']),
             models.Index(fields=['submitted_url_surt']),
-            models.Index(fields=['created_by', 'user_deleted']),
             GinIndex(OpClass(Upper('guid'), name='gin_trgm_ops'), name='guid_case_insensitive_idx'),
         ]
 
