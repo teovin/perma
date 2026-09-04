@@ -24,9 +24,8 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 from django.core.files.storage import storages
 from django.core.mail import mail_admins
-from django.db import transaction
-from django.db.models import Count, F, OuterRef, Subquery, Value
-from django.db.models.functions import Coalesce, Greatest, Now
+from django.db.models import Count, F
+from django.db.models.functions import Greatest, Now
 from django.conf import settings
 from django.utils import timezone
 from django.template.defaultfilters import pluralize, filesizeformat
@@ -1619,47 +1618,36 @@ def warn_expiring_organization_users(warning_days=None):
 
 
 @shared_task(acks_late=True)
-def reconcile_user_link_counts(dry_run=False, batch_size=None):
+def reconcile_user_link_counts(dry_run=False):
     """
     Set LinkUser.link_count to the count of non-deleted links created by each user.
-    Pass dry_run to count mismatches without updating.
-    Pass batch_size to run the job in batches.
+    Pass dry_run=True to get the count of mismatches without updating.
     """
-    if batch_size is not None and batch_size <= 0:
-        raise ValueError("batch_size must be greater than 0")
-
-    non_deleted_link_count = Subquery(
-        Link.objects.filter(created_by_id=OuterRef("pk"))
+    link_counts = dict(
+        Link.objects
         .values("created_by_id")
-        .annotate(count=Count("pk"))
-        .values("count")
+        .annotate(actual_count=Count("pk"))
+        .values_list("created_by_id", "actual_count")
     )
 
-    actual_link_count = Coalesce(non_deleted_link_count, Value(0))
-    users = LinkUser.objects.all()
-    users = users.exclude(link_count=actual_link_count).order_by("pk")
+    mismatches = []
+    for user in LinkUser.objects.only("pk", "link_count").iterator():
+        actual_count = link_counts.get(user.pk, 0)
+        if user.link_count != actual_count:
+            user.link_count = actual_count
+            mismatches.append(user)
+
+    mismatch_count = len(mismatches)
 
     if dry_run:
-        count = users.count()
-        logger.info(f"Would update {count} LinkUser records.")
-        return count
+        logger.info(f"Would update {mismatch_count} LinkUser records.")
+        return mismatch_count
 
-    if batch_size is None:
-        updated = users.update(link_count=actual_link_count)
-        logger.info(f"Updated {updated} LinkUser records.")
-        return updated
+    if mismatches:
+        LinkUser.objects.bulk_update(mismatches, ["link_count"])
 
-    updated = 0
-    while True:
-        batch_ids = list(users.values_list("pk", flat=True)[:batch_size])
-        if not batch_ids:
-            break
-        with transaction.atomic():
-            batch_updated = LinkUser.objects.filter(pk__in=batch_ids).update(link_count=actual_link_count)
-        updated += batch_updated
-
-    logger.info(f"Updated a total of {updated} LinkUser records.")
-    return updated
+    logger.info(f"Updated {mismatch_count} LinkUser records.")
+    return mismatch_count
 
 
 @shared_task

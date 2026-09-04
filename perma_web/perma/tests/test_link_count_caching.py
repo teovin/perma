@@ -31,24 +31,6 @@ def test_reconcile_user_link_counts_dry_run_does_not_write(link_user, link_facto
     assert link_user.link_count == 99
 
 
-def test_reconcile_user_link_counts_updates_in_batches(link_user, link_user_factory, link_factory):
-    other_user = link_user_factory()
-    link_factory(created_by=link_user, submitted_url="http://example.com/a")
-    link_factory(created_by=other_user, submitted_url="http://example.com/b")
-    link_user.link_count = 99
-    other_user.link_count = 100
-    link_user.save(update_fields=['link_count'])
-    other_user.save(update_fields=['link_count'])
-
-    updated = reconcile_user_link_counts(batch_size=1)
-
-    link_user.refresh_from_db()
-    other_user.refresh_from_db()
-    assert updated >= 2
-    assert link_user.link_count == 1
-    assert other_user.link_count == 1
-
-
 def test_link_count_do_not_increment_after_saving_a_deleted_link(org_user, link_factory):
     """ Re-saving a user-deleted link must not count it as a new link """
     organization = org_user.organizations.first()
